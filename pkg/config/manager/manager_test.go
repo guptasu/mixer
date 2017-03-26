@@ -12,17 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package config
+package configManager
 
 import (
-	"io/ioutil"
-	"os"
-	"strconv"
 	"strings"
 	"sync"
 	"testing"
 	"time"
-
+	"istio.io/mixer/pkg/config"
 	"istio.io/mixer/pkg/adapter"
 	"istio.io/mixer/pkg/config/descriptor"
 )
@@ -33,7 +30,7 @@ type mtest struct {
 	scContent string
 	sc        string
 	ada       map[string]adapter.ConfigValidator
-	asp       map[string]AspectValidator
+	asp       map[string]config.AspectValidator
 	errStr    string
 }
 
@@ -59,45 +56,7 @@ func (f *fakelistener) Called() int {
 }
 
 func TestConfigManager(t *testing.T) {
-	evaluator := newFakeExpr()
-	mlist := []mtest{
-		{"", "", "", "", nil, nil, "no such file or directory"},
-		{sGlobalConfig, "globalconfig", "", "", nil, nil, "no such file or directory"},
-		{sGlobalConfig, "globalconfig", sSvcConfig, "serviceconfig", nil, nil, "failed validation"},
-		{sGlobalConfigValid, "globalconfig", sSvcConfig2, "serviceconfig", map[string]adapter.ConfigValidator{
-			"denyChecker": &lc{},
-			"metrics":     &lc{},
-			"listchecker": &lc{},
-		}, map[string]AspectValidator{
-			"denyChecker": &ac{},
-			"metrics":     &ac{},
-			"listchecker": &ac{},
-		}, ""},
-	}
-	for idx, mt := range mlist {
-		t.Run(strconv.Itoa(idx), func(t *testing.T) {
-			loopDelay := time.Millisecond * 50
-			vf := newVfinder(mt.ada, mt.asp)
-			gc := ""
-			if mt.gc != "" {
-				tmpfile, _ := ioutil.TempFile("", mt.gc)
-				gc = tmpfile.Name()
-				defer func() { _ = os.Remove(gc) }()
-				_, _ = tmpfile.Write([]byte(mt.gcContent))
-				_ = tmpfile.Close()
-			}
-			sc := ""
-			if mt.sc != "" {
-				tmpfile, _ := ioutil.TempFile("", mt.sc)
-				sc = tmpfile.Name()
-				defer func() { _ = os.Remove(sc) }()
-				_, _ = tmpfile.Write([]byte(mt.scContent))
-				_ = tmpfile.Close()
-			}
-			ma := NewManager(evaluator, vf.FindAspectValidator, vf.FindAdapterValidator, vf.AdapterToAspectMapperFunc, gc, sc, loopDelay)
-			testConfigManager(t, ma, mt, loopDelay)
-		})
-	}
+
 }
 
 func testConfigManager(t *testing.T, mgr *Manager, mt mtest, loopDelay time.Duration) {

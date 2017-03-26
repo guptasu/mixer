@@ -12,27 +12,30 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package config
+package configManager
 
 import (
 	"crypto/sha1"
 	"io/ioutil"
 	"sync"
 	"time"
-
 	"github.com/golang/glog"
-
+	"istio.io/mixer/pkg/config"
 	"istio.io/mixer/pkg/adapter"
 	"istio.io/mixer/pkg/attribute"
 	"istio.io/mixer/pkg/config/descriptor"
 	pb "istio.io/mixer/pkg/config/proto"
+	"istio.io/mixer/pkg/aspect"
 	"istio.io/mixer/pkg/expr"
+	"fmt"
 )
 
 // Resolver resolves configuration to a list of combined configs.
 type Resolver interface {
 	// Resolve resolves configuration to a list of combined configs.
-	Resolve(bag attribute.Bag, aspectSet AspectSet) ([]*pb.Combined, error)
+	Resolve(bag attribute.Bag, aspectSet config.AspectSet) ([]*pb.Combined, error)
+	// get JS string
+	GetJS() string
 }
 
 // ChangeListener listens for config change notifications.
@@ -46,10 +49,10 @@ type ChangeListener interface {
 // api.Handler listens for config changes.
 type Manager struct {
 	eval             expr.Evaluator
-	aspectFinder     AspectValidatorFinder
-	builderFinder    BuilderValidatorFinder
+	aspectFinder     config.AspectValidatorFinder
+	builderFinder    config.BuilderValidatorFinder
 	descriptorFinder descriptor.Finder
-	findAspects      AdapterToAspectMapper
+	findAspects      config.AdapterToAspectMapper
 	loopDelay        time.Duration
 	globalConfig     string
 	serviceConfig    string
@@ -74,8 +77,8 @@ type Manager struct {
 // as command line input parameters.
 // GlobalConfig specifies the location of Global Config.
 // ServiceConfig specifies the location of Service config.
-func NewManager(eval expr.Evaluator, aspectFinder AspectValidatorFinder, builderFinder BuilderValidatorFinder,
-	findAspects AdapterToAspectMapper, globalConfig string, serviceConfig string, loopDelay time.Duration) *Manager {
+func NewManager(eval expr.Evaluator, aspectFinder config.AspectValidatorFinder, builderFinder config.BuilderValidatorFinder,
+	findAspects config.AdapterToAspectMapper, globalConfig string, serviceConfig string, loopDelay time.Duration) *Manager {
 	m := &Manager{
 		eval:          eval,
 		aspectFinder:  aspectFinder,
@@ -104,8 +107,8 @@ func read(fname string) ([sha1.Size]byte, string, error) {
 }
 
 // fetch config and return runtime if a new one is available.
-func (c *Manager) fetch() (*Runtime, descriptor.Finder, error) {
-	var vd *Validated
+func (c *Manager) fetch() (*config.Runtime, descriptor.Finder, error) {
+	var vd *config.Validated
 	var cerr *adapter.ConfigErrors
 
 	gcSHA, gc, err2 := read(c.globalConfig)
@@ -122,18 +125,66 @@ func (c *Manager) fetch() (*Runtime, descriptor.Finder, error) {
 		return nil, nil, nil
 	}
 
-	v := NewValidator(c.aspectFinder, c.builderFinder, c.findAspects, true, c.eval)
+	v := config.NewValidator(c.aspectFinder, c.builderFinder, c.findAspects, true, c.eval)
 	if vd, cerr = v.Validate(sc, gc); cerr != nil {
 		return nil, nil, cerr
 	}
 
-	c.descriptorFinder = descriptor.NewFinder(v.validated.globalConfig)
+	c.descriptorFinder = descriptor.NewFinder(v.GetValidatedGSC())
 
 	c.gcSHA = gcSHA
 	c.scSHA = scSHA
-	return NewRuntime(vd, c.eval), c.descriptorFinder, nil
+	rt := config.NewRuntime(vd, c.eval)
+
+	rt.JSStr = getJS(vd)
+	return rt, c.descriptorFinder, nil
 }
 
+func getJS(vd *config.Validated) string {
+	//vd.serviceConfig
+	/*
+	create methodStrs for each method (chk, report, quota)
+	for each rule r:
+	  create tmpMethodStrs for each method (chk, report, quota)
+          for each aspect a:
+	    generate JS k via Aspect Managers
+	    add k to appropriate tmpMethodStrs.
+	  for each non empty tmpMethodStrs {
+	    insert : if (rule) {
+	      tmpMethodStr
+	    }
+	  }
+	  Do recurrs for each nested rules.
+	*/
+	//var reportMethodStr string
+	//for _, aspectRule := range vd.serviceConfig.GetRules() {
+		//var tmpReportMethodStr string
+		//for _, aspect := range aspectRule.GetAspects() {
+			//aspect.Kind
+		//}
+	//}
+	var mgr aspect.Manager
+	fmt.Println(mgr)
+	js := `
+		function report(propertyBag) {
+
+RecordToprometheus({"request_count": {value: "1",target: "B",method: "DD",response_code: "200",service: "C",source: "A"}})
+		}
+		// more check and quota methods
+
+
+
+        // such methods will be dynamically generated for each aspect in the user config.
+        // For now assume there is only one aspect of kind metric for which we computed the call back
+        // method name to be "ParticularAspectReport". Currenly the Aspect Manager is invoked for each
+        // aspect, but eventually it will be invoked for check/report/quota call and calls to various
+        // aspects will be done here in this file.
+        function RecordToprometheus(val) {
+          CallBackFromUserScript_go("metrics", "prometheus", val)
+        }
+	`
+	return js
+}
 // fetchAndNotify fetches a new config and notifies listeners if something has changed
 func (c *Manager) fetchAndNotify() error {
 	rt, df, err := c.fetch()

@@ -16,6 +16,7 @@ go_library(
         "//pkg/aspect:go_default_library",
         "//pkg/attribute:go_default_library",
         "//pkg/config:go_default_library",
+        "//pkg/config/manager:go_default_library",
         "//pkg/config/descriptor:go_default_library",
         "//pkg/config/proto:go_default_library",
         "//pkg/expr:go_default_library",

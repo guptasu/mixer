@@ -31,6 +31,8 @@ type (
 		Validated
 		// used to evaluate selectors
 		eval expr.PredicateEvaluator
+		// Java Script representation of the SC
+		JSStr string
 	}
 
 	// AspectSet is a set of aspects by name.
@@ -56,6 +58,10 @@ func (r *Runtime) Resolve(bag attribute.Bag, aspectSet AspectSet) (dlist []*pb.C
 	}
 	dlist = make([]*pb.Combined, 0, r.numAspects)
 	return r.resolveRules(bag, aspectSet, r.serviceConfig.GetRules(), "/", dlist)
+}
+
+func (r *Runtime) GetJS() (string) {
+	return r.JSStr
 }
 
 func (r *Runtime) evalPredicate(selector string, bag attribute.Bag) (bool, error) {

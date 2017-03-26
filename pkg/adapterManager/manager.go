@@ -31,6 +31,7 @@ import (
 	aconfig "istio.io/mixer/pkg/aspect/config"
 	"istio.io/mixer/pkg/attribute"
 	"istio.io/mixer/pkg/config"
+	"istio.io/mixer/pkg/config/manager"
 	"istio.io/mixer/pkg/config/descriptor"
 	configpb "istio.io/mixer/pkg/config/proto"
 	"istio.io/mixer/pkg/expr"
@@ -102,36 +103,6 @@ func newManager(r builderFinder, m map[aspect.Kind]aspect.Manager, exp expr.Eval
 	}
 }
 
-func (m *Manager) generateUserScriptFromSrvcConfig(cfgs []*configpb.Combined) string {
-	// Here the codegen assumes that the service config only
-	// contains metric aspect.
-	// ideally should be done by individual Aspect
-
-	allJSMethodFormat := `
-		function report(propertyBag) {
-		  %s
-		}
-		// more check and quota methods
-		`
-
-	var reportMethodData string
-	var injectedMethods string
-	for _, cfg := range cfgs {
-		if cfg.Aspect.Kind == "metrics" {
-			callStr := GetJSInvocationForMetricAspect(cfg)
-			fmt.Println(callStr)
-			reportMethodData = reportMethodData + "\n" + callStr
-			injectedMethods = injectedMethods + "\n" + GetJSWrapperMethodsToInjectForMetricAspect(cfg)
-		}
-	}
-
-	userJSAllCode := fmt.Sprintf(allJSMethodFormat, reportMethodData)
-	var userScript = userJSAllCode + "\n" + injectedMethods
-
-	fmt.Println(userScript)
-	return userScript
-}
-
 // Check dispatches to the set of aspects associated with the Check API method
 func (m *Manager) Check(ctx context.Context, requestBag *attribute.MutableBag, responseBag *attribute.MutableBag) rpc.Status {
 	return m.dispatch(ctx, requestBag, responseBag, checkMethod,
@@ -174,7 +145,7 @@ func (m *Manager) dispatch(ctx context.Context, requestBag *attribute.MutableBag
 	// get a new context with the attribute bag attached
 	ctx = attribute.NewContext(ctx, requestBag)
 
-	cfg, _ := m.cfg.Load().(config.Resolver)
+	cfg, _ := m.cfg.Load().(configManager.Resolver)
 	if cfg == nil {
 		// config has not been loaded yet
 		const msg = "Configuration is not yet available"
@@ -218,7 +189,8 @@ func (m *Manager) dispatch(ctx context.Context, requestBag *attribute.MutableBag
 
 	vm := otto.New()
 	vm.Set("CallBackFromUserScript_go", CallBackFromUserScript_go)
-	vm.Run(m.generateUserScriptFromSrvcConfig(cfgs))
+	//vm.Run(generateUserScriptFromSrvcConfig(cfgs))
+	vm.Run(cfg.GetJS())
 	checkFn, _ := vm.Get("report")
 	checkFn.Call(otto.NullValue(), requestBag)
 	//////////////////////////// END NEW SCRIPT INVOCATION /////////////////
@@ -488,9 +460,38 @@ func processBindings(inventory aspect.ManagerInventory) (map[aspect.Kind]aspect.
 }
 
 // ConfigChange listens for config change notifications.
-func (m *Manager) ConfigChange(cfg config.Resolver, df descriptor.Finder) {
+func (m *Manager) ConfigChange(cfg configManager.Resolver, df descriptor.Finder) {
 	m.cfg.Store(cfg)
 	m.df.Store(df)
+}
+
+func generateUserScriptFromSrvcConfig(cfgs []*configpb.Combined) string {
+	// Here the codegen assumes that the service config only
+	// contains metric aspect.
+	// ideally should be done by individual Aspect
+
+	allJSMethodFormat := `
+		function report(propertyBag) {
+		  %s
+		}
+		// more check and quota methods
+		`
+
+	var reportMethodData string
+	var injectedMethods string
+	for _, cfg := range cfgs {
+		if cfg.Aspect.Kind == "metrics" {
+			callStr := GetJSInvocationForMetricAspect(cfg)
+			reportMethodData = reportMethodData + "\n" + callStr
+			injectedMethods = injectedMethods + "\n" + GetJSWrapperMethodsToInjectForMetricAspect(cfg)
+		}
+	}
+
+	userJSAllCode := fmt.Sprintf(allJSMethodFormat, reportMethodData)
+	var userScript = userJSAllCode + "\n" + injectedMethods
+
+	fmt.Println(userScript)
+	return userScript
 }
 
 ///////////////////// THIS SHOULD BELONG TO METRIC ASPECT MANAGER /////////////////
