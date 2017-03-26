@@ -5,8 +5,6 @@ rules:
         #- selector: service.name == "myservice"
 - selector: true
   aspects:
-  - kind: quotas
-    params:
   - kind: metrics
     adapter: prometheus
     params:
@@ -15,39 +13,8 @@ rules:
         # we want to increment this counter by 1 for each unique (source, target, service, method, response_code) tuple
         value: "1"
         labels:
-          source: source.name | "unknown"
-          target: target.name | "unknown"
-          service: api.name | "unknown"
-          method: api.method | "unknown"
-          response_code: response.http.code | 200
-      - descriptorName:  request_latency
-        value: response.latency | "0ms"
-        labels:
-          source: source.name | "unknown"
-          target: target.name | "unknown"
-          service: api.name | "unknown"
-          method: api.method | "unknown"
-          response_code: response.http.code | 200
-  - kind: access-logs
-    params:
-      logName: "access_log"
-      log:
-        logFormat: COMMON
-        templateExpressions:
-           originIp: origin.ip
-           sourceUser: origin.user
-           timestamp: request.time
-           method: request.method
-           url: request.path
-           protocol: request.scheme
-           responseCode: response.code
-           responseSize: response.size
-        labels:
-           originIp: origin.ip
-           sourceUser: origin.user
-           timestamp: request.time
-           method: request.method
-           url: request.path
-           protocol: request.scheme
-           responseCode: response.code
-           responseSize: response.size
+          source: "A"
+          target: "B"
+          service: "C"
+          method: "D"
+          response_code: "200"

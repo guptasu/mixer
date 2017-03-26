@@ -43,9 +43,10 @@ type (
 	}
 
 	metricsExecutor struct {
-		name     string
-		aspect   adapter.MetricsAspect
-		metadata map[string]*metricInfo // metric name -> info
+		name           string
+		aspect         adapter.MetricsAspect
+		metadata       map[string]*metricInfo // metric name -> info
+		evaluatedValue interface{}
 	}
 )
 
@@ -76,7 +77,7 @@ func (m *metricsManager) NewReportExecutor(c *cpb.Combined, a adapter.Builder, e
 		{
 			Name:        "request_latency",
 			Kind:        dpb.COUNTER, // TODO: nail this down; as is we'll have to do post-processing
-			Value:       dpb.DURATION,
+			Value:       dpb.INT64,
 			Description: "request latency by source, target, and service",
 			Labels: []*dpb.LabelDescriptor{
 				{Name: "source", ValueType: dpb.STRING},
@@ -117,7 +118,7 @@ func (m *metricsManager) NewReportExecutor(c *cpb.Combined, a adapter.Builder, e
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct metrics aspect with config '%v' and err: %s", c, err)
 	}
-	return &metricsExecutor{b.Name(), asp, metadata}, nil
+	return &metricsExecutor{b.Name(), asp, metadata, c.EvaluatedVal}, nil
 }
 
 func (*metricsManager) Kind() Kind                         { return MetricsKind }
@@ -136,24 +137,30 @@ func (*metricsManager) ValidateConfig(config.AspectParams, expr.Validator, descr
 func (w *metricsExecutor) Execute(attrs attribute.Bag, mapper expr.Evaluator) rpc.Status {
 	result := &multierror.Error{}
 	var values []adapter.Value
-
+	evaluatedMetricDatas := w.evaluatedValue.(map[string]interface{})
 	for name, md := range w.metadata {
-		metricValue, err := mapper.Eval(md.value, attrs)
-		if err != nil {
-			result = multierror.Append(result, fmt.Errorf("failed to eval metric value for metric '%s' with err: %s", name, err))
-			continue
-		}
-		labels, err := evalAll(md.labels, attrs, mapper)
-		if err != nil {
-			result = multierror.Append(result, fmt.Errorf("failed to eval labels for metric '%s' with err: %s", name, err))
-			continue
-		}
+
+		//metricValue, err := mapper.Eval(md.value, attrs)
+		//if err != nil {
+		//	result = multierror.Append(result, fmt.Errorf("failed to eval metric value for metric '%s' with err: %s", name, err))
+		//	continue
+		//}
+		specificEvaluatedMetricData := evaluatedMetricDatas[name].(map[string]interface{})
+		metricValue := specificEvaluatedMetricData["value"]
+
+		//labels, err := evalAll(md.labels, attrs, mapper)
+		//if err != nil {
+		//	result = multierror.Append(result, fmt.Errorf("failed to eval labels for metric '%s' with err: %s", name, err))
+		//	continue
+		//}
+		// TEMP HACK for Prototyping. Remove the value and everything else is labels
+		delete(specificEvaluatedMetricData, "value")
 
 		// TODO: investigate either pooling these, or keeping a set around that has only its field's values updated.
 		// we could keep a map[metric name]value, iterate over the it updating only the fields in each value
 		values = append(values, adapter.Value{
 			Definition: md.definition,
-			Labels:     labels,
+			Labels:     specificEvaluatedMetricData,
 			// TODO: extract standard timestamp attributes for start/end once we det'm what they are
 			StartTime:   time.Now(),
 			EndTime:     time.Now(),

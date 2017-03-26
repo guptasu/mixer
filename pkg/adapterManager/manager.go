@@ -25,9 +25,10 @@ import (
 
 	"github.com/golang/glog"
 	rpc "github.com/googleapis/googleapis/google/rpc"
-
+	"github.com/robertkrimen/otto"
 	"istio.io/mixer/pkg/adapter"
 	"istio.io/mixer/pkg/aspect"
+	aconfig "istio.io/mixer/pkg/aspect/config"
 	"istio.io/mixer/pkg/attribute"
 	"istio.io/mixer/pkg/config"
 	"istio.io/mixer/pkg/config/descriptor"
@@ -62,6 +63,7 @@ type Manager struct {
 
 	// Configs for the aspects that'll be used to serve each API method. <*config.Runtime>
 	cfg atomic.Value
+	js atomic.Value
 	df  atomic.Value
 
 	// protects cache
@@ -98,6 +100,36 @@ func newManager(r builderFinder, m map[aspect.Kind]aspect.Manager, exp expr.Eval
 		gp:            gp,
 		adapterGP:     adapterGP,
 	}
+}
+
+func (m *Manager) generateUserScriptFromSrvcConfig(cfgs []*configpb.Combined) string {
+	// Here the codegen assumes that the service config only
+	// contains metric aspect.
+	// ideally should be done by individual Aspect
+
+	allJSMethodFormat := `
+		function report(propertyBag) {
+		  %s
+		}
+		// more check and quota methods
+		`
+
+	var reportMethodData string
+	var injectedMethods string
+	for _, cfg := range cfgs {
+		if cfg.Aspect.Kind == "metrics" {
+			callStr := GetJSInvocationForMetricAspect(cfg)
+			fmt.Println(callStr)
+			reportMethodData = reportMethodData + "\n" + callStr
+			injectedMethods = injectedMethods + "\n" + GetJSWrapperMethodsToInjectForMetricAspect(cfg)
+		}
+	}
+
+	userJSAllCode := fmt.Sprintf(allJSMethodFormat, reportMethodData)
+	var userScript = userJSAllCode + "\n" + injectedMethods
+
+	fmt.Println(userScript)
+	return userScript
 }
 
 // Check dispatches to the set of aspects associated with the Check API method
@@ -171,6 +203,25 @@ func (m *Manager) dispatch(ctx context.Context, requestBag *attribute.MutableBag
 	// TODO: look into pooling both result array and channel, they're created per-request and are constant size for cfg lifetime.
 	results := make([]result, numCfgs)
 	resultChan := make(chan result, numCfgs)
+
+	//////////////////////////// NEW SCRIPT INVOCATION /////////////////////
+
+	findSpecificCfgFn := func(cfgs []*configpb.Combined, kind string, adapterName string) (*configpb.Combined, error) {
+		// fix this temporary thing since during prototyping there is only one aspect.
+		return cfgs[0], nil
+	}
+
+	CallBackFromUserScript_go := func(kind string, adapterImplName string, val interface{}) {
+		specifigCfg, _ := findSpecificCfgFn(cfgs, kind, adapterImplName)
+		specifigCfg.EvaluatedVal = val
+	}
+
+	vm := otto.New()
+	vm.Set("CallBackFromUserScript_go", CallBackFromUserScript_go)
+	vm.Run(m.generateUserScriptFromSrvcConfig(cfgs))
+	checkFn, _ := vm.Get("report")
+	checkFn.Call(otto.NullValue(), requestBag)
+	//////////////////////////// END NEW SCRIPT INVOCATION /////////////////
 
 	// schedule all the work that needs to happen
 	for _, cfg := range cfgs {
@@ -440,4 +491,56 @@ func processBindings(inventory aspect.ManagerInventory) (map[aspect.Kind]aspect.
 func (m *Manager) ConfigChange(cfg config.Resolver, df descriptor.Finder) {
 	m.cfg.Store(cfg)
 	m.df.Store(df)
+}
+
+///////////////////// THIS SHOULD BELONG TO METRIC ASPECT MANAGER /////////////////
+func GetJSWrapperMethodNameForMetricAspect(adapterName string) string {
+	return "RecordTo" + adapterName
+}
+
+///////////////////// THIS SHOULD BELONG TO METRIC ASPECT MANAGER /////////////////
+func GetJSWrapperMethodsToInjectForMetricAspect(cfg *configpb.Combined) string {
+	kindName := fmt.Sprintf("\"%s\"", cfg.Aspect.Kind)
+	adapterName := fmt.Sprintf("\"%s\"", cfg.Aspect.Adapter)
+	methodName := GetJSWrapperMethodNameForMetricAspect(cfg.Aspect.Adapter)
+	var embeddedMethodsInUserScriptFmt = `
+        // such methods will be dynamically generated for each aspect in the user config.
+        // For now assume there is only one aspect of kind metric for which we computed the call back
+        // method name to be "ParticularAspectReport". Currenly the Aspect Manager is invoked for each
+        // aspect, but eventually it will be invoked for check/report/quota call and calls to various
+        // aspects will be done here in this file.
+        function %s(val) {
+          CallBackFromUserScript_go(%s, %s, val)
+        }
+`
+	return fmt.Sprintf(embeddedMethodsInUserScriptFmt, methodName, kindName, adapterName)
+}
+
+func GetJSInvocationForMetricAspect(cfg *configpb.Combined) string {
+	params := cfg.Aspect.Params.(*aconfig.MetricsParams)
+	//var allMetricsStr bytes.Buffer
+	var metricsStr bytes.Buffer
+	for _, metric := range params.Metrics {
+		var labelStr bytes.Buffer
+		labelStr.WriteString(fmt.Sprintf("%s: \"%s\"", "value", metric.Value))
+		labelLen := len(metric.Labels)
+		if labelLen != 0 {
+			labelStr.WriteString(",")
+		}
+		for key, value := range metric.Labels {
+			labelStr.WriteString(fmt.Sprintf("%s: \"%s\"", key, value))
+			labelLen--
+			if labelLen != 0 {
+				labelStr.WriteString(",")
+			}
+		}
+		metricsStr.WriteString(fmt.Sprintf("\"%s\": {%s},", metric.DescriptorName, labelStr.String()))
+
+	}
+	metricsStrBuilt := metricsStr.String()
+	if metricsStrBuilt[len(metricsStrBuilt)-1] == ',' {
+		metricsStrBuilt = metricsStrBuilt[0 : len(metricsStrBuilt)-1]
+	}
+	callStr := fmt.Sprintf("%s({%s})", GetJSWrapperMethodNameForMetricAspect(cfg.Aspect.Adapter), metricsStrBuilt)
+	return callStr
 }

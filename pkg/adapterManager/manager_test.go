@@ -525,7 +525,7 @@ func TestExecute(t *testing.T) {
 		m := newManager(breg, mreg, nil, nil, gp, agp)
 
 		cfg := []*configpb.Combined{
-			{&configpb.Adapter{Name: c.name}, &configpb.Aspect{Kind: c.name}},
+			{&configpb.Adapter{Name: c.name}, &configpb.Aspect{Kind: c.name}, nil},
 		}
 		m.cfg.Store(&fakeResolver{cfg, nil})
 
@@ -558,7 +558,7 @@ func TestExecute_Cancellation(t *testing.T) {
 	cancel()
 
 	cfg := []*configpb.Combined{
-		{&configpb.Adapter{Name: ""}, &configpb.Aspect{Kind: ""}},
+		{&configpb.Adapter{Name: ""}, &configpb.Aspect{Kind: ""}, nil},
 	}
 	m.cfg.Store(&fakeResolver{cfg, nil})
 
@@ -603,6 +603,7 @@ func TestExecute_TimeoutWaitingForResults(t *testing.T) {
 	cfg := []*configpb.Combined{{
 		&configpb.Adapter{Name: name},
 		&configpb.Aspect{Kind: name},
+		nil,
 	}}
 	m.cfg.Store(&fakeResolver{cfg, nil})
 

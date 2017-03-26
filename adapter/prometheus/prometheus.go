@@ -118,6 +118,7 @@ func (p *prom) Record(vals []adapter.Value) error {
 				continue
 			}
 			vec.With(promLabels(val.Labels)).Set(amt)
+			fmt.Printf("** REPORETED METRIC AMT %v , labels %v \n", amt, val.Labels)
 		case adapter.Counter:
 			vec := collector.(*prometheus.CounterVec)
 			amt, err := promValue(val)
@@ -126,6 +127,7 @@ func (p *prom) Record(vals []adapter.Value) error {
 				continue
 			}
 			vec.With(promLabels(val.Labels)).Add(amt)
+			fmt.Printf("** REPORETED METRIC AMT %v , labels %v \n", amt, val.Labels)
 		}
 	}
 
