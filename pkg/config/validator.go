@@ -154,6 +154,12 @@ func (p *Validator) GetValidatedGSC() (*pb.GlobalConfig) {
 	return p.validated.globalConfig
 }
 
+
+func (p *Validated) GetValidatedSC() (*pb.ServiceConfig) {
+	return p.serviceConfig
+}
+
+
 // validateAspectRules validates the recursive configuration data structure.
 // It is primarily used by validate ServiceConfig.
 func (p *Validator) validateAspectRules(rules []*pb.AspectRule, path string, validatePresence bool) (ce *adapter.ConfigErrors) {

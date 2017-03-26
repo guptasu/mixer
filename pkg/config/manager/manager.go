@@ -18,14 +18,16 @@ import (
 	"crypto/sha1"
 	"io/ioutil"
 	"sync"
+	"bytes"
 	"time"
 	"github.com/golang/glog"
 	"istio.io/mixer/pkg/config"
 	"istio.io/mixer/pkg/adapter"
+	aconfig "istio.io/mixer/pkg/aspect/config"
 	"istio.io/mixer/pkg/attribute"
 	"istio.io/mixer/pkg/config/descriptor"
 	pb "istio.io/mixer/pkg/config/proto"
-	"istio.io/mixer/pkg/aspect"
+
 	"istio.io/mixer/pkg/expr"
 	"fmt"
 )
@@ -156,15 +158,32 @@ func getJS(vd *config.Validated) string {
 	  }
 	  Do recurrs for each nested rules.
 	*/
-	//var reportMethodStr string
-	//for _, aspectRule := range vd.serviceConfig.GetRules() {
-		//var tmpReportMethodStr string
-		//for _, aspect := range aspectRule.GetAspects() {
-			//aspect.Kind
-		//}
-	//}
-	var mgr aspect.Manager
-	fmt.Println(mgr)
+	var reportMethodStr string
+	var injectionMethods string
+	for _, aspectRule := range vd.GetValidatedSC().GetRules() {
+		var tmpReportMethodStr string
+		for _, aspect := range aspectRule.GetAspects() {
+			if aspect.Kind == "metrics" {
+				inv := GetJSInvocationForMetricAspect(nil)
+				injectionMethods = injectionMethods + GetJSWrapperMethodsToInjectForMetricAspect(nil)
+				if (true /*can fit report method*/) {
+					tmpReportMethodStr = tmpReportMethodStr + inv
+				}
+			}
+		}
+		//if tmpReportMethodStr not empty
+		reportMethodStr = reportMethodStr + tmpReportMethodStr
+	}
+	allJSMethodFormat := `
+		function report(propertyBag) {
+		  %s
+		}
+		// more check and quota methods
+		`
+	userJSAllCode := fmt.Sprintf(allJSMethodFormat, reportMethodStr)
+	var userScript = userJSAllCode + "\n" + injectionMethods
+
+	fmt.Println(userScript)
 	js := `
 		function report(propertyBag) {
 
@@ -183,6 +202,7 @@ RecordToprometheus({"request_count": {value: "1",target: "B",method: "DD",respon
           CallBackFromUserScript_go("metrics", "prometheus", val)
         }
 	`
+	js = userScript
 	return js
 }
 // fetchAndNotify fetches a new config and notifies listeners if something has changed
@@ -242,4 +262,106 @@ func (c *Manager) Start() {
 	if err != nil {
 		glog.Warning("Unable to process config: ", err)
 	}
+}
+
+
+func generateUserScriptFromSrvcConfig(cfgs []*pb.Combined) string {
+	// Here the codegen assumes that the service config only
+	// contains metric aspect.
+	// ideally should be done by individual Aspect
+
+
+
+	var reportMethodData string
+	var injectedMethods string
+	for _, cfg := range cfgs {
+		if cfg.Aspect.Kind == "metrics" {
+			callStr := GetJSInvocationForMetricAspect(cfg)
+			reportMethodData = reportMethodData + "\n" + callStr
+			injectedMethods = injectedMethods + "\n" + GetJSWrapperMethodsToInjectForMetricAspect(cfg)
+		}
+	}
+	allJSMethodFormat := `
+		function report(propertyBag) {
+		  %s
+		}
+		// more check and quota methods
+		`
+	userJSAllCode := fmt.Sprintf(allJSMethodFormat, reportMethodData)
+	var userScript = userJSAllCode + "\n" + injectedMethods
+
+	fmt.Println(userScript)
+	return userScript
+}
+
+///////////////////// THIS SHOULD BELONG TO METRIC ASPECT MANAGER /////////////////
+func GetJSWrapperMethodNameForMetricAspect(adapterName string) string {
+	return "RecordTo" + adapterName
+}
+
+///////////////////// THIS SHOULD BELONG TO METRIC ASPECT MANAGER /////////////////
+func GetJSWrapperMethodsToInjectForMetricAspect(cfg *pb.Combined) string {
+	if (true) {
+return `        // such methods will be dynamically generated for each aspect in the user config.
+        // For now assume there is only one aspect of kind metric for which we computed the call back
+        // method name to be "ParticularAspectReport". Currenly the Aspect Manager is invoked for each
+        // aspect, but eventually it will be invoked for check/report/quota call and calls to various
+        // aspects will be done here in this file.
+        function RecordToprometheus(val) {
+          CallBackFromUserScript_go("metrics", "prometheus", val)
+        }
+	`
+	} else {
+		kindName := fmt.Sprintf("\"%s\"", cfg.Aspect.Kind)
+		adapterName := fmt.Sprintf("\"%s\"", cfg.Aspect.Adapter)
+		methodName := GetJSWrapperMethodNameForMetricAspect(cfg.Aspect.Adapter)
+		var embeddedMethodsInUserScriptFmt = `
+        // such methods will be dynamically generated for each aspect in the user config.
+        // For now assume there is only one aspect of kind metric for which we computed the call back
+        // method name to be "ParticularAspectReport". Currenly the Aspect Manager is invoked for each
+        // aspect, but eventually it will be invoked for check/report/quota call and calls to various
+        // aspects will be done here in this file.
+        function %s(val) {
+          CallBackFromUserScript_go(%s, %s, val)
+        }
+`
+		return fmt.Sprintf(embeddedMethodsInUserScriptFmt, methodName, kindName, adapterName)
+	}
+	return ""
+}
+
+func GetJSInvocationForMetricAspect(cfg *pb.Combined) string {
+	if (true) {
+		return `
+		RecordToprometheus({"request_count": {value: "1",target: "BBBBB",method: "DD",response_code: "200",service: "C",source: "A"}})
+		`
+	} else {
+	params := cfg.Aspect.Params.(*aconfig.MetricsParams)
+	//var allMetricsStr bytes.Buffer
+	var metricsStr bytes.Buffer
+	for _, metric := range params.Metrics {
+		var labelStr bytes.Buffer
+		labelStr.WriteString(fmt.Sprintf("%s: \"%s\"", "value", metric.Value))
+		labelLen := len(metric.Labels)
+		if labelLen != 0 {
+			labelStr.WriteString(",")
+		}
+		for key, value := range metric.Labels {
+			labelStr.WriteString(fmt.Sprintf("%s: \"%s\"", key, value))
+			labelLen--
+			if labelLen != 0 {
+				labelStr.WriteString(",")
+			}
+		}
+		metricsStr.WriteString(fmt.Sprintf("\"%s\": {%s},", metric.DescriptorName, labelStr.String()))
+
+	}
+	metricsStrBuilt := metricsStr.String()
+	if metricsStrBuilt[len(metricsStrBuilt)-1] == ',' {
+		metricsStrBuilt = metricsStrBuilt[0 : len(metricsStrBuilt)-1]
+	}
+	callStr := fmt.Sprintf("%s({%s})", GetJSWrapperMethodNameForMetricAspect(cfg.Aspect.Adapter), metricsStrBuilt)
+	return callStr
+	}
+	return ""
 }
