@@ -3,7 +3,7 @@ revision: "2022"
 rules:
         #- selector: service.name == “*”
         #- selector: service.name == "myservice"
-- selector: true
+- selector: source.name == "test"
   aspects:
   - kind: metrics
     adapter: prometheus

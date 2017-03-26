@@ -140,7 +140,8 @@ func (w *metricsExecutor) Execute(attrs attribute.Bag, mapper expr.Evaluator) rp
 	evaluatedMetricDatas := w.evaluatedValue.(map[string]interface{})
 	for name, md := range w.metadata {
 
-		//metricValue, err := mapper.Eval(md.value, attrs)
+		metricValueOld, _ := mapper.Eval(md.value, attrs)
+		fmt.Println(metricValueOld)
 		//if err != nil {
 		//	result = multierror.Append(result, fmt.Errorf("failed to eval metric value for metric '%s' with err: %s", name, err))
 		//	continue
