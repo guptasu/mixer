@@ -13,8 +13,45 @@ rules:
         # we want to increment this counter by 1 for each unique (source, target, service, method, response_code) tuple
         value: "1"
         labels:
-          source: source.name | "unknown"
-          target: target.name | "unknown"
-          service: api.name | "unknown"
-          method: api.method | "unknown"
+          source: source.name | "a"
+          target: target.name | "a"
+          service: api.name | "a"
+          method: api.method | "a"
           response_code: response.http.code | 200
+      - descriptorName:  request_latency
+        value: response.latency | 0
+        labels:
+          source: source.name | "b"
+          target: target.name | "b"
+          service: api.name | "b"
+          method: api.method | "b"
+          response_code: response.http.code | 400
+- selector: source.name == "foo"
+  aspects:
+  - kind: metrics
+    adapter: prometheus
+    params:
+      metrics:
+      - descriptorName:  request_latency
+        value: response.latency | 0
+        labels:
+          source: source.name | "c"
+          target: target.name | "c"
+          service: api.name | "c"
+          method: api.method | "c"
+          response_code: response.http.code | 500
+  - kind: metrics
+    adapter: prometheus
+    params:
+      metrics:
+      - descriptorName: request_count
+        # we want to increment this counter by 1 for each unique (source, target, service, method, response_code) tuple
+        value: "5"
+        labels:
+          source: source.name | "d"
+          target: target.name | "d"
+          service: api.name | "d"
+          method: api.method | "d"
+          response_code: response.http.code | 600
+
+

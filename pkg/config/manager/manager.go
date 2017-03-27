@@ -165,9 +165,12 @@ func getJS(vd *config.Validated, c *Manager) string {
 		var tmpReportMethodStr string
 		for _, aspect := range aspectRule.GetAspects() {
 			if aspect.Kind == "metrics" {
-				inv, inj := GetJSInvocationForMetricAspect(aspect.Params.(*aconfig.MetricsParams), aspect.Adapter)
-				injectionMethods = injectionMethods + inj
-				tmpReportMethodStr = tmpReportMethodStr + inv
+				invocation, wrapperMtdToIngest := GetJSInvocationForMetricAspect(aspect.Params.(*aconfig.MetricsParams), aspect.Adapter)
+				tmpReportMethodStr = tmpReportMethodStr + invocation
+				// HACK. skipping duplication incertion of mtd.
+				if len(injectionMethods) == 0 {
+					injectionMethods = injectionMethods + wrapperMtdToIngest
+				}
 			}
 		}
 		if len(tmpReportMethodStr) > 0 {
@@ -183,9 +186,6 @@ func getJS(vd *config.Validated, c *Manager) string {
 			ruleIfBlocked := fmt.Sprintf(`
 			if (%s) {
 			  %s
-			} else {
-			  console.log("** Debugging : JS SELECTOR FAILED **")
-			  console.log("ACTUAL" + propertyBag.Get("source.name")[0])
 			}
 			`, ifStatementStr, tmpReportMethodStr)
 
