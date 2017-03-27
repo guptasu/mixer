@@ -294,8 +294,7 @@ func GetJSInvocationForMetricAspect(metricsParams *aconfig.MetricsParams, adapte
 		metricsStr.WriteString(fmt.Sprintf(`
 			      "%s": {
 			        %s
-			      },
-			    `, metric.DescriptorName, labelStr.String()))
+			      },`, metric.DescriptorName, labelStr.String()))
 
 	}
 	metricsStrBuilt := metricsStr.String()
