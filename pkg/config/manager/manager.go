@@ -165,39 +165,27 @@ func getJS(vd *config.Validated, c *Manager) string {
 		var tmpReportMethodStr string
 		for _, aspect := range aspectRule.GetAspects() {
 			if aspect.Kind == "metrics" {
-				inv, inj := GetJSInvocationForMetricAspect(nil)
+				inv, inj := GetJSInvocationForMetricAspect(aspect.Params.(*aconfig.MetricsParams), aspect.Adapter)
 				injectionMethods = injectionMethods + inj
-				if (true /*can fit report method*/) {
-					tmpReportMethodStr = tmpReportMethodStr + inv
-				}
+				tmpReportMethodStr = tmpReportMethodStr + inv
 			}
 		}
 		if len(tmpReportMethodStr) > 0 {
 			//TODO FIX FOR COMPLEXT OPTIONS
 			var ifStatementStr string
 			if len(aspectRule.Selector) > 0 {
-				ifStmExpr := aspectRule.Selector
-				ex, err := expr.Parse(ifStmExpr)
-				if err != nil {
-					glog.Warning("Unable to parse : %s. %v. Setting expression to false", ifStmExpr, err)
-					ifStmExpr = "false"
-				} else {
-					ifStmExpr = aspectRule.Selector
-					condition, _ := EvalJSExpession(ex, expr.FuncMap(), "propertyBag.Get")
-					ifStmExpr = condition
-
-				}
-				ifStatementStr = ifStmExpr
+				expressionStr := aspectRule.Selector
+				ifStatementStr = getJSForExpression(expressionStr)
 
 			} else {
 				ifStatementStr = "true"
 			}
 			ruleIfBlocked := fmt.Sprintf(`
 			if (%s) {
-			%s
+			  %s
 			} else {
-			console.log("** Debugging : JS SELECTOR FAILED **")
-			console.log("ACTUAL" + propertyBag.Get("source.name")[0])
+			  console.log("** Debugging : JS SELECTOR FAILED **")
+			  console.log("ACTUAL" + propertyBag.Get("source.name")[0])
 			}
 			`, ifStatementStr, tmpReportMethodStr)
 
@@ -208,9 +196,14 @@ func getJS(vd *config.Validated, c *Manager) string {
 	}
 	allJSMethodFormat := `
 		function report(propertyBag) {
-		  %s
+		    %s
 		}
-		// more check and quota methods
+		function check(propertyBag) {
+		    // TODO
+		}
+		function quota(propertyBag) {
+		    // TODO
+		}
 		`
 	userJSAllCode := fmt.Sprintf(allJSMethodFormat, reportMethodStr)
 	var userScript = userJSAllCode + "\n" + injectionMethods
@@ -280,60 +273,50 @@ func (c *Manager) Start() {
 
 ///////////////////// THIS SHOULD BELONG TO METRIC ASPECT MANAGER /////////////////
 
-func GetJSInvocationForMetricAspect(cfg *pb.Combined) (string, string) {
-	if (true) {
-		return `
-		RecordToprometheus({"request_count": {value: "1",target: "XXBBBBB",method: "DD",response_code: "200",service: "C",source: "A"}})
-		`, `
-		// such methods will be dynamically generated for each aspect in the user config.
-		// For now assume there is only one aspect of kind metric for which we computed the call back
-		// method name to be "ParticularAspectReport". Currenly the Aspect Manager is invoked for each
-		// aspect, but eventually it will be invoked for check/report/quota call and calls to various
-		// aspects will be done here in this file.
-		function RecordToprometheus(val) {
-		  CallBackFromUserScript_go("metrics", "prometheus", val)
-		}
-		`
-	} else {
-	params := cfg.Aspect.Params.(*aconfig.MetricsParams)
+func GetJSInvocationForMetricAspect(metricsParams *aconfig.MetricsParams, adapterName string) (string, string) {
+	params := metricsParams
 	//var allMetricsStr bytes.Buffer
 	var metricsStr bytes.Buffer
 	for _, metric := range params.Metrics {
 		var labelStr bytes.Buffer
-		labelStr.WriteString(fmt.Sprintf("%s: \"%s\"", "value", metric.Value))
+		labelStr.WriteString(fmt.Sprintf("%s: %s", "value", getJSForExpression(metric.Value)))
 		labelLen := len(metric.Labels)
 		if labelLen != 0 {
-			labelStr.WriteString(",")
+			labelStr.WriteString(",\n")
 		}
 		for key, value := range metric.Labels {
-			labelStr.WriteString(fmt.Sprintf("%s: \"%s\"", key, value))
+			labelStr.WriteString(fmt.Sprintf(`				    %s: %s`, key, getJSForExpression(value)))
 			labelLen--
 			if labelLen != 0 {
-				labelStr.WriteString(",")
+				labelStr.WriteString(",\n")
 			}
 		}
-		metricsStr.WriteString(fmt.Sprintf("\"%s\": {%s},", metric.DescriptorName, labelStr.String()))
+		metricsStr.WriteString(fmt.Sprintf(`
+			      "%s": {
+			        %s
+			      },
+			    `, metric.DescriptorName, labelStr.String()))
 
 	}
 	metricsStrBuilt := metricsStr.String()
 	if metricsStrBuilt[len(metricsStrBuilt)-1] == ',' {
 		metricsStrBuilt = metricsStrBuilt[0 : len(metricsStrBuilt)-1]
 	}
-	callStr := fmt.Sprintf("%s({%s})", GetJSWrapperMethodNameForMetricAspect(cfg.Aspect.Adapter), metricsStrBuilt)
-	return callStr, GetJSWrapperMethodsToInjectForMetricAspect(nil)
-	}
-	return "", ""
+	callStr := fmt.Sprintf(`
+				%s({
+	  			  %s
+				})
+	`, GetJSWrapperMethodNameForMetricAspect(adapterName), metricsStrBuilt)
+	return callStr, GetJSWrapperMethodsToInjectForMetricAspect(adapterName, "metrics")
 }
 
 func GetJSWrapperMethodNameForMetricAspect(adapterName string) string {
 	return "RecordTo" + adapterName
 }
 
-func GetJSWrapperMethodsToInjectForMetricAspect(cfg *pb.Combined) string {
+func GetJSWrapperMethodsToInjectForMetricAspect(adapterName string, kindName string) string {
 
-	kindName := fmt.Sprintf("\"%s\"", cfg.Aspect.Kind)
-	adapterName := fmt.Sprintf("\"%s\"", cfg.Aspect.Adapter)
-	methodName := GetJSWrapperMethodNameForMetricAspect(cfg.Aspect.Adapter)
+	methodName := GetJSWrapperMethodNameForMetricAspect(adapterName)
 	var embeddedMethodsInUserScriptFmt = `
         // such methods will be dynamically generated for each aspect in the user config.
         // For now assume there is only one aspect of kind metric for which we computed the call back
@@ -341,12 +324,24 @@ func GetJSWrapperMethodsToInjectForMetricAspect(cfg *pb.Combined) string {
         // aspect, but eventually it will be invoked for check/report/quota call and calls to various
         // aspects will be done here in this file.
         function %s(val) {
-          CallBackFromUserScript_go(%s, %s, val)
+          CallBackFromUserScript_go("%s", "%s", val)
         }
 `
 	return fmt.Sprintf(embeddedMethodsInUserScriptFmt, methodName, kindName, adapterName)
 }
 
+func getJSForExpression(expression string) string{
+	ex, err := expr.Parse(expression)
+	var out string
+	if err != nil {
+		glog.Warning("Unable to parse : %s. %v. Setting expression to false", expression, err)
+		out = "false"
+	} else {
+		condition, _ := EvalJSExpession(ex, expr.FuncMap(), "propertyBag.Get")
+		out = condition
+	}
+	return out
+}
 
 // Eval evaluates the expression given an attribute bag and a function map.
 func EvalJSExpession(e *expr.Expression, fMap map[string]expr.FuncBase, getPropMtdName string) (string, error) {
@@ -367,6 +362,15 @@ func EvalJSExpession(e *expr.Expression, fMap map[string]expr.FuncBase, getPropM
 		rightStr, _ := EvalJSExpession(e.Fn.Args[1], fMap, getPropMtdName)
 		return fmt.Sprintf("%s == %s", leftStr, rightStr), nil
 	}
-	
+	if e.Fn.Name == "OR" {
+		//(age < 18) ? "Too young":"Old enough"
+		allArgs := e.Fn.Args
+		if len(allArgs) > 0 {
+			chkIfExists := fmt.Sprintf(getPropMtdName+"(\"%s\")[1]", allArgs[0].Var.Name)
+			leftexp, _ := EvalJSExpession(e.Fn.Args[0], fMap, getPropMtdName)
+			rightexp, _ := EvalJSExpession(e.Fn.Args[1], fMap, getPropMtdName)
+			return fmt.Sprintf("%s ? %s : %s", chkIfExists, leftexp, rightexp), nil
+		}
+	}
 	return "", nil
 }

@@ -140,8 +140,7 @@ func (w *metricsExecutor) Execute(attrs attribute.Bag, mapper expr.Evaluator) rp
 	evaluatedMetricDatas := w.evaluatedValue.(map[string]interface{})
 	for name, md := range w.metadata {
 
-		metricValueOld, _ := mapper.Eval(md.value, attrs)
-		fmt.Println(metricValueOld)
+		//metricValue,err := mapper.Eval(md.value, attrs)
 		//if err != nil {
 		//	result = multierror.Append(result, fmt.Errorf("failed to eval metric value for metric '%s' with err: %s", name, err))
 		//	continue
@@ -149,13 +148,15 @@ func (w *metricsExecutor) Execute(attrs attribute.Bag, mapper expr.Evaluator) rp
 		specificEvaluatedMetricData := evaluatedMetricDatas[name].(map[string]interface{})
 		metricValue := specificEvaluatedMetricData["value"]
 
-		//labels, err := evalAll(md.labels, attrs, mapper)
-		//if err != nil {
-		//	result = multierror.Append(result, fmt.Errorf("failed to eval labels for metric '%s' with err: %s", name, err))
-		//	continue
-		//}
+		labels, err := evalAll(md.labels, attrs, mapper)
+		if err != nil {
+			result = multierror.Append(result, fmt.Errorf("failed to eval labels for metric '%s' with err: %s", name, err))
+			continue
+		}
+		fmt.Println("OLD EXISTING CODE OUTPUT FOR LABELS : ", labels)
 		// TEMP HACK for Prototyping. Remove the value and everything else is labels
 		delete(specificEvaluatedMetricData, "value")
+		fmt.Println("LABELS FROM JS                      : ", specificEvaluatedMetricData)
 
 		// TODO: investigate either pooling these, or keeping a set around that has only its field's values updated.
 		// we could keep a map[metric name]value, iterate over the it updating only the fields in each value

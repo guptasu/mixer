@@ -13,8 +13,8 @@ rules:
         # we want to increment this counter by 1 for each unique (source, target, service, method, response_code) tuple
         value: "1"
         labels:
-          source: "A"
-          target: "B"
-          service: "C"
-          method: "D"
-          response_code: "200"
+          source: source.name | "unknown"
+          target: target.name | "unknown"
+          service: api.name | "unknown"
+          method: api.method | "unknown"
+          response_code: response.http.code | 200
