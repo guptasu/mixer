@@ -209,6 +209,10 @@ func getJS(vd *config.Validated, c *Manager) string {
 	var userScript = userJSAllCode + "\n" + injectionMethods
 
 	fmt.Println(userScript)
+	err := ioutil.WriteFile("/tmp/generatedJSFromConfig.js", []byte(userScript), 0644)
+	if err != nil {
+		panic(err)
+	}
 
 	return userScript
 }
@@ -317,14 +321,9 @@ func GetJSWrapperMethodsToInjectForMetricAspect(adapterName string, kindName str
 
 	methodName := GetJSWrapperMethodNameForMetricAspect(adapterName)
 	var embeddedMethodsInUserScriptFmt = `
-        // such methods will be dynamically generated for each aspect in the user config.
-        // For now assume there is only one aspect of kind metric for which we computed the call back
-        // method name to be "ParticularAspectReport". Currenly the Aspect Manager is invoked for each
-        // aspect, but eventually it will be invoked for check/report/quota call and calls to various
-        // aspects will be done here in this file.
-        function %s(val) {
-          CallBackFromUserScript_go("%s", "%s", val)
-        }
+                function %s(val) {
+                  CallBackFromUserScript_go("%s", "%s", val)
+                }
 `
 	return fmt.Sprintf(embeddedMethodsInUserScriptFmt, methodName, kindName, adapterName)
 }
