@@ -17,12 +17,9 @@ package config
 import (
 	"github.com/golang/glog"
 	multierror "github.com/hashicorp/go-multierror"
-	"github.com/robertkrimen/otto"
 	"istio.io/mixer/pkg/attribute"
 	pb "istio.io/mixer/pkg/config/proto"
-	configpb "istio.io/mixer/pkg/config/proto"
 	"istio.io/mixer/pkg/expr"
-	"fmt"
 )
 
 type (
@@ -46,24 +43,6 @@ func NewRuntime(v *Validated, evaluator expr.PredicateEvaluator) *Runtime {
 	return &Runtime{
 		Validated: *v,
 		eval:      evaluator,
-	}
-}
-
-
-type NormalizedConfig struct {
-	JavaScript string
-}
-
-func (n *NormalizedConfig) Evalaute(requestBag *attribute.MutableBag,
-	aspectFinder func(cfgs []*configpb.Combined, kind string, adapterName string, val interface{}) (*configpb.Combined, error),
-	callBack func(kind string, adapterImplName string, val interface{})) {
-	vm := otto.New()
-	vm.Set("CallBackFromUserScript_go", callBack)
-	vm.Run(n.JavaScript)
-	checkFn, _ := vm.Get("report")
-	_, errFromJS := checkFn.Call(otto.NullValue(), requestBag)
-	if errFromJS != nil {
-		fmt.Println(errFromJS)
 	}
 }
 

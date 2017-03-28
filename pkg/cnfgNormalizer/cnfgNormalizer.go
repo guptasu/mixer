@@ -18,10 +18,8 @@ import (
 	"bytes"
 	"os/exec"
 	"io/ioutil"
-	"github.com/golang/glog"
 	"istio.io/mixer/pkg/config"
 	aconfig "istio.io/mixer/pkg/aspect/config"
-	"istio.io/mixer/pkg/expr"
 	"fmt"
 )
 
@@ -199,49 +197,4 @@ func GetJSWrapperMethodsToInjectForMetricAspect(adapterName string, kindName str
                 }
 `
 	return fmt.Sprintf(embeddedMethodsInUserScriptFmt, methodName, kindName, adapterName)
-}
-
-func getJSForExpression(expression string) string{
-	ex, err := expr.Parse(expression)
-	var out string
-	if err != nil {
-		glog.Warning("Unable to parse : %s. %v. Setting expression to false", expression, err)
-		out = "false"
-	} else {
-		condition, _ := EvalJSExpession(ex, expr.FuncMap(), "attributes.Get")
-		out = condition
-	}
-	return out
-}
-
-// Eval evaluates the expression given an attribute bag and a function map.
-func EvalJSExpession(e *expr.Expression, fMap map[string]expr.FuncBase, getPropMtdName string) (string, error) {
-	if e.Const != nil {
-		return e.Const.StrValue, nil
-	}
-	if e.Var != nil {
-		return fmt.Sprintf(getPropMtdName + "(\"%s\")[0]", e.Var.Name), nil
-	}
-
-	fn := fMap[e.Fn.Name]
-	if fn == nil {
-		return "", fmt.Errorf("unknown function: %s", e.Fn.Name)
-	}
-	// may panic
-	if e.Fn.Name == "EQ" {
-		leftStr, _ := EvalJSExpession(e.Fn.Args[0], fMap, getPropMtdName)
-		rightStr, _ := EvalJSExpession(e.Fn.Args[1], fMap, getPropMtdName)
-		return fmt.Sprintf("%s == %s", leftStr, rightStr), nil
-	}
-	if e.Fn.Name == "OR" {
-		//(age < 18) ? "Too young":"Old enough"
-		allArgs := e.Fn.Args
-		if len(allArgs) > 0 {
-			chkIfExists := fmt.Sprintf(getPropMtdName+"(\"%s\")[1]", allArgs[0].Var.Name)
-			leftexp, _ := EvalJSExpession(e.Fn.Args[0], fMap, getPropMtdName)
-			rightexp, _ := EvalJSExpession(e.Fn.Args[1], fMap, getPropMtdName)
-			return fmt.Sprintf("%s ? %s : %s", chkIfExists, leftexp, rightexp), nil
-		}
-	}
-	return "", nil
 }
