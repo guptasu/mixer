@@ -6,15 +6,18 @@ go_library(
     name = "go_default_library",
     srcs = [
         "cnfgNormalizer.go",
+        "jsFromExpression.go",
+        "metricsAspectNormalizer.go",
     ],
     deps = [
         "//pkg/adapter:go_default_library",
         "//pkg/attribute:go_default_library",
         "//pkg/config/descriptor:go_default_library",
         "//pkg/config/proto:go_default_library",
+        "//pkg/aspect/config:go_default_library",
         "//pkg/expr:go_default_library",
         "//pkg/aspect:go_default_library",
         "//pkg/config:go_default_library",
-        #"//pkg/aspect/config:go_default_library",
+        "@com_github_robertkrimen_otto//:go_default_library",
     ],
 )

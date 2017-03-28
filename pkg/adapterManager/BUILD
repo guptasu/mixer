@@ -25,7 +25,6 @@ go_library(
         "//pkg/aspect/config:go_default_library",
         "@com_github_golang_glog//:go_default_library",
         "@com_github_googleapis_googleapis//:google/rpc",
-        "@com_github_robertkrimen_otto//:go_default_library",
     ],
 )
 

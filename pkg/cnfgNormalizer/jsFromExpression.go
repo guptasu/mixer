@@ -15,7 +15,6 @@
 package cnfgNormalizer
 
 import (
-	"github.com/golang/glog"
 	"istio.io/mixer/pkg/expr"
 	"fmt"
 )
@@ -24,7 +23,6 @@ func getJSForExpression(expression string) string{
 	ex, err := expr.Parse(expression)
 	var out string
 	if err != nil {
-		glog.Warning("Unable to parse : %s. %v. Setting expression to false", expression, err)
 		out = "false"
 	} else {
 		condition, _ := EvalJSExpession(ex, expr.FuncMap(), "attributes.Get")
