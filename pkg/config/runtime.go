@@ -17,10 +17,12 @@ package config
 import (
 	"github.com/golang/glog"
 	multierror "github.com/hashicorp/go-multierror"
-
+	"github.com/robertkrimen/otto"
 	"istio.io/mixer/pkg/attribute"
 	pb "istio.io/mixer/pkg/config/proto"
+	configpb "istio.io/mixer/pkg/config/proto"
 	"istio.io/mixer/pkg/expr"
+	"fmt"
 )
 
 type (
@@ -32,7 +34,7 @@ type (
 		// used to evaluate selectors
 		eval expr.PredicateEvaluator
 		// Java Script representation of the SC
-		JSStr string
+		NormalizedConfig *NormalizedConfig
 	}
 
 	// AspectSet is a set of aspects by name.
@@ -44,6 +46,24 @@ func NewRuntime(v *Validated, evaluator expr.PredicateEvaluator) *Runtime {
 	return &Runtime{
 		Validated: *v,
 		eval:      evaluator,
+	}
+}
+
+
+type NormalizedConfig struct {
+	JavaScript string
+}
+
+func (n *NormalizedConfig) Evalaute(requestBag *attribute.MutableBag,
+	aspectFinder func(cfgs []*configpb.Combined, kind string, adapterName string, val interface{}) (*configpb.Combined, error),
+	callBack func(kind string, adapterImplName string, val interface{})) {
+	vm := otto.New()
+	vm.Set("CallBackFromUserScript_go", callBack)
+	vm.Run(n.JavaScript)
+	checkFn, _ := vm.Get("report")
+	_, errFromJS := checkFn.Call(otto.NullValue(), requestBag)
+	if errFromJS != nil {
+		fmt.Println(errFromJS)
 	}
 }
 
@@ -60,8 +80,8 @@ func (r *Runtime) Resolve(bag attribute.Bag, aspectSet AspectSet) (dlist []*pb.C
 	return r.resolveRules(bag, aspectSet, r.serviceConfig.GetRules(), "/", dlist)
 }
 
-func (r *Runtime) GetJS() (string) {
-	return r.JSStr
+func (r *Runtime) GetNormalizedConfig() (*NormalizedConfig) {
+	return r.NormalizedConfig
 }
 
 func (r *Runtime) evalPredicate(selector string, bag attribute.Bag) (bool, error) {

@@ -25,7 +25,6 @@ import (
 
 	"github.com/golang/glog"
 	rpc "github.com/googleapis/googleapis/google/rpc"
-	"github.com/robertkrimen/otto"
 	"istio.io/mixer/pkg/adapter"
 	"istio.io/mixer/pkg/aspect"
 
@@ -199,15 +198,7 @@ func (m *Manager) dispatch(ctx context.Context, requestBag *attribute.MutableBag
 		specifigCfg.EvaluatedVal = val
 	}
 
-	vm := otto.New()
-	vm.Set("CallBackFromUserScript_go", CallBackFromUserScript_go)
-	vm.Run(cfg.GetJS())
-	checkFn, _ := vm.Get("report")
-	_, errFromJS := checkFn.Call(otto.NullValue(), requestBag)
-	if errFromJS != nil {
-		fmt.Println(errFromJS)
-	}
-	//////////////////////////// END NEW SCRIPT INVOCATION /////////////////
+	cfg.GetNormalizedConfig().Evalaute(requestBag, findSpecificCfgFn, CallBackFromUserScript_go)
 
 	// schedule all the work that needs to happen
 	for _, cfg := range cfgs {
