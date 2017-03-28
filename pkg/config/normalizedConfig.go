@@ -15,25 +15,12 @@
 package config
 
 import (
-	"github.com/robertkrimen/otto"
 	"istio.io/mixer/pkg/attribute"
 	configpb "istio.io/mixer/pkg/config/proto"
-	"fmt"
 )
-
-type NormalizedConfig struct {
-	JavaScript string
+type NormalizedConfig interface {
+	Evalaute(requestBag *attribute.MutableBag,
+		aspectFinder func(cfgs []*configpb.Combined, kind string, adapterName string, val interface{}) (*configpb.Combined, error),
+		callBack func(kind string, adapterImplName string, val interface{}))
 }
 
-func (n *NormalizedConfig) Evalaute(requestBag *attribute.MutableBag,
-	aspectFinder func(cfgs []*configpb.Combined, kind string, adapterName string, val interface{}) (*configpb.Combined, error),
-	callBack func(kind string, adapterImplName string, val interface{})) {
-	vm := otto.New()
-	vm.Set("CallBackFromUserScript_go", callBack)
-	vm.Run(n.JavaScript)
-	checkFn, _ := vm.Get("report")
-	_, errFromJS := checkFn.Call(otto.NullValue(), requestBag)
-	if errFromJS != nil {
-		fmt.Println(errFromJS)
-	}
-}

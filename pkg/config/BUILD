@@ -7,6 +7,7 @@ go_library(
     srcs = [
         "runtime.go",
         "validator.go",
+        "normalizedConfig.go",
     ],
     deps = [
         "//pkg/adapter:go_default_library",

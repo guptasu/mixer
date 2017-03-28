@@ -31,7 +31,7 @@ type (
 		// used to evaluate selectors
 		eval expr.PredicateEvaluator
 		// Java Script representation of the SC
-		NormalizedConfig *NormalizedConfig
+		NormalizedConfig NormalizedConfig
 	}
 
 	// AspectSet is a set of aspects by name.
@@ -59,7 +59,7 @@ func (r *Runtime) Resolve(bag attribute.Bag, aspectSet AspectSet) (dlist []*pb.C
 	return r.resolveRules(bag, aspectSet, r.serviceConfig.GetRules(), "/", dlist)
 }
 
-func (r *Runtime) GetNormalizedConfig() (*NormalizedConfig) {
+func (r *Runtime) GetNormalizedConfig() (NormalizedConfig) {
 	return r.NormalizedConfig
 }
 

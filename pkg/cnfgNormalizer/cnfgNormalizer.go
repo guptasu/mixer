@@ -21,10 +21,29 @@ import (
 	"istio.io/mixer/pkg/config"
 	aconfig "istio.io/mixer/pkg/aspect/config"
 	"fmt"
+	configpb "istio.io/mixer/pkg/config/proto"
+	"github.com/robertkrimen/otto"
+	"istio.io/mixer/pkg/attribute"
 )
 
+type NormalizedConfigJS struct {
+	JavaScript string
+}
 
-func Normalize(vd *config.Validated) *config.NormalizedConfig {
+func (n NormalizedConfigJS) Evalaute(requestBag *attribute.MutableBag,
+	aspectFinder func(cfgs []*configpb.Combined, kind string, adapterName string, val interface{}) (*configpb.Combined, error),
+	callBack func(kind string, adapterImplName string, val interface{})) {
+	vm := otto.New()
+	vm.Set("CallBackFromUserScript_go", callBack)
+	vm.Run(n.JavaScript)
+	checkFn, _ := vm.Get("report")
+	_, errFromJS := checkFn.Call(otto.NullValue(), requestBag)
+	if errFromJS != nil {
+		fmt.Println(errFromJS)
+	}
+}
+
+func Normalize(vd *config.Validated) config.NormalizedConfig {
 	//vd.serviceConfig
 	/*
 	create methodStrs for each method (chk, report, quota)
@@ -46,7 +65,7 @@ func Normalize(vd *config.Validated) *config.NormalizedConfig {
 		var tmpReportMethodStr string
 		for _, aspect := range aspectRule.GetAspects() {
 			if aspect.Kind == "metrics" {
-				invocation, wrapperMtdToIngest := GetJSInvocationForMetricAspectTest(aspect.Params.(*aconfig.MetricsParams), aspect.Adapter)
+				invocation, wrapperMtdToIngest := GetJSInvocationForMetricAspect(aspect.Params.(*aconfig.MetricsParams), aspect.Adapter)
 				tmpReportMethodStr = tmpReportMethodStr + invocation
 				// HACK. skipping duplication incertion of mtd.
 				if len(injectionMethods) == 0 {
@@ -87,7 +106,7 @@ func Normalize(vd *config.Validated) *config.NormalizedConfig {
 		}
 		`
 	userJSAllCode := fmt.Sprintf(allJSMethodFormat, reportMethodStr)
-	var userScript = userJSAllCode + "\n" + injectionMethods + "\n" + getAllDeclarations()
+	var userScript = userJSAllCode + "\n" + injectionMethods + "\n" //+ getAllDeclarations()
 
 	fmt.Println(userScript)
 	err := ioutil.WriteFile("/tmp/generatedJSFromConfig.js", []byte(userScript), 0644)
@@ -95,7 +114,7 @@ func Normalize(vd *config.Validated) *config.NormalizedConfig {
 		panic(err)
 	}
 
-	return &config.NormalizedConfig{JavaScript: userScript}
+	return NormalizedConfigJS{JavaScript: userScript}
 }
 ///////////////////// THIS SHOULD BELONG TO METRIC ASPECT MANAGER /////////////////
 

@@ -36,7 +36,7 @@ type Resolver interface {
 	// Resolve resolves configuration to a list of combined configs.
 	Resolve(bag attribute.Bag, aspectSet config.AspectSet) ([]*pb.Combined, error)
 	// get JS string
-	GetNormalizedConfig() *config.NormalizedConfig
+	GetNormalizedConfig() config.NormalizedConfig
 }
 
 // ChangeListener listens for config change notifications.
