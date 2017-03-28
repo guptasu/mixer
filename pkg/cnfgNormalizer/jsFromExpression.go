@@ -20,8 +20,6 @@ import (
 	"fmt"
 )
 
-
-
 func getJSForExpression(expression string) string{
 	ex, err := expr.Parse(expression)
 	var out string
