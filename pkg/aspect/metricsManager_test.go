@@ -205,7 +205,7 @@ func TestMetricsExecutor_Execute(t *testing.T) {
 				}},
 				metadata: c.mdin,
 			}
-			out := executor.Execute(test.NewBag(), c.eval)
+			out := executor.Execute(nil, test.NewBag(), c.eval)
 
 			errString := out.Message
 			if !strings.Contains(errString, c.errString) {

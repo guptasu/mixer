@@ -138,6 +138,11 @@ func (m *Manager) Quota(ctx context.Context, requestBag *attribute.MutableBag, r
 
 type invokeExecutorFunc func(evaluatedValue interface{}, executor aspect.Executor, evaluator expr.Evaluator) rpc.Status
 
+type evaluatedDataForAspect struct {
+	cfg         *configpb.Combined
+	value interface{}
+}
+
 // Execute resolves config and invokes the specific set of aspects necessary to service the current request
 func (m *Manager) dispatch(ctx context.Context, requestBag *attribute.MutableBag, responseBag *attribute.MutableBag,
 	method apiMethod, invokeFunc invokeExecutorFunc) rpc.Status {
@@ -164,20 +169,15 @@ func (m *Manager) dispatch(ctx context.Context, requestBag *attribute.MutableBag
 	}
 
 	df, _ := m.df.Load().(descriptor.Finder)
-	numCfgs := len(cfgs)
+	//numCfgs := len(cfgs)
 
 	// TODO: consider implementing a fast path when there is only a single config.
 	//       we don't need to schedule goroutines, we could use the incoming attribute
 	//       bags without needing children & merging, etc.
 
-	// TODO: look into pooling both result array and channel, they're created per-request and are constant size for cfg lifetime.
-	results := make([]result, numCfgs)
-	resultChan := make(chan result, numCfgs)
-
 	//////////////////////////// NEW SCRIPT INVOCATION /////////////////////
 
 	findSpecificCfgFn := func(cfgs []*configpb.Combined, kind string, val interface{}) (*configpb.Combined, error) {
-		// fix this temporary thing since during prototyping there is only one aspect.
 
 		if len(cfgs) == 2 {
 			// HACK to use falues from sample to detect the right aspect. This is an issue
@@ -192,26 +192,34 @@ func (m *Manager) dispatch(ctx context.Context, requestBag *attribute.MutableBag
 
 		return cfgs[0], nil
 	}
-
+	evaluatedDataForAspects := make([]evaluatedDataForAspect, 0, 100)
 	CallBackFromUserScript_go := func(kind string, evaluatedValue interface{}) {
 		specifigCfg, _ := findSpecificCfgFn(cfgs, kind, evaluatedValue)
-		// schedule all the work that needs to happen
-		c := specifigCfg // ensure proper capture in the worker func below
+		evaluatedDataForAspects = append(evaluatedDataForAspects, evaluatedDataForAspect{cfg:specifigCfg, value:evaluatedValue})
+	}
+	cfg.GetNormalizedConfig().Evalaute(requestBag, CallBackFromUserScript_go)
+
+	// This number is more than number of aspects since, there can be multiple calls for each descriptor within the aspect
+	totalCallsToAspect := len(evaluatedDataForAspects)
+	// TODO: look into pooling both result array and channel, they're created per-request and are constant size for cfg lifetime.
+	results := make([]result, totalCallsToAspect)
+	resultChan := make(chan result, totalCallsToAspect)
+
+	for _, evaluatedDataForAspect := range evaluatedDataForAspects {
+		tmpEvaluatedDataForAspect := evaluatedDataForAspect
 		m.gp.ScheduleWork(func() {
 			childRequestBag := requestBag.Child()
 			childResponseBag := responseBag.Child()
 
-			out := m.execute(ctx, c, evaluatedValue, childRequestBag, childResponseBag, df, invokeFunc)
-			resultChan <- result{c, out, childResponseBag}
+			out := m.execute(ctx, tmpEvaluatedDataForAspect.cfg, tmpEvaluatedDataForAspect.value, childRequestBag, childResponseBag, df, invokeFunc)
+			resultChan <- result{tmpEvaluatedDataForAspect.cfg, out, childResponseBag}
 
 			childRequestBag.Done()
 		})
 	}
 
-	cfg.GetNormalizedConfig().Evalaute(requestBag, CallBackFromUserScript_go)
-
 	// wait for all the work to be done or the context to be cancelled
-	for i := 0; i < numCfgs; i++ {
+	for i := 0; i < totalCallsToAspect; i++ {
 		select {
 		case <-ctx.Done():
 			if ctx.Err() == context.Canceled {
@@ -224,7 +232,7 @@ func (m *Manager) dispatch(ctx context.Context, requestBag *attribute.MutableBag
 	}
 
 	// TODO: look into having a pool of these to avoid frequent allocs
-	bags := make([]*attribute.MutableBag, numCfgs)
+	bags := make([]*attribute.MutableBag, totalCallsToAspect)
 	for i, r := range results {
 		bags[i] = r.responseBag
 	}
