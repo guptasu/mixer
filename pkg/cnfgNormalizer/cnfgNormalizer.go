@@ -16,12 +16,17 @@ package cnfgNormalizer
 
 import (
 	"io/ioutil"
+	"os/exec"
 	"istio.io/mixer/pkg/config"
 	aconfig "istio.io/mixer/pkg/aspect/config"
 	"fmt"
-	configpb "istio.io/mixer/pkg/config/proto"
 	"github.com/robertkrimen/otto"
 	"istio.io/mixer/pkg/attribute"
+)
+
+var (
+	callbackMtdName = "CallBackFromUserScript_go"
+	callbackMtdDeclaration = "var " + callbackMtdName + " = function(name: string, val: any){};"
 )
 
 type NormalizedConfigJS struct {
@@ -29,15 +34,14 @@ type NormalizedConfigJS struct {
 }
 
 func (n NormalizedConfigJS) Evalaute(requestBag *attribute.MutableBag,
-	aspectFinder func(cfgs []*configpb.Combined, kind string, adapterName string, val interface{}) (*configpb.Combined, error),
-	callBack func(kind string, adapterImplName string, val interface{})) {
+	callBack func(kind string, val interface{})) {
 	vm := otto.New()
-	vm.Set("CallBackFromUserScript_go", callBack)
 	vm.Run(n.JavaScript)
+	vm.Set(callbackMtdName, callBack)
 	checkFn, _ := vm.Get("report")
 	_, errFromJS := checkFn.Call(otto.NullValue(), requestBag)
 	if errFromJS != nil {
-		fmt.Println(errFromJS)
+		fmt.Println("ERROR FROM JS", errFromJS)
 	}
 }
 
@@ -58,17 +62,13 @@ func Normalize(vd *config.Validated) config.NormalizedConfig {
 	  Do recurrs for each nested rules.
 	*/
 	var reportMethodStr string
-	var injectionMethods string
+
 	for _, aspectRule := range vd.GetValidatedSC().GetRules() {
 		var tmpReportMethodStr string
 		for _, aspect := range aspectRule.GetAspects() {
 			if aspect.Kind == "metrics" {
-				invocation, wrapperMtdToIngest := GetJSInvocationForMetricAspect(aspect.Params.(*aconfig.MetricsParams), aspect.Adapter)
-				tmpReportMethodStr = tmpReportMethodStr + invocation
-				// HACK. skipping duplication incertion of mtd.
-				if len(injectionMethods) == 0 {
-					injectionMethods = injectionMethods + wrapperMtdToIngest
-				}
+				userCodeForMetricAspect := GenerateUserCodeForMetrics(aspect.Params.(*aconfig.MetricsParams), aspect.Adapter)
+				tmpReportMethodStr = tmpReportMethodStr + userCodeForMetricAspect
 			}
 		}
 		if len(tmpReportMethodStr) > 0 {
@@ -101,27 +101,35 @@ func Normalize(vd *config.Validated) config.NormalizedConfig {
 		    // TODO
 		}
 		`
+
 	userJSAllCode := fmt.Sprintf(allJSMethodFormat, reportMethodStr)
-	var userScript = userJSAllCode + "\n" +
-		injectionMethods + "\n" +
+	var userScript = ""+
+		"\n//-----------------CallBack Method Declaration-----------------\n" +
+		"//This method gets injected at runtime. Need this declaration to make TypeScript happy\n" +
+		callbackMtdDeclaration + "\n" +
+		"\n//-----------------All Types Declaration-----------------\n" +
 		getAllDeclarations() + "\n" +
-		getCallbackDeclaration()
+		"\n//-----------------User Code-----------------\n" +
+		userJSAllCode
 
 	fmt.Println(userScript)
-	err := ioutil.WriteFile("/tmp/generatedJSFromConfig.js", []byte(userScript), 0644)
+
+	tempTSFile := "/tmp/tmp.eWerwGNd6f/userTS.ts"
+	tempGeneratedJSFile := "/tmp/tmp.eWerwGNd6f/generatedJSFromUserTS.js"
+
+	ioutil.WriteFile(tempTSFile, []byte(userScript), 0644)
+	err := exec.Command("clang-format", "-i", tempTSFile).Run()
+	err = exec.Command("tsc", "--outFile", tempGeneratedJSFile, tempTSFile).Run()
 	if err != nil {
-		panic(err)
+		fmt.Println("tst generation failed", err)
 	}
-
-	return NormalizedConfigJS{JavaScript: userScript}
-}
-
-func getCallbackDeclaration() string {
-	return `
-	var CallBackFromUserScript_go;
-	`
+	generatedJS, err := ioutil.ReadFile(tempGeneratedJSFile)
+	if err != nil {
+		fmt.Println("cannot read generated JS file", err)
+	}
+	return NormalizedConfigJS{JavaScript: string(generatedJS)}
 }
 
 func getAllDeclarations() string {
-	return getMetricAspectAllDeclarations()
+	return GetMetricAspectAllDeclarations(callbackMtdName)
 }

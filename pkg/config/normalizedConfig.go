@@ -16,11 +16,9 @@ package config
 
 import (
 	"istio.io/mixer/pkg/attribute"
-	configpb "istio.io/mixer/pkg/config/proto"
 )
 type NormalizedConfig interface {
 	Evalaute(requestBag *attribute.MutableBag,
-		aspectFinder func(cfgs []*configpb.Combined, kind string, adapterName string, val interface{}) (*configpb.Combined, error),
-		callBack func(kind string, adapterImplName string, val interface{}))
+		callBack func(kind string, val interface{}))
 }
 

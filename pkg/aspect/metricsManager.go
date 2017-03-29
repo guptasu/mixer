@@ -145,7 +145,10 @@ func (w *metricsExecutor) Execute(attrs attribute.Bag, mapper expr.Evaluator) rp
 		//	result = multierror.Append(result, fmt.Errorf("failed to eval metric value for metric '%s' with err: %s", name, err))
 		//	continue
 		//}
-		specificEvaluatedMetricData := evaluatedMetricDatas[name].(map[string]interface{})
+		if (evaluatedMetricDatas["descriptorName"].(string) != name) {
+			continue;
+		}
+		specificEvaluatedMetricData := evaluatedMetricDatas["value"].(map[string]interface{})
 		metricValue := specificEvaluatedMetricData["value"]
 
 		labels, err := evalAll(md.labels, attrs, mapper)

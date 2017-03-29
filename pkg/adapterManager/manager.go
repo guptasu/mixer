@@ -176,7 +176,7 @@ func (m *Manager) dispatch(ctx context.Context, requestBag *attribute.MutableBag
 
 	//////////////////////////// NEW SCRIPT INVOCATION /////////////////////
 
-	findSpecificCfgFn := func(cfgs []*configpb.Combined, kind string, adapterName string, val interface{}) (*configpb.Combined, error) {
+	findSpecificCfgFn := func(cfgs []*configpb.Combined, kind string, val interface{}) (*configpb.Combined, error) {
 		// fix this temporary thing since during prototyping there is only one aspect.
 
 		if len(cfgs) == 2 {
@@ -193,12 +193,12 @@ func (m *Manager) dispatch(ctx context.Context, requestBag *attribute.MutableBag
 		return cfgs[0], nil
 	}
 
-	CallBackFromUserScript_go := func(kind string, adapterImplName string, val interface{}) {
-		specifigCfg, _ := findSpecificCfgFn(cfgs, kind, adapterImplName, val)
+	CallBackFromUserScript_go := func(kind string, val interface{}) {
+		specifigCfg, _ := findSpecificCfgFn(cfgs, kind, val)
 		specifigCfg.EvaluatedVal = val
 	}
 
-	cfg.GetNormalizedConfig().Evalaute(requestBag, findSpecificCfgFn, CallBackFromUserScript_go)
+	cfg.GetNormalizedConfig().Evalaute(requestBag, CallBackFromUserScript_go)
 
 	// schedule all the work that needs to happen
 	for _, cfg := range cfgs {
