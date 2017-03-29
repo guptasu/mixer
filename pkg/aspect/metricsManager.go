@@ -139,31 +139,32 @@ func printOldCodeOutput(descriptroName string, md *metricInfo, attrs attribute.B
 	if err != nil {
 		fmt.Printf("failed to eval metric value for metric '%s' with err: %s--", descriptroName, err)
 	}
-	fmt.Println("** METRIC VALUE from OLD CODE : \t\t\t", metricValue2)
+	fmt.Println("** OLD CODE METRIC VALUE : \t\t\t\t", metricValue2)
 
 	labels, err := evalAll(md.labels, attrs, mapper)
 	if err != nil {
 		fmt.Printf("failed to eval labels for metric '%s' with err: %s", descriptroName, err)
 	}
-	fmt.Println("** LABELS from OLD CODE : \t\t\t\t\t", labels)
+	fmt.Println("** OLD CODE LABELS : \t\t\t\t\t", labels)
 }
 func (w *metricsExecutor) Execute(attrs attribute.Bag, mapper expr.Evaluator) rpc.Status {
 	result := &multierror.Error{}
 	var values []adapter.Value
 	evaluatedMetricDatas := w.evaluatedValue.(map[string]interface{})
 	for name, md := range w.metadata {
-		printOldCodeOutput(name, md, attrs, mapper) // for prototype debugging only
+
 
 		if (evaluatedMetricDatas["descriptorName"].(string) != name) {
 			continue;
 		}
+		printOldCodeOutput(name, md, attrs, mapper) // for prototype debugging only
 		specificEvaluatedMetricData := evaluatedMetricDatas["value"].(map[string]interface{})
 		metricValue := specificEvaluatedMetricData["value"]
-		fmt.Println("** METRIC VALUE from JS : \t\t\t\t\t", metricValue)
+		fmt.Println("** NEW JS METRIC VALUE : \t\t\t\t", metricValue)
 
 		// TEMP HACK for Prototyping. Remove the value and everything else is labels
 		delete(specificEvaluatedMetricData, "value")
-		fmt.Println("** LABELS from JS : \t\t\t\t\t\t", specificEvaluatedMetricData)
+		fmt.Println("** NEW JS LABELS : \t\t\t\t\t\t", specificEvaluatedMetricData)
 
 		// TODO: investigate either pooling these, or keeping a set around that has only its field's values updated.
 		// we could keep a map[metric name]value, iterate over the it updating only the fields in each value

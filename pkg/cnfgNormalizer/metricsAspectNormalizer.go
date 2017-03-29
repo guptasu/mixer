@@ -143,11 +143,9 @@ func createIndividualMethod(metricDescriptor *dpb.MetricDescriptor, callbackMtdn
 	typeName := snake2UpperCamelCase(metricDescriptor.Name)
 	metricsDescriptorFunction.WriteString(fmt.Sprintf(`
 	function Record%s(val: %s) {
-	  console.log("Record%s invoked");
 	  %s("metrics", {descriptorName: "%s", value: val})
-	  console.log("Record%s finished");
 	}
-	`, typeName, typeName, typeName, callbackMtdname, metricDescriptor.Name, typeName))
+	`, typeName, typeName, callbackMtdname, metricDescriptor.Name))
 	return metricsDescriptorFunction.String()
 }
 

@@ -30,8 +30,8 @@ import (
 
 	"istio.io/mixer/pkg/attribute"
 	"istio.io/mixer/pkg/config"
-	"istio.io/mixer/pkg/config/manager"
 	"istio.io/mixer/pkg/config/descriptor"
+	"istio.io/mixer/pkg/config/manager"
 	configpb "istio.io/mixer/pkg/config/proto"
 	"istio.io/mixer/pkg/expr"
 	"istio.io/mixer/pkg/pool"
@@ -63,7 +63,7 @@ type Manager struct {
 
 	// Configs for the aspects that'll be used to serve each API method. <*config.Runtime>
 	cfg atomic.Value
-	js atomic.Value
+	js  atomic.Value
 	df  atomic.Value
 
 	// protects cache
@@ -196,13 +196,8 @@ func (m *Manager) dispatch(ctx context.Context, requestBag *attribute.MutableBag
 	CallBackFromUserScript_go := func(kind string, val interface{}) {
 		specifigCfg, _ := findSpecificCfgFn(cfgs, kind, val)
 		specifigCfg.EvaluatedVal = val
-	}
-
-	cfg.GetNormalizedConfig().Evalaute(requestBag, CallBackFromUserScript_go)
-
-	// schedule all the work that needs to happen
-	for _, cfg := range cfgs {
-		c := cfg // ensure proper capture in the worker func below
+		// schedule all the work that needs to happen
+		c := specifigCfg // ensure proper capture in the worker func below
 		m.gp.ScheduleWork(func() {
 			childRequestBag := requestBag.Child()
 			childResponseBag := responseBag.Child()
@@ -213,6 +208,8 @@ func (m *Manager) dispatch(ctx context.Context, requestBag *attribute.MutableBag
 			childRequestBag.Done()
 		})
 	}
+
+	cfg.GetNormalizedConfig().Evalaute(requestBag, CallBackFromUserScript_go)
 
 	// wait for all the work to be done or the context to be cancelled
 	for i := 0; i < numCfgs; i++ {
