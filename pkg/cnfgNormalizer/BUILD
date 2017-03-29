@@ -19,5 +19,6 @@ go_library(
         "//pkg/aspect:go_default_library",
         "//pkg/config:go_default_library",
         "@com_github_robertkrimen_otto//:go_default_library",
+        "@com_github_istio_api//:mixer/v1/config/descriptor",
     ],
 )
