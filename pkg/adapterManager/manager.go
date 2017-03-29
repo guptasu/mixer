@@ -105,7 +105,7 @@ func newManager(r builderFinder, m map[aspect.Kind]aspect.Manager, exp expr.Eval
 // Check dispatches to the set of aspects associated with the Check API method
 func (m *Manager) Check(ctx context.Context, requestBag *attribute.MutableBag, responseBag *attribute.MutableBag) rpc.Status {
 	return m.dispatch(ctx, requestBag, responseBag, checkMethod,
-		func(executor aspect.Executor, evaluator expr.Evaluator) rpc.Status {
+		func(evaluatedValue interface{}, executor aspect.Executor, evaluator expr.Evaluator) rpc.Status {
 			cw := executor.(aspect.CheckExecutor)
 			return cw.Execute(requestBag, evaluator)
 		})
@@ -114,9 +114,9 @@ func (m *Manager) Check(ctx context.Context, requestBag *attribute.MutableBag, r
 // Report dispatches to the set of aspects associated with the Report API method
 func (m *Manager) Report(ctx context.Context, requestBag *attribute.MutableBag, responseBag *attribute.MutableBag) rpc.Status {
 	return m.dispatch(ctx, requestBag, responseBag, reportMethod,
-		func(executor aspect.Executor, evaluator expr.Evaluator) rpc.Status {
+		func(evaluatedValue interface{}, executor aspect.Executor, evaluator expr.Evaluator) rpc.Status {
 			rw := executor.(aspect.ReportExecutor)
-			return rw.Execute(requestBag, evaluator)
+			return rw.Execute(evaluatedValue, requestBag, evaluator)
 		})
 }
 
@@ -126,7 +126,7 @@ func (m *Manager) Quota(ctx context.Context, requestBag *attribute.MutableBag, r
 
 	var qmr *aspect.QuotaMethodResp
 	o := m.dispatch(ctx, requestBag, responseBag, quotaMethod,
-		func(executor aspect.Executor, evaluator expr.Evaluator) rpc.Status {
+		func(evaluatedValue interface{}, executor aspect.Executor, evaluator expr.Evaluator) rpc.Status {
 			qw := executor.(aspect.QuotaExecutor)
 			var o rpc.Status
 			o, qmr = qw.Execute(requestBag, evaluator, qma)
@@ -136,7 +136,7 @@ func (m *Manager) Quota(ctx context.Context, requestBag *attribute.MutableBag, r
 	return qmr, o
 }
 
-type invokeExecutorFunc func(executor aspect.Executor, evaluator expr.Evaluator) rpc.Status
+type invokeExecutorFunc func(evaluatedValue interface{}, executor aspect.Executor, evaluator expr.Evaluator) rpc.Status
 
 // Execute resolves config and invokes the specific set of aspects necessary to service the current request
 func (m *Manager) dispatch(ctx context.Context, requestBag *attribute.MutableBag, responseBag *attribute.MutableBag,
@@ -193,16 +193,15 @@ func (m *Manager) dispatch(ctx context.Context, requestBag *attribute.MutableBag
 		return cfgs[0], nil
 	}
 
-	CallBackFromUserScript_go := func(kind string, val interface{}) {
-		specifigCfg, _ := findSpecificCfgFn(cfgs, kind, val)
-		specifigCfg.EvaluatedVal = val
+	CallBackFromUserScript_go := func(kind string, evaluatedValue interface{}) {
+		specifigCfg, _ := findSpecificCfgFn(cfgs, kind, evaluatedValue)
 		// schedule all the work that needs to happen
 		c := specifigCfg // ensure proper capture in the worker func below
 		m.gp.ScheduleWork(func() {
 			childRequestBag := requestBag.Child()
 			childResponseBag := responseBag.Child()
 
-			out := m.execute(ctx, c, childRequestBag, childResponseBag, df, invokeFunc)
+			out := m.execute(ctx, c, evaluatedValue, childRequestBag, childResponseBag, df, invokeFunc)
 			resultChan <- result{c, out, childResponseBag}
 
 			childRequestBag.Done()
@@ -277,7 +276,7 @@ type result struct {
 }
 
 // execute performs action described in the combined config using the attribute bag
-func (m *Manager) execute(ctx context.Context, cfg *configpb.Combined, requestBag attribute.Bag, responseBag *attribute.MutableBag,
+func (m *Manager) execute(ctx context.Context, cfg *configpb.Combined, evaluatedValue interface{}, requestBag attribute.Bag, responseBag *attribute.MutableBag,
 	df descriptor.Finder, invokeFunc invokeExecutorFunc) (out rpc.Status) {
 	var mgr aspect.Manager
 	var found bool
@@ -312,7 +311,7 @@ func (m *Manager) execute(ctx context.Context, cfg *configpb.Combined, requestBa
 	// TODO: plumb ctx through asp.Execute
 	_ = ctx
 
-	return invokeFunc(executor, m.mapper)
+	return invokeFunc(evaluatedValue, executor, m.mapper)
 }
 
 // cacheKey is used to cache fully constructed aspects

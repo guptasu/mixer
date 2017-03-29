@@ -96,7 +96,7 @@ func (r *Runtime) resolveRules(bag attribute.Bag, aspectSet AspectSet, rules []*
 			}
 			adp := r.adapterByName[adapterKey{aa.Kind, aa.Adapter}]
 			glog.V(2).Infof("selected aspect %s -> %s", aa.Kind, adp)
-			dlist = append(dlist, &pb.Combined{adp, aa, nil})
+			dlist = append(dlist, &pb.Combined{adp, aa})
 		}
 		rs := rule.GetRules()
 		if len(rs) == 0 {

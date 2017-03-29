@@ -18,7 +18,6 @@ package istio_mixer_v1_config
 type Combined struct {
 	Builder      *Adapter
 	Aspect       *Aspect
-	EvaluatedVal interface{}
 }
 
 func (c *Combined) String() (ret string) {

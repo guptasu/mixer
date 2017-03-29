@@ -17,7 +17,6 @@ package aspect
 import (
 	"fmt"
 	"time"
-
 	"github.com/golang/glog"
 	rpc "github.com/googleapis/googleapis/google/rpc"
 	multierror "github.com/hashicorp/go-multierror"
@@ -46,7 +45,6 @@ type (
 		name           string
 		aspect         adapter.MetricsAspect
 		metadata       map[string]*metricInfo // metric name -> info
-		evaluatedValue interface{}
 	}
 )
 
@@ -118,7 +116,7 @@ func (m *metricsManager) NewReportExecutor(c *cpb.Combined, a adapter.Builder, e
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct metrics aspect with config '%v' and err: %s", c, err)
 	}
-	return &metricsExecutor{b.Name(), asp, metadata, c.EvaluatedVal}, nil
+	return &metricsExecutor{b.Name(), asp, metadata}, nil
 }
 
 func (*metricsManager) Kind() Kind                         { return MetricsKind }
@@ -147,10 +145,11 @@ func printOldCodeOutput(descriptroName string, md *metricInfo, attrs attribute.B
 	}
 	fmt.Println("** OLD CODE LABELS : \t\t\t\t\t", labels)
 }
-func (w *metricsExecutor) Execute(attrs attribute.Bag, mapper expr.Evaluator) rpc.Status {
+
+func (w *metricsExecutor) Execute(evaluatedValue interface{}, attrs attribute.Bag, mapper expr.Evaluator) rpc.Status {
 	result := &multierror.Error{}
 	var values []adapter.Value
-	evaluatedMetricDatas := w.evaluatedValue.(map[string]interface{})
+	evaluatedMetricDatas := evaluatedValue.(map[string]interface{})
 	for name, md := range w.metadata {
 
 
