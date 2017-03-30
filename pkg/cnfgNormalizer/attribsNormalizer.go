@@ -67,7 +67,6 @@ func GetAttributesType() string {
 	    class Attributes {
 	      // All the well known attribute names.
 	      %s
-	      //attribsThatExists : Set<keyof typeof KnownAttribute> = new Set<keyof typeof KnownAttribute>();
 	      constructor (attribs: any) {
 	        // Fill the set of attribues that are part of the call (data is available inside the attribs).
 
