@@ -8,6 +8,7 @@ go_library(
         "cnfgNormalizer.go",
         "jsFromExpression.go",
         "metricsAspectNormalizer.go",
+        "attribsNormalizer.go",
     ],
     deps = [
         "//pkg/adapter:go_default_library",

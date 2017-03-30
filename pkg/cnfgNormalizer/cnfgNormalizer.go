@@ -38,14 +38,32 @@ func (n NormalizedConfigJS) Evalaute(requestBag *attribute.MutableBag,
 	vm := otto.New()
 	vm.Run(n.JavaScript)
 	vm.Set(callbackMtdName, callBack)
+
+	attribConstructor, _ := vm.Get("ConstructAttributes")
+	attributesFromJS, errFromJS := attribConstructor.Call(otto.NullValue(), requestBag)
+	fmt.Println(attributesFromJS)
+
 	checkFn, _ := vm.Get("report")
-	_, errFromJS := checkFn.Call(otto.NullValue(), requestBag)
+	_, errFromJS = checkFn.Call(otto.NullValue(), attributesFromJS)
 	if errFromJS != nil {
 		fmt.Println("ERROR FROM JS", errFromJS)
 	}
 }
 
 func Normalize(vd *config.Validated) config.NormalizedConfig {
+
+	userTSAllCode := getUserTSCodeFile(vd);
+
+	typeDefTSCode := getPredefinedTypesForDescriptors()
+
+	attributeTypeDeclaration := getAttributesDeclaration()
+
+	generatedJS := getJS(userTSAllCode, typeDefTSCode, attributeTypeDeclaration)
+
+	return NormalizedConfigJS{JavaScript: generatedJS}
+}
+
+func getUserTSCodeFile(vd *config.Validated) string {
 	//vd.serviceConfig
 	/*
 	create methodStrs for each method (chk, report, quota)
@@ -91,7 +109,7 @@ func Normalize(vd *config.Validated) config.NormalizedConfig {
 		}
 	}
 	allJSMethodFormat := `
-		function report(attributes) {
+		function report(attributes: Attributes) {
 		    %s
 		}
 		function check(attributes) {
@@ -103,35 +121,39 @@ func Normalize(vd *config.Validated) config.NormalizedConfig {
 		`
 
 	userTSAllCode := fmt.Sprintf(allJSMethodFormat, reportMethodStr)
-	//var userScript = ""+
-	//	"\n//-----------------CallBack Method Declaration-----------------\n" +
-	//	"//This method gets injected at runtime. Need this declaration to make TypeScript happy\n" +
-	//	callbackMtdDeclaration + "\n" +
-	//	"\n//-----------------All Types Declaration-----------------\n" +
-	//	getAllDeclarations() + "\n" +
-	//	"\n//-----------------User Code-----------------\n" +
-	//	userJSAllCode
-	//fmt.Println(userScript)
 
-	userTSAllCode = "/// <reference path=\"typeDefs.ts\"/>\n\n" + userTSAllCode
-	typeDefTSCode := ""+
+	userTSAllCode = ""+
+		"/// <reference path=\"typeDefs.ts\"/>\n\n" +
+		"/// <reference path=\"attribs.ts\"/>\n\n" +
+		userTSAllCode
+
+	return userTSAllCode
+
+}
+
+func getPredefinedTypesForDescriptors() string {
+	return ""+
 		"\n//-----------------CallBack Method Declaration-----------------\n" +
 		"//This method gets injected at runtime. Need this declaration to make TypeScript happy\n" +
 		callbackMtdDeclaration + "\n" +
 		"\n//-----------------All Types Declaration-----------------\n" +
 		getAllDeclarations() + "\n"
+}
 
-
+func getJS(userTSAllCode string, typeDefTSCode string, attributeTypeDeclaration string) string {
 	tempTypeDefsTSFile := "/tmp/TSConversion/typeDefs.ts"
+	tempAttribsDefsTSFile := "/tmp/TSConversion/attribs.ts"
 	tempUserTSFile := "/tmp/TSConversion/userTS.ts"
 
 	ioutil.WriteFile(tempUserTSFile, []byte(userTSAllCode), 0644)
 	err := exec.Command("clang-format", "-i", tempUserTSFile).Run()
 	ioutil.WriteFile(tempTypeDefsTSFile, []byte(typeDefTSCode), 0644)
 	err = exec.Command("clang-format", "-i", tempTypeDefsTSFile).Run()
+	ioutil.WriteFile(tempAttribsDefsTSFile, []byte(attributeTypeDeclaration), 0644)
+	err = exec.Command("clang-format", "-i", tempAttribsDefsTSFile).Run()
 
 	tempGeneratedJSFile := "/tmp/TSConversion/generatedJSFromUserTS.js"
-	err = exec.Command("tsc", "--outFile", tempGeneratedJSFile, tempUserTSFile).Run()
+	err = exec.Command("tsc", "--lib", "es7", "--outFile",  tempGeneratedJSFile, tempUserTSFile).Run()
 	if err != nil {
 		fmt.Println("tst generation failed", err)
 	}
@@ -139,9 +161,13 @@ func Normalize(vd *config.Validated) config.NormalizedConfig {
 	if err != nil {
 		fmt.Println("cannot read generated JS file", err)
 	}
-	return NormalizedConfigJS{JavaScript: string(generatedJS)}
+	return string(generatedJS);
 }
 
 func getAllDeclarations() string {
 	return GetMetricAspectAllDeclarations(callbackMtdName)
+}
+
+func getAttributesDeclaration() string {
+	return GetAttributesType()
 }

@@ -25,11 +25,7 @@ import (
 ///////////////////// THIS SHOULD BELONG TO METRIC ASPECT MANAGER /////////////////
 
 var (
-	valueTypeToJSType = map[dpb.ValueType]string{
-		dpb.INT64:  "number",
-		dpb.STRING: "string",
-	}
-	debug       = true
+	debug       = false
 	desc = []*dpb.MetricDescriptor{
 		{
 			Name:        "request_count",

@@ -25,7 +25,7 @@ func getJSForExpression(expression string) string{
 	if err != nil {
 		out = "false"
 	} else {
-		condition, _ := EvalJSExpession(ex, expr.FuncMap(), "attributes.Get")
+		condition, _ := EvalJSExpession(ex, expr.FuncMap(), "attributes.")
 		out = condition
 	}
 	return out
@@ -37,7 +37,7 @@ func EvalJSExpession(e *expr.Expression, fMap map[string]expr.FuncBase, getPropM
 		return e.Const.StrValue, nil
 	}
 	if e.Var != nil {
-		return fmt.Sprintf(getPropMtdName + "(\"%s\")[0]", e.Var.Name), nil
+		return fmt.Sprintf(getPropMtdName + "%s", getAttributeFieldName(e.Var.Name)), nil
 	}
 
 	fn := fMap[e.Fn.Name]
@@ -54,7 +54,7 @@ func EvalJSExpession(e *expr.Expression, fMap map[string]expr.FuncBase, getPropM
 		//(age < 18) ? "Too young":"Old enough"
 		allArgs := e.Fn.Args
 		if len(allArgs) > 0 {
-			chkIfExists := fmt.Sprintf(getPropMtdName+"(\"%s\")[1]", allArgs[0].Var.Name)
+			chkIfExists := fmt.Sprintf(getPropMtdName+"%s !== undefined", getAttributeFieldName(allArgs[0].Var.Name))
 			leftexp, _ := EvalJSExpession(e.Fn.Args[0], fMap, getPropMtdName)
 			rightexp, _ := EvalJSExpession(e.Fn.Args[1], fMap, getPropMtdName)
 			return fmt.Sprintf("%s ? %s : %s", chkIfExists, leftexp, rightexp), nil

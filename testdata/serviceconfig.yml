@@ -11,7 +11,7 @@ rules:
       metrics:
       - descriptorName: request_count
         # we want to increment this counter by 1 for each unique (source, target, service, method, response_code) tuple
-        value: api.name | 100
+        value: response.latency | 100
         labels:
           source: source.name | "one"
           target: target.name | "one"
