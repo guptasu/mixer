@@ -114,8 +114,8 @@ func Normalize(vd *config.Validated) config.NormalizedConfig {
 
 	fmt.Println(userScript)
 
-	tempTSFile := "/tmp/tmp.eWerwGNd6f/userTS.ts"
-	tempGeneratedJSFile := "/tmp/tmp.eWerwGNd6f/generatedJSFromUserTS.js"
+	tempTSFile := "/tmp/TSConversion/userTS.ts"
+	tempGeneratedJSFile := "/tmp/TSConversion/generatedJSFromUserTS.js"
 
 	ioutil.WriteFile(tempTSFile, []byte(userScript), 0644)
 	err := exec.Command("clang-format", "-i", tempTSFile).Run()

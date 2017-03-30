@@ -183,7 +183,7 @@ func (m *Manager) dispatch(ctx context.Context, requestBag *attribute.MutableBag
 			// HACK to use falues from sample to detect the right aspect. This is an issue
 			// with multiple aspects that match the selectors
 			data := val.(map[string]interface{})
-			if data["request_count"] != nil {
+			if data["descriptorName"] == "request_count" {
 				return cfgs[1], nil
 			} else {
 				return cfgs[0], nil
