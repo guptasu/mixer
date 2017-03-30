@@ -102,24 +102,36 @@ func Normalize(vd *config.Validated) config.NormalizedConfig {
 		}
 		`
 
-	userJSAllCode := fmt.Sprintf(allJSMethodFormat, reportMethodStr)
-	var userScript = ""+
+	userTSAllCode := fmt.Sprintf(allJSMethodFormat, reportMethodStr)
+	//var userScript = ""+
+	//	"\n//-----------------CallBack Method Declaration-----------------\n" +
+	//	"//This method gets injected at runtime. Need this declaration to make TypeScript happy\n" +
+	//	callbackMtdDeclaration + "\n" +
+	//	"\n//-----------------All Types Declaration-----------------\n" +
+	//	getAllDeclarations() + "\n" +
+	//	"\n//-----------------User Code-----------------\n" +
+	//	userJSAllCode
+	//fmt.Println(userScript)
+
+	userTSAllCode = "/// <reference path=\"typeDefs.ts\"/>\n\n" + userTSAllCode
+	typeDefTSCode := ""+
 		"\n//-----------------CallBack Method Declaration-----------------\n" +
 		"//This method gets injected at runtime. Need this declaration to make TypeScript happy\n" +
 		callbackMtdDeclaration + "\n" +
 		"\n//-----------------All Types Declaration-----------------\n" +
-		getAllDeclarations() + "\n" +
-		"\n//-----------------User Code-----------------\n" +
-		userJSAllCode
+		getAllDeclarations() + "\n"
 
-	fmt.Println(userScript)
 
-	tempTSFile := "/tmp/TSConversion/userTS.ts"
+	tempTypeDefsTSFile := "/tmp/TSConversion/typeDefs.ts"
+	tempUserTSFile := "/tmp/TSConversion/userTS.ts"
+
+	ioutil.WriteFile(tempUserTSFile, []byte(userTSAllCode), 0644)
+	err := exec.Command("clang-format", "-i", tempUserTSFile).Run()
+	ioutil.WriteFile(tempTypeDefsTSFile, []byte(typeDefTSCode), 0644)
+	err = exec.Command("clang-format", "-i", tempTypeDefsTSFile).Run()
+
 	tempGeneratedJSFile := "/tmp/TSConversion/generatedJSFromUserTS.js"
-
-	ioutil.WriteFile(tempTSFile, []byte(userScript), 0644)
-	err := exec.Command("clang-format", "-i", tempTSFile).Run()
-	err = exec.Command("tsc", "--outFile", tempGeneratedJSFile, tempTSFile).Run()
+	err = exec.Command("tsc", "--outFile", tempGeneratedJSFile, tempUserTSFile).Run()
 	if err != nil {
 		fmt.Println("tst generation failed", err)
 	}
