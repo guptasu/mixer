@@ -47,28 +47,21 @@ func dotCaseToCamelCase(s string) string {
 }
 
 func GetAttributesType() string {
-	var knownAttributesFields bytes.Buffer
 	var attributesTypeFields bytes.Buffer
 	var constructorCode bytes.Buffer
 
 	for attrName, attrType := range attributesDescriptor {
 		attrUpperCamelCaseName := dotCaseToCamelCase(attrName)
-		knownAttributesFields.WriteString(fmt.Sprintf(`%s: "%s" as "%s",`, attrUpperCamelCaseName, attrName, attrUpperCamelCaseName))
 
 		attributesTypeFields.WriteString(fmt.Sprintf("%s: %s;\n", attrUpperCamelCaseName, valueTypeToJSType[attrType]))
 
 		constructorCode.WriteString(fmt.Sprintf(`
 		if (attribs.Get('%s')[1]) {
-		  //this.attribsThatExists.add(KnownAttribute.%s);
 		  this.%s = attribs.Get('%s')[0]
 		}
-		`, attrName, attrUpperCamelCaseName, attrUpperCamelCaseName, attrName))
+		`, attrName, attrUpperCamelCaseName, attrName))
 
 	}
-	knownAttributeClass := fmt.Sprintf(`
-	    const KnownAttribute = {
-	      %s
-	    }`, knownAttributesFields.String())
 
 	AttributesClass := fmt.Sprintf(`
 	    class Attributes {
@@ -80,16 +73,10 @@ func GetAttributesType() string {
 
 	        %s
 	      }
-              //has (knownAttribute: keyof typeof KnownAttribute) {
-              //  if (this.attribsThatExists.has(knownAttribute)) {
-              //    return true;
-              //  }
-              //  return false;
-              //}
 	    }
             function ConstructAttributes(attr: any) : Attributes {
               return new Attributes(attr)
             }`, attributesTypeFields.String(), constructorCode.String())
 
-	return knownAttributeClass + "\n" + AttributesClass
+	return AttributesClass
 }
