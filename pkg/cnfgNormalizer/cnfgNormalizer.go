@@ -20,6 +20,7 @@ import (
 	"istio.io/mixer/pkg/config"
 	aconfig "istio.io/mixer/pkg/aspect/config"
 	"fmt"
+	"bytes"
 	"github.com/robertkrimen/otto"
 	"istio.io/mixer/pkg/attribute"
 )
@@ -52,18 +53,22 @@ func (n NormalizedConfigJS) Evalaute(requestBag *attribute.MutableBag,
 
 func Normalize(vd *config.Validated) config.NormalizedConfig {
 
-	userTSAllCode := getUserTSCodeFile(vd);
+
 
 	typeDefTSCode := getPredefinedTypesForDescriptors()
 
 	attributeTypeDeclaration := getAttributesDeclaration()
 
-	generatedJS := getJS(userTSAllCode, typeDefTSCode, attributeTypeDeclaration)
+	fileForTypesFromAspectDescriptors := "TypesFromAspectDescriptors.ts"
+	fileForWellKnownAttribs := "WellKnownAttribs.ts"
+	userTSAllCode := getUserTSCodeFile(vd, fileForTypesFromAspectDescriptors, fileForWellKnownAttribs);
+
+	generatedJS := getJS(userTSAllCode, typeDefTSCode, attributeTypeDeclaration, fileForTypesFromAspectDescriptors, fileForWellKnownAttribs)
 
 	return NormalizedConfigJS{JavaScript: generatedJS}
 }
 
-func getUserTSCodeFile(vd *config.Validated) string {
+func getUserTSCodeFile(vd *config.Validated, imports ...string) string {
 	//vd.serviceConfig
 	/*
 	create methodStrs for each method (chk, report, quota)
@@ -122,10 +127,12 @@ func getUserTSCodeFile(vd *config.Validated) string {
 
 	userTSAllCode := fmt.Sprintf(allJSMethodFormat, reportMethodStr)
 
-	userTSAllCode = ""+
-		"/// <reference path=\"typeDefs.ts\"/>\n\n" +
-		"/// <reference path=\"attribs.ts\"/>\n\n" +
-		userTSAllCode
+	var importStringBuffer bytes.Buffer
+	for _,fileToImport := range imports {
+		importStringBuffer.WriteString(fmt.Sprintf("/// <reference path=\"%s\"/>\n\n", fileToImport))
+
+	}
+	userTSAllCode = importStringBuffer.String() + userTSAllCode
 
 	return userTSAllCode
 
@@ -140,10 +147,11 @@ func getPredefinedTypesForDescriptors() string {
 		getAllDeclarations() + "\n"
 }
 
-func getJS(userTSAllCode string, typeDefTSCode string, attributeTypeDeclaration string) string {
-	tempTypeDefsTSFile := "/tmp/TSConversion/typeDefs.ts"
-	tempAttribsDefsTSFile := "/tmp/TSConversion/attribs.ts"
-	tempUserTSFile := "/tmp/TSConversion/userTS.ts"
+func getJS(userTSAllCode string, typeDefTSCode string, attributeTypeDeclaration string, fileNameForTypesFromAspectDescriptors string, fileNameForWellKnownAttribs string) string {
+	tempTypeDefsTSFile := "/tmp/TSConversion/" + fileNameForTypesFromAspectDescriptors
+	tempAttribsDefsTSFile := "/tmp/TSConversion/" + fileNameForWellKnownAttribs
+	tempUserTSFile := "/tmp/TSConversion/UserWrittenMethods.ts"
+	tempGeneratedJSFile := "/tmp/TSConversion/generatedJSFromTypeScriptCompiler.js"
 
 	ioutil.WriteFile(tempUserTSFile, []byte(userTSAllCode), 0644)
 	err := exec.Command("clang-format", "-i", tempUserTSFile).Run()
@@ -152,7 +160,6 @@ func getJS(userTSAllCode string, typeDefTSCode string, attributeTypeDeclaration 
 	ioutil.WriteFile(tempAttribsDefsTSFile, []byte(attributeTypeDeclaration), 0644)
 	err = exec.Command("clang-format", "-i", tempAttribsDefsTSFile).Run()
 
-	tempGeneratedJSFile := "/tmp/TSConversion/generatedJSFromUserTS.js"
 	err = exec.Command("tsc", "--lib", "es7", "--outFile",  tempGeneratedJSFile, tempUserTSFile).Run()
 	if err != nil {
 		fmt.Println("tst generation failed", err)
