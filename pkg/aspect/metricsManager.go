@@ -42,9 +42,9 @@ type (
 	}
 
 	metricsExecutor struct {
-		name           string
-		aspect         adapter.MetricsAspect
-		metadata       map[string]*metricInfo // metric name -> info
+		name     string
+		aspect   adapter.MetricsAspect
+		metadata map[string]*metricInfo // metric name -> info
 	}
 )
 
@@ -149,27 +149,28 @@ func printOldCodeOutput(descriptroName string, md *metricInfo, attrs attribute.B
 func (w *metricsExecutor) Execute(evaluatedValue interface{}, attrs attribute.Bag, mapper expr.Evaluator) rpc.Status {
 	result := &multierror.Error{}
 	var values []adapter.Value
-	evaluatedMetricDatas := evaluatedValue.(map[string]interface{})
+	evaluatedMetricData := evaluatedValue.(map[string]interface{})
 	for name, md := range w.metadata {
 
 
-		if (evaluatedMetricDatas["descriptorName"].(string) != name) {
+		if (evaluatedMetricData["descriptorName"].(string) != name) {
 			continue;
 		}
 		printOldCodeOutput(name, md, attrs, mapper) // for prototype debugging only
-		specificEvaluatedMetricData := evaluatedMetricDatas["value"].(map[string]interface{})
-		metricValue := specificEvaluatedMetricData["value"]
+		specificDescriptorEvaluatedMetricData := evaluatedMetricData["value"].(map[string]interface{})
+		metricValue := specificDescriptorEvaluatedMetricData["value"]
 		fmt.Println("** NEW JS METRIC VALUE : \t\t\t\t", metricValue)
 
 		// TEMP HACK for Prototyping. Remove the value and everything else is labels
-		delete(specificEvaluatedMetricData, "value")
-		fmt.Println("** NEW JS LABELS : \t\t\t\t\t\t", specificEvaluatedMetricData)
+		delete(specificDescriptorEvaluatedMetricData, "value")
+		specificDescriptorEvaluatedLabelsData := specificDescriptorEvaluatedMetricData
+		fmt.Println("** NEW JS LABELS : \t\t\t\t\t\t", specificDescriptorEvaluatedLabelsData)
 
 		// TODO: investigate either pooling these, or keeping a set around that has only its field's values updated.
 		// we could keep a map[metric name]value, iterate over the it updating only the fields in each value
 		values = append(values, adapter.Value{
 			Definition: md.definition,
-			Labels:     specificEvaluatedMetricData,
+			Labels:     specificDescriptorEvaluatedLabelsData,
 			// TODO: extract standard timestamp attributes for start/end once we det'm what they are
 			StartTime:   time.Now(),
 			EndTime:     time.Now(),
