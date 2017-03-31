@@ -54,6 +54,7 @@ type serverArgs struct {
 	serverKeyFile          string
 	clientCertFiles        string
 	serviceConfigFile      string
+	userTypeScriptFile      string
 	globalConfigFile       string
 	configFetchIntervalSec uint
 }
@@ -104,6 +105,9 @@ func serverCmd(printf, fatalf shared.FormatFn) *cobra.Command {
 	serverCmd.PersistentFlags().StringVarP(&sa.globalConfigFile, "globalConfigFile", "", "globalConfig.yml", "Global Config")
 	_ = serverCmd.MarkPersistentFlagFilename("globalConfigFile", "yaml", "yml")
 
+	serverCmd.PersistentFlags().StringVarP(&sa.userTypeScriptFile, "userTypeScriptFile", "", "", "user written type script")
+	_ = serverCmd.MarkPersistentFlagFilename("userTypeScriptFile", "ts")
+
 	serverCmd.PersistentFlags().UintVarP(&sa.configFetchIntervalSec, "configFetchInterval", "", 5, "Configuration fetch interval in seconds")
 
 	return &serverCmd
@@ -126,7 +130,7 @@ func runServer(sa *serverArgs, printf, fatalf shared.FormatFn) {
 	adapterMgr := adapterManager.NewManager(adapter.Inventory(), aspect.Inventory(), eval, gp, adapterGP)
 	configManager := configManager.NewManager(eval, adapterMgr.AspectValidatorFinder, adapterMgr.BuilderValidatorFinder,
 		adapterMgr.AdapterToAspectMapper,
-		sa.globalConfigFile, sa.serviceConfigFile, time.Second*time.Duration(sa.configFetchIntervalSec))
+		sa.globalConfigFile, sa.serviceConfigFile, time.Second*time.Duration(sa.configFetchIntervalSec), sa.userTypeScriptFile)
 
 	handler := api.NewHandler(adapterMgr)
 

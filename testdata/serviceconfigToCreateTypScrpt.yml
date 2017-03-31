@@ -1,0 +1,20 @@
+subject: namespace:ns
+revision: "2022"
+rules:
+        #- selector: service.name == “*”
+        #- selector: service.name == "myservice"
+- selector: true
+  aspects:
+  - name: prometheus_reporting_all_metrics
+    kind: metrics
+    adapter: prometheus
+
+- selector: true
+  aspects:
+  - name: prometheus_reporting_just_req_latency
+    kind: metrics
+    adapter: prometheus
+
+  - name: prometheus_reporting_just_req_count
+    kind: metrics
+    adapter: prometheus

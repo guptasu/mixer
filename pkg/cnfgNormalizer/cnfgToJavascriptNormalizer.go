@@ -23,6 +23,8 @@ import (
 	"bytes"
 	"github.com/robertkrimen/otto"
 	"istio.io/mixer/pkg/attribute"
+	"path/filepath"
+	"os"
 )
 
 var (
@@ -53,7 +55,7 @@ func (n NormalizedJavascriptConfig) Evalaute(requestBag *attribute.MutableBag,
 }
 
 // invoked at configuration time
-func Normalize(vd *config.Validated) config.NormalizedConfig {
+func Normalize(vd *config.Validated, fileLocation string) config.NormalizedConfig {
 
 	typeDefTSCode := getPredefinedTypesForDescriptors(vd)
 
@@ -63,7 +65,7 @@ func Normalize(vd *config.Validated) config.NormalizedConfig {
 	fileForWellKnownAttribs := "WellKnownAttribs.ts"
 	userTSAllCode := getUserTSCodeFile(vd, fileForTypesFromAspectDescriptors, fileForWellKnownAttribs);
 
-	generatedJS := getJS(userTSAllCode, typeDefTSCode, attributeTypeDeclaration, fileForTypesFromAspectDescriptors, fileForWellKnownAttribs)
+	generatedJS := getJS(userTSAllCode, typeDefTSCode, attributeTypeDeclaration, fileForTypesFromAspectDescriptors, fileForWellKnownAttribs, fileLocation)
 
 	return NormalizedJavascriptConfig{JavaScript: generatedJS}
 }
@@ -147,24 +149,50 @@ func getPredefinedTypesForDescriptors(vd *config.Validated) string {
 		getAllDeclarations(vd) + "\n"
 }
 
-func getJS(userTSAllCode string, typeDefTSCode string, attributeTypeDeclaration string, fileNameForTypesFromAspectDescriptors string, fileNameForWellKnownAttribs string) string {
-	tempTypeDefsTSFile := "/tmp/TSConversion/" + fileNameForTypesFromAspectDescriptors
-	tempAttribsDefsTSFile := "/tmp/TSConversion/" + fileNameForWellKnownAttribs
-	tempUserTSFile := "/tmp/TSConversion/UserWrittenMethods.ts"
-	tempGeneratedJSFile := "/tmp/TSConversion/generatedJSFromTypeScriptCompiler.js"
-
+func getJS(userTSAllCode string, typeDefTSCode string, attributeTypeDeclaration string, fileNameForTypesFromAspectDescriptors string, fileNameForWellKnownAttribs string, srvcConfigFileLocation string) string {
+	generatedDirName := filepath.Join(filepath.Dir(srvcConfigFileLocation), getFileNameWithoutExt(srvcConfigFileLocation) + "_generated")
+	tempTypeDefsTSFile := filepath.Join(generatedDirName, fileNameForTypesFromAspectDescriptors)
+	tempAttribsDefsTSFile := filepath.Join(generatedDirName, fileNameForWellKnownAttribs)
+	tempUserTSFile := filepath.Join(generatedDirName, getFileNameWithDifferentExt(srvcConfigFileLocation, ".ts"))
+	err := os.MkdirAll(generatedDirName, os.ModePerm)
+	if err != nil {
+		fmt.Println("cannot create directory", generatedDirName)
+	}
 	ioutil.WriteFile(tempUserTSFile, []byte(userTSAllCode), 0644)
-	err := exec.Command("clang-format", "-i", tempUserTSFile).Run()
+	_ = exec.Command("clang-format", "-i", tempUserTSFile).Run()
 	ioutil.WriteFile(tempTypeDefsTSFile, []byte(typeDefTSCode), 0644)
-	err = exec.Command("clang-format", "-i", tempTypeDefsTSFile).Run()
+	_ = exec.Command("clang-format", "-i", tempTypeDefsTSFile).Run()
 	ioutil.WriteFile(tempAttribsDefsTSFile, []byte(attributeTypeDeclaration), 0644)
-	err = exec.Command("clang-format", "-i", tempAttribsDefsTSFile).Run()
+	_ = exec.Command("clang-format", "-i", tempAttribsDefsTSFile).Run()
 
-	err = exec.Command("tsc", "--lib", "es7", "--outFile",  tempGeneratedJSFile, tempUserTSFile).Run()
+	return GenerateJsFromTypeScript(tempUserTSFile);
+}
+
+
+func getFileNameWithDifferentExt(filePath string, ext string) string {
+	tmp := filepath.Base(filePath)
+
+	return tmp[0 : len(tmp)-len(filepath.Ext(tmp))] + ext
+}
+
+func getFileNameWithoutExt(filePath string) string {
+	tmp := filepath.Base(filePath)
+	return tmp[0 : len(tmp)-len(filepath.Ext(tmp))]
+}
+
+func getOutFileNameWithDifferentExt(filePath string, ext string) string {
+	tmp := filepath.Base(filePath)
+
+	return filepath.Join(filepath.Dir(filePath), tmp[0 : len(tmp)-len(filepath.Ext(tmp))] + ext)
+}
+
+func GenerateJsFromTypeScript (userTSFile string) string {
+	tempGeneratedJSOutFile := getOutFileNameWithDifferentExt(userTSFile, ".js")
+	err := exec.Command("tsc", "--lib", "es7", "--outFile",  tempGeneratedJSOutFile, userTSFile).Run()
 	if err != nil {
 		fmt.Println("tst generation failed", err)
 	}
-	generatedJS, err := ioutil.ReadFile(tempGeneratedJSFile)
+	generatedJS, err := ioutil.ReadFile(tempGeneratedJSOutFile)
 	if err != nil {
 		fmt.Println("cannot read generated JS file", err)
 	}

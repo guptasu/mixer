@@ -54,7 +54,7 @@ func newMetricsManager() ReportManager {
 }
 
 func (m *metricsManager) NewReportExecutor(c *cpb.Combined, a adapter.Builder, env adapter.Env, df descriptor.Finder) (ReportExecutor, error) {
-	params := c.Aspect.Params.(*aconfig.MetricsParams)
+	//params := c.Aspect.Params.(*aconfig.MetricsParams)
 
 	// TODO: get descriptors from config
 	// TODO: sync these schemas with the new standardized metric schemas.
@@ -90,11 +90,7 @@ func (m *metricsManager) NewReportExecutor(c *cpb.Combined, a adapter.Builder, e
 	metadata := make(map[string]*metricInfo)
 	defs := make(map[string]*adapter.MetricDefinition, len(desc))
 	for _, d := range desc {
-		metric, found := findMetric(params.Metrics, d.Name)
-		if !found {
-			env.Logger().Warningf("No metric found for descriptor %s, skipping it", d.Name)
-			continue
-		}
+
 
 		// TODO: once we plumb descriptors into the validation, remove this err: no descriptor should make it through validation
 		// if it cannot be converted into a MetricDefinition, so we should never have to handle the error case.
@@ -107,8 +103,6 @@ func (m *metricsManager) NewReportExecutor(c *cpb.Combined, a adapter.Builder, e
 		defs[def.Name] = def
 		metadata[def.Name] = &metricInfo{
 			definition: def,
-			value:      metric.Value,
-			labels:     metric.Labels,
 		}
 	}
 	b := a.(adapter.MetricsBuilder)
@@ -156,7 +150,7 @@ func (w *metricsExecutor) Execute(evaluatedValue interface{}, attrs attribute.Ba
 		if (evaluatedMetricData["descriptorName"].(string) != name) {
 			continue;
 		}
-		printOldCodeOutput(name, md, attrs, mapper) // for prototype debugging only
+		// printOldCodeOutput(name, md, attrs, mapper) // for prototype debugging only
 		specificDescriptorEvaluatedMetricData := evaluatedMetricData["value"].(map[string]interface{})
 		metricValue := specificDescriptorEvaluatedMetricData["value"]
 		fmt.Println("** NEW JS METRIC VALUE : \t\t\t\t", metricValue)

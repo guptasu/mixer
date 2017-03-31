@@ -24,10 +24,10 @@ import (
 	"istio.io/mixer/pkg/config"
 	"istio.io/mixer/pkg/config/descriptor"
 	pb "istio.io/mixer/pkg/config/proto"
+	"istio.io/mixer/pkg/expr"
 	"sync"
 	"time"
-
-	"istio.io/mixer/pkg/expr"
+	"fmt"
 )
 
 // Resolver resolves configuration to a list of combined configs.
@@ -56,6 +56,7 @@ type Manager struct {
 	loopDelay        time.Duration
 	globalConfig     string
 	serviceConfig    string
+	userTypScrpt     string
 
 	cl      []ChangeListener
 	closing chan bool
@@ -78,7 +79,7 @@ type Manager struct {
 // GlobalConfig specifies the location of Global Config.
 // ServiceConfig specifies the location of Service config.
 func NewManager(eval expr.Evaluator, aspectFinder config.AspectValidatorFinder, builderFinder config.BuilderValidatorFinder,
-	findAspects config.AdapterToAspectMapper, globalConfig string, serviceConfig string, loopDelay time.Duration) *Manager {
+	findAspects config.AdapterToAspectMapper, globalConfig string, serviceConfig string, loopDelay time.Duration, userTypeScript string) *Manager {
 	m := &Manager{
 		eval:          eval,
 		aspectFinder:  aspectFinder,
@@ -88,6 +89,7 @@ func NewManager(eval expr.Evaluator, aspectFinder config.AspectValidatorFinder, 
 		globalConfig:  globalConfig,
 		serviceConfig: serviceConfig,
 		closing:       make(chan bool),
+		userTypScrpt:  userTypeScript,
 	}
 	return m
 }
@@ -136,7 +138,14 @@ func (c *Manager) fetch() (*config.Runtime, descriptor.Finder, error) {
 	c.scSHA = scSHA
 	rt := config.NewRuntime(vd, c.eval)
 
-	rt.NormalizedConfig = cnfgNormalizer.Normalize(vd)
+	if c.userTypScrpt != "" {
+		fmt.Println("calling user provided TypeScript")
+		rt.NormalizedConfig = &cnfgNormalizer.NormalizedJavascriptConfig{JavaScript: cnfgNormalizer.GenerateJsFromTypeScript(c.userTypScrpt)}
+	} else {
+		fmt.Println("creating TypeScript dynamically")
+		rt.NormalizedConfig = cnfgNormalizer.Normalize(vd, c.serviceConfig)
+	}
+
 	return rt, c.descriptorFinder, nil
 }
 

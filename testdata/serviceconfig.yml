@@ -20,7 +20,7 @@ rules:
           method: api.method | "one"
           response_code: response.http.code | 111
       - descriptorName:  request_latency
-        value: response.latency | 200
+        value: response.latency | 2000
         labels:
           source: source.name | "two"
           target: target.name | "two"
