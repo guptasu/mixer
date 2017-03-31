@@ -5,10 +5,10 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 go_library(
     name = "go_default_library",
     srcs = [
-        "cnfgNormalizer.go",
-        "jsFromExpression.go",
-        "metricsAspectNormalizer.go",
-        "attribsNormalizer.go",
+        "cnfgToJavascriptNormalizer.go",
+        "expressionsToTypeScriptHelper.go",
+        "metricsAspectConfigToTypeScript.go",
+        "attribsToTypeScript.go",
     ],
     deps = [
         "//pkg/adapter:go_default_library",

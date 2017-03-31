@@ -30,11 +30,12 @@ var (
 	callbackMtdDeclaration = "var " + callbackMtdName + " = function(name: string, val: any){};"
 )
 
-type NormalizedConfigJS struct {
+type NormalizedJavascriptConfig struct {
 	JavaScript string
 }
 
-func (n NormalizedConfigJS) Evalaute(requestBag *attribute.MutableBag,
+// invoked at runtime
+func (n NormalizedJavascriptConfig) Evalaute(requestBag *attribute.MutableBag,
 	callBack func(kind string, val interface{})) {
 	vm := otto.New()
 	vm.Run(n.JavaScript)
@@ -51,9 +52,8 @@ func (n NormalizedConfigJS) Evalaute(requestBag *attribute.MutableBag,
 	}
 }
 
+// invoked at configuration time
 func Normalize(vd *config.Validated) config.NormalizedConfig {
-
-
 
 	typeDefTSCode := getPredefinedTypesForDescriptors()
 
@@ -65,7 +65,7 @@ func Normalize(vd *config.Validated) config.NormalizedConfig {
 
 	generatedJS := getJS(userTSAllCode, typeDefTSCode, attributeTypeDeclaration, fileForTypesFromAspectDescriptors, fileForWellKnownAttribs)
 
-	return NormalizedConfigJS{JavaScript: generatedJS}
+	return NormalizedJavascriptConfig{JavaScript: generatedJS}
 }
 
 func getUserTSCodeFile(vd *config.Validated, imports ...string) string {
@@ -176,5 +176,5 @@ func getAllDeclarations() string {
 }
 
 func getAttributesDeclaration() string {
-	return GetAttributesType()
+	return GetTypeFromAttributes()
 }

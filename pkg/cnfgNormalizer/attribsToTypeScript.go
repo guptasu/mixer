@@ -46,7 +46,7 @@ func dotCaseToCamelCase(s string) string {
 	return strings.Join(subStrs, "")
 }
 
-func GetAttributesType() string {
+func GetTypeFromAttributes() string {
 	var attributesTypeFields bytes.Buffer
 	var constructorCode bytes.Buffer
 

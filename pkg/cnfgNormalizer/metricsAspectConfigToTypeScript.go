@@ -25,7 +25,6 @@ import (
 ///////////////////// THIS SHOULD BELONG TO METRIC ASPECT MANAGER /////////////////
 
 var (
-	debug       = false
 	desc = []*dpb.MetricDescriptor{
 		{
 			Name:        "request_count",
@@ -76,20 +75,20 @@ func GenerateUserCodeForMetrics(metricsParams *aconfig.MetricsParams, adapterNam
 			}
 		}
 		methodToInvoke := getMethodNameForDescriptor(metric.DescriptorName)
-		if debug {
-			metricsStr.WriteString(fmt.Sprintf("\nconsole.log(\"invoking %s\")\n", methodToInvoke))
-		}
 		callStr := fmt.Sprintf(`
 				%s({
 	  			  %s
 				})`, methodToInvoke, labelStr.String())
 		metricsStr.WriteString(callStr + "\n")
-		if debug {
-			metricsStr.WriteString(fmt.Sprintf("\nconsole.log(\"Done %s\")\n", methodToInvoke))
-		}
 
 	}
 	return metricsStr.String()
+}
+
+
+func GetMetricAspectAllDeclarations(callbackMtdName string) string {
+	return getTypesAndMethodsForDescriptors(callbackMtdName)
+
 }
 
 func getMethodNameForDescriptor(descriptorName string) string {
@@ -97,24 +96,19 @@ func getMethodNameForDescriptor(descriptorName string) string {
 	return "Record" + snake2UpperCamelCase(descriptorName)
 }
 
-func GetMetricAspectAllDeclarations(callbackMtdName string) string {
-	return getTypesAndMethodsForDescriptors(callbackMtdName)
-
-}
-
 func getTypesAndMethodsForDescriptors(callbackMtdName string) string {
 	var metricsStr bytes.Buffer
 	for _, metricDescriptor := range desc {
-		metricsStr.WriteString(createIndividualClass(metricDescriptor))
+		metricsStr.WriteString(createClassForDescriptor(metricDescriptor))
 	}
 	for _, metricDescriptor := range desc {
-		metricsStr.WriteString(createIndividualMethod(metricDescriptor, callbackMtdName))
+		metricsStr.WriteString(createMethodForDescriptor(metricDescriptor, callbackMtdName))
 	}
 
 	return metricsStr.String()
 }
 
-func createIndividualClass(metricDescriptor *dpb.MetricDescriptor) string {
+func createClassForDescriptor(metricDescriptor *dpb.MetricDescriptor) string {
 	var metricsStr bytes.Buffer
 	var fieldsStr bytes.Buffer
 	fieldsStr.WriteString(fmt.Sprintf("%s: %s;", "value", getJSType(metricDescriptor.Value)))
@@ -125,11 +119,7 @@ func createIndividualClass(metricDescriptor *dpb.MetricDescriptor) string {
 	return metricsStr.String()
 }
 
-func getJSType(valueType dpb.ValueType) string {
-	return valueTypeToJSType[valueType]
-}
-
-func createIndividualMethod(metricDescriptor *dpb.MetricDescriptor, callbackMtdname string) string {
+func createMethodForDescriptor(metricDescriptor *dpb.MetricDescriptor, callbackMtdname string) string {
 	var metricsDescriptorFunction bytes.Buffer
 	var fieldsStr bytes.Buffer
 	fieldsStr.WriteString(fmt.Sprintf("%s: %s;", "value", getJSType(metricDescriptor.Value)))
@@ -151,4 +141,8 @@ func snake2UpperCamelCase(s string) string {
 		subStrs[i] = strings.Title(subStr)
 	}
 	return strings.Join(subStrs, "")
+}
+
+func getJSType(valueType dpb.ValueType) string {
+	return valueTypeToJSType[valueType]
 }
