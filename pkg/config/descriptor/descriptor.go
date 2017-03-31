@@ -77,9 +77,10 @@ func NewFinder(cfg *pb.GlobalConfig) Finder {
 	}
 
 	attributes := make(map[string]*dpb.AttributeDescriptor)
-	for _, desc := range cfg.Attributes {
-		attributes[desc.Name] = desc
-	}
+	// no longer available in the global config.
+	//for _, desc := range cfg.Attributes {
+	//	attributes[desc.Name] = desc
+	//}
 
 	return &finder{
 		logs:               logs,
