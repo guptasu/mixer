@@ -5,39 +5,39 @@
 
 function report(attributes: Attributes) {
   if (attributes.SourceName == 'test') {
-    RecordRequestCount({
+    RecordRequestCountInPrometheusReportingAllMetrics({
       value: attributes.ResponseLatency !== undefined ?
           attributes.ResponseLatency :
           100,
+      method: attributes.ApiMethod !== undefined ? attributes.ApiMethod : 'one',
+      response_code: attributes.ResponseHttpCode !== undefined ?
+          attributes.ResponseHttpCode :
+          111,
       service: attributes.ApiName !== undefined ? attributes.ApiName : 'one',
       source: attributes.SourceName !== undefined ? attributes.SourceName :
                                                     'one',
       target: attributes.TargetName !== undefined ? attributes.TargetName :
-                                                    'one',
-      method: attributes.ApiMethod !== undefined ? attributes.ApiMethod : 'one',
-      response_code: attributes.ResponseHttpCode !== undefined ?
-          attributes.ResponseHttpCode :
-          111
+                                                    'one'
     })
 
-    RecordRequestLatency({
+    RecordRequestLatencyInPrometheusReportingAllMetrics({
       value: attributes.ResponseLatency !== undefined ?
           attributes.ResponseLatency :
           200,
-      source: attributes.SourceName !== undefined ? attributes.SourceName :
-                                                    'two',
-      target: attributes.TargetName !== undefined ? attributes.TargetName :
-                                                    'two',
       method: attributes.ApiMethod !== undefined ? attributes.ApiMethod : 'two',
       response_code: attributes.ResponseHttpCode !== undefined ?
           attributes.ResponseHttpCode :
           222,
-      service: attributes.ApiName !== undefined ? attributes.ApiName : 'two'
+      service: attributes.ApiName !== undefined ? attributes.ApiName : 'two',
+      source: attributes.SourceName !== undefined ? attributes.SourceName :
+                                                    'two',
+      target: attributes.TargetName !== undefined ? attributes.TargetName :
+                                                    'two'
     })
   }
 
   if (attributes.SourceName == 'foo') {
-    RecordRequestLatency({
+    RecordRequestLatencyInPrometheusReportingJustReqLatency({
       value: attributes.ResponseLatency !== undefined ?
           attributes.ResponseLatency :
           300,
@@ -53,18 +53,18 @@ function report(attributes: Attributes) {
                                                    'three'
     })
 
-    RecordRequestCount({
+    RecordRequestCountInPrometheusReportingJustReqCount({
       value: 400,
+      service: attributes.ApiName !== undefined ? attributes.ApiName : 'four',
+      source: attributes.SourceName !== undefined ? attributes.SourceName :
+                                                    'four',
       target: attributes.TargetName !== undefined ? attributes.TargetName :
                                                     'four',
       method: attributes.ApiMethod !== undefined ? attributes.ApiMethod :
                                                    'four',
       response_code: attributes.ResponseHttpCode !== undefined ?
           attributes.ResponseHttpCode :
-          444,
-      service: attributes.ApiName !== undefined ? attributes.ApiName : 'four',
-      source: attributes.SourceName !== undefined ? attributes.SourceName :
-                                                    'four'
+          444
     })
   }
 }
