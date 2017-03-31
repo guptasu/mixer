@@ -35,12 +35,6 @@ var Attributes = (function () {
     function Attributes(attribs) {
         // Fill the set of attribues that are part of the call (data is available
         // inside the attribs).
-        if (attribs.Get('response.latency')[1]) {
-            this.ResponseLatency = attribs.Get('response.latency')[0];
-        }
-        if (attribs.Get('api.method')[1]) {
-            this.ApiMethod = attribs.Get('api.method')[0];
-        }
         if (attribs.Get('target.name')[1]) {
             this.TargetName = attribs.Get('target.name')[0];
         }
@@ -52,6 +46,12 @@ var Attributes = (function () {
         }
         if (attribs.Get('response.http.code')[1]) {
             this.ResponseHttpCode = attribs.Get('response.http.code')[0];
+        }
+        if (attribs.Get('response.latency')[1]) {
+            this.ResponseLatency = attribs.Get('response.latency')[0];
+        }
+        if (attribs.Get('api.method')[1]) {
+            this.ApiMethod = attribs.Get('api.method')[0];
         }
     }
     return Attributes;
@@ -81,7 +81,6 @@ function report(attributes) {
             value: attributes.ResponseLatency !== undefined ?
                 attributes.ResponseLatency :
                 2000,
-            service: attributes.ApiName !== undefined ? attributes.ApiName : 'two',
             source: attributes.SourceName !== undefined ? attributes.SourceName :
                 'two',
             target: attributes.TargetName !== undefined ? attributes.TargetName :
@@ -89,7 +88,8 @@ function report(attributes) {
             method: attributes.ApiMethod !== undefined ? attributes.ApiMethod : 'two',
             response_code: attributes.ResponseHttpCode !== undefined ?
                 attributes.ResponseHttpCode :
-                222
+                222,
+            service: attributes.ApiName !== undefined ? attributes.ApiName : 'two'
         });
     }
     if (attributes.SourceName == 'foo') {
@@ -110,16 +110,16 @@ function report(attributes) {
         });
         RecordRequestCountInPrometheusReportingJustReqCount({
             value: 400,
-            service: attributes.ApiName !== undefined ? attributes.ApiName : 'four',
-            source: attributes.SourceName !== undefined ? attributes.SourceName :
-                'four',
             target: attributes.TargetName !== undefined ? attributes.TargetName :
                 'four',
             method: attributes.ApiMethod !== undefined ? attributes.ApiMethod :
                 'four',
             response_code: attributes.ResponseHttpCode !== undefined ?
                 attributes.ResponseHttpCode :
-                444
+                444,
+            service: attributes.ApiName !== undefined ? attributes.ApiName : 'four',
+            source: attributes.SourceName !== undefined ? attributes.SourceName :
+                'four'
         });
     }
 }

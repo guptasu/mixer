@@ -24,7 +24,6 @@ function report(attributes: Attributes) {
       value: attributes.ResponseLatency !== undefined ?
           attributes.ResponseLatency :
           2000,
-      service: attributes.ApiName !== undefined ? attributes.ApiName : 'two',
       source: attributes.SourceName !== undefined ? attributes.SourceName :
                                                     'two',
       target: attributes.TargetName !== undefined ? attributes.TargetName :
@@ -32,7 +31,8 @@ function report(attributes: Attributes) {
       method: attributes.ApiMethod !== undefined ? attributes.ApiMethod : 'two',
       response_code: attributes.ResponseHttpCode !== undefined ?
           attributes.ResponseHttpCode :
-          222
+          222,
+      service: attributes.ApiName !== undefined ? attributes.ApiName : 'two'
     })
   }
 
@@ -55,16 +55,16 @@ function report(attributes: Attributes) {
 
     RecordRequestCountInPrometheusReportingJustReqCount({
       value: 400,
-      service: attributes.ApiName !== undefined ? attributes.ApiName : 'four',
-      source: attributes.SourceName !== undefined ? attributes.SourceName :
-                                                    'four',
       target: attributes.TargetName !== undefined ? attributes.TargetName :
                                                     'four',
       method: attributes.ApiMethod !== undefined ? attributes.ApiMethod :
                                                    'four',
       response_code: attributes.ResponseHttpCode !== undefined ?
           attributes.ResponseHttpCode :
-          444
+          444,
+      service: attributes.ApiName !== undefined ? attributes.ApiName : 'four',
+      source: attributes.SourceName !== undefined ? attributes.SourceName :
+                                                    'four'
     })
   }
 }
