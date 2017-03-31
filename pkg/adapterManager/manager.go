@@ -144,6 +144,34 @@ func (m *Manager) Quota(ctx context.Context, requestBag *attribute.MutableBag, r
 
 type invokeExecutorFunc func(evaluatedValue interface{}, executor aspect.Executor, evaluator expr.Evaluator) rpc.Status
 
+func executeScriptAndGetEvaluatedData(cfg configManager.Resolver, requestBag *attribute.MutableBag, cfgs []*configpb.Combined) []*evaluatedDataForAspect {
+	findSpecificCfgFnSuperHacky := func(cfgs []*configpb.Combined, kind string, val interface{}) (*configpb.Combined, error) {
+		if len(cfgs) == 2 {
+			// HACK Only works for the values from sample to detect the right aspect. This is an issue
+			// with multiple aspects that match the selectors, need to discuss on how can we retrive the
+			// correct aspect to invoke from this call back.
+			data := val.(map[string]interface{})
+			if data["descriptorName"] == "request_count" {
+				return cfgs[1], nil
+			} else {
+				return cfgs[0], nil
+			}
+		}
+
+		return cfgs[0], nil
+	}
+
+	evaluatedDataForAspectList := make([]*evaluatedDataForAspect, 0, 100)
+	CallBackFromUserScript_go := func(kind string, evaluatedValue interface{}) {
+		specifigCfg, _ := findSpecificCfgFnSuperHacky(cfgs, kind, evaluatedValue)
+		// Save all the evaluated data. We can then dispatch them to different aspects by fanning out to
+		// multiple go routines.
+		evaluatedDataForAspectList = append(evaluatedDataForAspectList, &evaluatedDataForAspect{cfg: specifigCfg, value: evaluatedValue})
+	}
+	cfg.GetNormalizedConfig().Evalaute(requestBag, CallBackFromUserScript_go)
+
+	return evaluatedDataForAspectList
+}
 // Execute resolves config and invokes the specific set of aspects necessary to service the current request
 func (m *Manager) dispatch(ctx context.Context, requestBag *attribute.MutableBag, responseBag *attribute.MutableBag,
 	method apiMethod, invokeFunc invokeExecutorFunc) rpc.Status {
@@ -176,31 +204,7 @@ func (m *Manager) dispatch(ctx context.Context, requestBag *attribute.MutableBag
 	//       bags without needing children & merging, etc.
 
 
-	findSpecificCfgFnSuperHacky := func(cfgs []*configpb.Combined, kind string, val interface{}) (*configpb.Combined, error) {
-		if len(cfgs) == 2 {
-			// HACK Only works for the values from sample to detect the right aspect. This is an issue
-			// with multiple aspects that match the selectors, need to discuss on how can we retrive the
-			// correct aspect to invoke from this call back.
-			data := val.(map[string]interface{})
-			if data["descriptorName"] == "request_count" {
-				return cfgs[1], nil
-			} else {
-				return cfgs[0], nil
-			}
-		}
-
-		return cfgs[0], nil
-	}
-
-	evaluatedDataForAspectList := make([]evaluatedDataForAspect, 0, 100)
-	CallBackFromUserScript_go := func(kind string, evaluatedValue interface{}) {
-		specifigCfg, _ := findSpecificCfgFnSuperHacky(cfgs, kind, evaluatedValue)
-		// Save all the evaluated data. We can then dispatch them to different aspects by fanning out to
-		// multiple go routines.
-		evaluatedDataForAspectList = append(evaluatedDataForAspectList, evaluatedDataForAspect{cfg: specifigCfg, value: evaluatedValue})
-	}
-	cfg.GetNormalizedConfig().Evalaute(requestBag, CallBackFromUserScript_go)
-
+	evaluatedDataForAspectList := executeScriptAndGetEvaluatedData(cfg, requestBag, cfgs)
 	// This number is more than number of aspects since, there can be multiple calls for each descriptor within the aspect
 	totalCallsToAspect := len(evaluatedDataForAspectList)
 	// TODO: look into pooling both result array and channel, they're created per-request and are constant size for cfg lifetime.
