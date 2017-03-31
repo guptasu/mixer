@@ -27,7 +27,7 @@ import (
 
 var (
 	callbackMtdName = "CallBackFromUserScript_go"
-	callbackMtdDeclaration = "var " + callbackMtdName + " = function(name: string, val: any){};"
+	callbackMtdDeclaration = "var " + callbackMtdName + " = function(aspectName: string, val: any){};"
 )
 
 type NormalizedJavascriptConfig struct {
@@ -55,7 +55,7 @@ func (n NormalizedJavascriptConfig) Evalaute(requestBag *attribute.MutableBag,
 // invoked at configuration time
 func Normalize(vd *config.Validated) config.NormalizedConfig {
 
-	typeDefTSCode := getPredefinedTypesForDescriptors()
+	typeDefTSCode := getPredefinedTypesForDescriptors(vd)
 
 	attributeTypeDeclaration := getAttributesDeclaration()
 
@@ -90,7 +90,7 @@ func getUserTSCodeFile(vd *config.Validated, imports ...string) string {
 		var tmpReportMethodStr string
 		for _, aspect := range aspectRule.GetAspects() {
 			if aspect.Kind == "metrics" {
-				userCodeForMetricAspect := GenerateUserCodeForMetrics(aspect.Params.(*aconfig.MetricsParams), aspect.Adapter)
+				userCodeForMetricAspect := GenerateUserCodeForMetrics(aspect.Params.(*aconfig.MetricsParams), aspect.Name)
 				tmpReportMethodStr = tmpReportMethodStr + userCodeForMetricAspect
 			}
 		}
@@ -138,13 +138,13 @@ func getUserTSCodeFile(vd *config.Validated, imports ...string) string {
 
 }
 
-func getPredefinedTypesForDescriptors() string {
+func getPredefinedTypesForDescriptors(vd *config.Validated) string {
 	return ""+
 		"\n//-----------------CallBack Method Declaration-----------------\n" +
 		"//This method gets injected at runtime. Need this declaration to make TypeScript happy\n" +
 		callbackMtdDeclaration + "\n" +
 		"\n//-----------------All Types Declaration-----------------\n" +
-		getAllDeclarations() + "\n"
+		getAllDeclarations(vd) + "\n"
 }
 
 func getJS(userTSAllCode string, typeDefTSCode string, attributeTypeDeclaration string, fileNameForTypesFromAspectDescriptors string, fileNameForWellKnownAttribs string) string {
@@ -171,8 +171,17 @@ func getJS(userTSAllCode string, typeDefTSCode string, attributeTypeDeclaration 
 	return string(generatedJS);
 }
 
-func getAllDeclarations() string {
-	return GetMetricAspectAllDeclarations(callbackMtdName)
+func getAllDeclarations(vd *config.Validated) string {
+	allUserDeclaredMetricsAspectNames := make([]string, 0)
+	for _, aspectRule := range vd.GetValidatedSC().GetRules() {
+		for _, aspect := range aspectRule.GetAspects() {
+			if aspect.Kind == "metrics" {
+				allUserDeclaredMetricsAspectNames = append(allUserDeclaredMetricsAspectNames, aspect.Name)
+			}
+			// TODO... need to go nested inside the rules within the aspects
+		}
+	}
+	return GetMetricAspectAllDeclarations(callbackMtdName, allUserDeclaredMetricsAspectNames)
 }
 
 func getAttributesDeclaration() string {

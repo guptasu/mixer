@@ -5,7 +5,8 @@ rules:
         #- selector: service.name == "myservice"
 - selector: source.name == "test"
   aspects:
-  - kind: metrics
+  - name: prometheus_reporting_all_metrics
+    kind: metrics
     adapter: prometheus
     params:
       metrics:
@@ -28,7 +29,8 @@ rules:
           response_code: response.http.code | 222
 - selector: source.name == "foo"
   aspects:
-  - kind: metrics
+  - name: prometheus_reporting_just_req_latency
+    kind: metrics
     adapter: prometheus
     params:
       metrics:
@@ -40,7 +42,8 @@ rules:
           service: api.name | "three"
           method: api.method | "three"
           response_code: response.http.code | 333
-  - kind: metrics
+  - name: prometheus_reporting_just_req_count
+    kind: metrics
     adapter: prometheus
     params:
       metrics:

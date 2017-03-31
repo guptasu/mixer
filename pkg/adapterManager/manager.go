@@ -145,25 +145,21 @@ func (m *Manager) Quota(ctx context.Context, requestBag *attribute.MutableBag, r
 type invokeExecutorFunc func(evaluatedValue interface{}, executor aspect.Executor, evaluator expr.Evaluator) rpc.Status
 
 func executeScriptAndGetEvaluatedData(cfg configManager.Resolver, requestBag *attribute.MutableBag, cfgs []*configpb.Combined) []*evaluatedDataForAspect {
-	findSpecificCfgFnSuperHacky := func(cfgs []*configpb.Combined, kind string, val interface{}) (*configpb.Combined, error) {
-		if len(cfgs) == 2 {
-			// HACK Only works for the values from sample to detect the right aspect. This is an issue
-			// with multiple aspects that match the selectors, need to discuss on how can we retrive the
-			// correct aspect to invoke from this call back.
-			data := val.(map[string]interface{})
-			if data["descriptorName"] == "request_count" {
-				return cfgs[1], nil
-			} else {
-				return cfgs[0], nil
+	findAspectToDispatchTheCallFromJS := func(cfgs []*configpb.Combined, aspectName string) (*configpb.Combined, error) {
+
+		for _, cfg := range cfgs {
+			if cfg.Aspect.Name == aspectName {
+				return cfg, nil
 			}
 		}
 
-		return cfgs[0], nil
+		// todo better error handling
+		return nil, nil
 	}
 
 	evaluatedDataForAspectList := make([]*evaluatedDataForAspect, 0, 100)
-	CallBackFromUserScript_go := func(kind string, evaluatedValue interface{}) {
-		specifigCfg, _ := findSpecificCfgFnSuperHacky(cfgs, kind, evaluatedValue)
+	CallBackFromUserScript_go := func(aspectName string, evaluatedValue interface{}) {
+		specifigCfg, _ := findAspectToDispatchTheCallFromJS(cfgs, aspectName)
 		// Save all the evaluated data. We can then dispatch them to different aspects by fanning out to
 		// multiple go routines.
 		evaluatedDataForAspectList = append(evaluatedDataForAspectList, &evaluatedDataForAspect{cfg: specifigCfg, value: evaluatedValue})

@@ -16,17 +16,16 @@ package configManager
 
 import (
 	"crypto/sha1"
-	"io/ioutil"
-	"sync"
-	"time"
 	"github.com/golang/glog"
-	"istio.io/mixer/pkg/config"
+	"io/ioutil"
 	"istio.io/mixer/pkg/adapter"
 	"istio.io/mixer/pkg/attribute"
-	"istio.io/mixer/pkg/config/descriptor"
 	"istio.io/mixer/pkg/cnfgNormalizer"
+	"istio.io/mixer/pkg/config"
+	"istio.io/mixer/pkg/config/descriptor"
 	pb "istio.io/mixer/pkg/config/proto"
-
+	"sync"
+	"time"
 
 	"istio.io/mixer/pkg/expr"
 )
