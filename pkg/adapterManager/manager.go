@@ -82,10 +82,9 @@ type builderFinder interface {
 }
 
 type evaluatedDataForAspect struct {
-	cfg         *configpb.Combined
+	cfg   *configpb.Combined
 	value interface{}
 }
-
 
 // NewManager creates a new adapterManager.
 func NewManager(builders []adapter.RegisterFn, managers aspect.ManagerInventory,
@@ -145,29 +144,22 @@ func (m *Manager) Quota(ctx context.Context, requestBag *attribute.MutableBag, r
 type invokeExecutorFunc func(evaluatedValue interface{}, executor aspect.Executor, evaluator expr.Evaluator) rpc.Status
 
 func executeScriptAndGetEvaluatedData(cfg configManager.Resolver, requestBag *attribute.MutableBag, cfgs []*configpb.Combined) []*evaluatedDataForAspect {
-	findAspectToDispatchTheCallFromJS := func(cfgs []*configpb.Combined, aspectName string) (*configpb.Combined, error) {
-
-		for _, cfg := range cfgs {
-			if cfg.Aspect.Name == aspectName {
-				return cfg, nil
-			}
-		}
-
-		// todo better error handling
-		return nil, nil
-	}
 
 	evaluatedDataForAspectList := make([]*evaluatedDataForAspect, 0, 100)
 	CallBackFromUserScript_go := func(aspectName string, evaluatedValue interface{}) {
-		specifigCfg, _ := findAspectToDispatchTheCallFromJS(cfgs, aspectName)
-		// Save all the evaluated data. We can then dispatch them to different aspects by fanning out to
-		// multiple go routines.
-		evaluatedDataForAspectList = append(evaluatedDataForAspectList, &evaluatedDataForAspect{cfg: specifigCfg, value: evaluatedValue})
+		for _, cfg := range cfgs {
+			if cfg.Aspect.Name == aspectName {
+				// Save all the evaluated data. We can then dispatch them to different aspects by fanning out to
+				// multiple go routines.
+				evaluatedDataForAspectList = append(evaluatedDataForAspectList, &evaluatedDataForAspect{cfg: cfg, value: evaluatedValue})
+			}
+		}
 	}
 	cfg.GetNormalizedConfig().Evalaute(requestBag, CallBackFromUserScript_go)
 
 	return evaluatedDataForAspectList
 }
+
 // Execute resolves config and invokes the specific set of aspects necessary to service the current request
 func (m *Manager) dispatch(ctx context.Context, requestBag *attribute.MutableBag, responseBag *attribute.MutableBag,
 	method apiMethod, invokeFunc invokeExecutorFunc) rpc.Status {
@@ -198,7 +190,6 @@ func (m *Manager) dispatch(ctx context.Context, requestBag *attribute.MutableBag
 	// TODO: consider implementing a fast path when there is only a single config.
 	//       we don't need to schedule goroutines, we could use the incoming attribute
 	//       bags without needing children & merging, etc.
-
 
 	evaluatedDataForAspectList := executeScriptAndGetEvaluatedData(cfg, requestBag, cfgs)
 	// This number is more than number of aspects since, there can be multiple calls for each descriptor within the aspect
