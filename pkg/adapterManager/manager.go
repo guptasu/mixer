@@ -146,7 +146,8 @@ type invokeExecutorFunc func(evaluatedValue interface{}, executor aspect.Executo
 func executeScriptAndGetEvaluatedData(cfg configManager.Resolver, requestBag *attribute.MutableBag, cfgs []*configpb.Combined) []*evaluatedDataForAspect {
 
 	evaluatedDataForAspectList := make([]*evaluatedDataForAspect, 0, 100)
-	CallBackFromUserScript_go := func(aspectName string, evaluatedValue interface{}) {
+
+	cfg.GetNormalizedConfig().Evalaute(requestBag, func(aspectName string, evaluatedValue interface{}) {
 		for _, cfg := range cfgs {
 			if cfg.Aspect.Name == aspectName {
 				// Save all the evaluated data. We can then dispatch them to different aspects by fanning out to
@@ -154,8 +155,7 @@ func executeScriptAndGetEvaluatedData(cfg configManager.Resolver, requestBag *at
 				evaluatedDataForAspectList = append(evaluatedDataForAspectList, &evaluatedDataForAspect{cfg: cfg, value: evaluatedValue})
 			}
 		}
-	}
-	cfg.GetNormalizedConfig().Evalaute(requestBag, CallBackFromUserScript_go)
+	})
 
 	return evaluatedDataForAspectList
 }
