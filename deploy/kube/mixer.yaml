@@ -20,7 +20,7 @@ spec:
           name: config
         args:
           - --globalConfigFile=/etc/opt/mixer/globalconfig.yml
-          - --serviceConfigFile=/etc/opt/mixer/sample1_declarativeServiceConfig.yml
+          - --serviceConfigFile=/etc/opt/mixer/scenario2_declarativeServiceConfig.yml
           - -v=4
       volumes:
       - name: config
