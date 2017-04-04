@@ -5,16 +5,12 @@ rules:
         #- selector: service.name == "myservice"
 - selector: true
   aspects:
-  - name: prometheus_reporting_all_metrics
+  - name: AspectOne
     kind: metrics
     adapter: prometheus
 
 - selector: true
   aspects:
-  - name: prometheus_reporting_just_req_latency
-    kind: metrics
-    adapter: prometheus
-
-  - name: prometheus_reporting_just_req_count
+  - name: AspectTwo
     kind: metrics
     adapter: prometheus
