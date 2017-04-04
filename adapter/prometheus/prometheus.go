@@ -131,6 +131,8 @@ func (p *prom) Record(vals []adapter.Value) error {
 		}
 	}
 
+	fmt.Println("\n\n----------------------\n\n")
+
 	return result.ErrorOrNil()
 }
 
