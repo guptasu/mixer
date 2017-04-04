@@ -153,12 +153,11 @@ func (w *metricsExecutor) Execute(evaluatedValue interface{}, attrs attribute.Ba
 		// printOldCodeOutput(name, md, attrs, mapper) // for prototype debugging only
 		specificDescriptorEvaluatedMetricData := evaluatedMetricData["value"].(map[string]interface{})
 		metricValue := specificDescriptorEvaluatedMetricData["value"]
-		fmt.Println("** NEW JS METRIC VALUE : \t\t\t\t", metricValue)
 
 		// TEMP HACK for Prototyping. Remove the value and everything else is labels
 		delete(specificDescriptorEvaluatedMetricData, "value")
 		specificDescriptorEvaluatedLabelsData := specificDescriptorEvaluatedMetricData
-		fmt.Println("** NEW JS LABELS : \t\t\t\t\t\t", specificDescriptorEvaluatedLabelsData)
+		fmt.Printf("** MetricManager received Metric Value : %v and LABELS : %v\n\n", metricValue, specificDescriptorEvaluatedLabelsData)
 
 		// TODO: investigate either pooling these, or keeping a set around that has only its field's values updated.
 		// we could keep a map[metric name]value, iterate over the it updating only the fields in each value

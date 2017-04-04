@@ -45,7 +45,7 @@ func (n NormalizedJavascriptConfig) Evalaute(requestBag *attribute.MutableBag,
 
 	attribConstructor, _ := vm.Get("ConstructAttributes")
 	attributesFromJS, errFromJS := attribConstructor.Call(otto.NullValue(), requestBag)
-	fmt.Println(attributesFromJS)
+	//fmt.Println(attributesFromJS)
 
 	checkFn, _ := vm.Get("report")
 	_, errFromJS = checkFn.Call(otto.NullValue(), attributesFromJS)

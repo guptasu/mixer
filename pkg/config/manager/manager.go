@@ -139,12 +139,14 @@ func (c *Manager) fetch() (*config.Runtime, descriptor.Finder, error) {
 	rt := config.NewRuntime(vd, c.eval)
 
 	if c.userTypScrpt != "" {
-		fmt.Println("calling user provided TypeScript")
+		fmt.Println("**config/manager.go : Received user provided TypeScript\n")
 		rt.NormalizedConfig = &cnfgNormalizer.NormalizedJavascriptConfig{JavaScript: cnfgNormalizer.GenerateJsFromTypeScript(c.userTypScrpt)}
 	} else {
-		fmt.Println("creating TypeScript dynamically")
+		fmt.Println("**config/manager.go : Creating TypeScript from SC\n")
 		rt.NormalizedConfig = cnfgNormalizer.Normalize(vd, c.serviceConfig)
 	}
+
+	fmt.Println("**config/manager.go : Saving generated javascript in config.runtime object \n")
 
 	return rt, c.descriptorFinder, nil
 }

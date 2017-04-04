@@ -3,7 +3,7 @@ revision: "2022"
 rules:
         #- selector: service.name == “*”
         #- selector: service.name == "myservice"
-- selector: source.name == "test"
+- selector: true
   aspects:
   - name: prometheus_reporting_all_metrics
     kind: metrics
@@ -27,32 +27,3 @@ rules:
           service: api.name | "two"
           method: api.method | "two"
           response_code: response.http.code | 222
-- selector: source.name == "foo"
-  aspects:
-  - name: prometheus_reporting_just_req_latency
-    kind: metrics
-    adapter: prometheus
-    params:
-      metrics:
-      - descriptorName:  request_latency
-        value: response.latency | 300
-        labels:
-          source: source.name | "three"
-          target: target.name | "three"
-          service: api.name | "three"
-          method: api.method | "three"
-          response_code: response.http.code | 333
-  - name: prometheus_reporting_just_req_count
-    kind: metrics
-    adapter: prometheus
-    params:
-      metrics:
-      - descriptorName: request_count
-        # we want to increment this counter by 1 for each unique (source, target, service, method, response_code) tuple
-        value: "400"
-        labels:
-          source: source.name | "four"
-          target: target.name | "four"
-          service: api.name | "four"
-          method: api.method | "four"
-          response_code: response.http.code | 444

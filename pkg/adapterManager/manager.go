@@ -146,8 +146,9 @@ type invokeExecutorFunc func(evaluatedValue interface{}, executor aspect.Executo
 func executeScriptAndGetEvaluatedData(cfg configManager.Resolver, requestBag *attribute.MutableBag, cfgs []*configpb.Combined) []*evaluatedDataForAspect {
 
 	evaluatedDataForAspectList := make([]*evaluatedDataForAspect, 0, 100)
-
+	fmt.Println("** adapterManager: Invoking Javascript\n")
 	cfg.GetNormalizedConfig().Evalaute(requestBag, func(aspectName string, evaluatedValue interface{}) {
+		fmt.Printf("** Callback from Javascript received. aspectName : '%s', evaluatedValue interface : '%v'\n\n", aspectName, evaluatedValue)
 		for _, cfg := range cfgs {
 			if cfg.Aspect.Name == aspectName {
 				// Save all the evaluated data. We can then dispatch them to different aspects by fanning out to
