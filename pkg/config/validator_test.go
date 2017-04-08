@@ -30,8 +30,8 @@ import (
 
 type fakeVFinder struct {
 	ada   map[string]adapter.ConfigValidator
-	asp   map[string]AspectValidator
-	kinds []string
+	asp   map[Kind]AspectValidator
+	kinds KindSet
 }
 
 func (f *fakeVFinder) FindAdapterValidator(name string) (adapter.ConfigValidator, bool) {
@@ -39,12 +39,12 @@ func (f *fakeVFinder) FindAdapterValidator(name string) (adapter.ConfigValidator
 	return v, found
 }
 
-func (f *fakeVFinder) FindAspectValidator(name string) (AspectValidator, bool) {
-	v, found := f.asp[name]
+func (f *fakeVFinder) FindAspectValidator(kind Kind) (AspectValidator, bool) {
+	v, found := f.asp[kind]
 	return v, found
 }
 
-func (f *fakeVFinder) AdapterToAspectMapperFunc(impl string) []string {
+func (f *fakeVFinder) AdapterToAspectMapperFunc(builder string) KindSet {
 	return f.kinds
 }
 
@@ -77,17 +77,17 @@ func (a *ac) ValidateConfig(AspectParams, expr.Validator, descriptor.Finder) *ad
 type configTable struct {
 	cerr     *adapter.ConfigErrors
 	ada      map[string]adapter.ConfigValidator
-	asp      map[string]AspectValidator
+	asp      map[Kind]AspectValidator
 	nerrors  int
 	selector string
 	strict   bool
 	cfg      string
 }
 
-func newVfinder(ada map[string]adapter.ConfigValidator, asp map[string]AspectValidator) *fakeVFinder {
-	kinds := []string{}
-	for k := range ada {
-		kinds = append(kinds, k)
+func newVfinder(ada map[string]adapter.ConfigValidator, asp map[Kind]AspectValidator) *fakeVFinder {
+	var kinds KindSet
+	for k := range asp {
+		kinds = kinds.Set(k)
 	}
 	return &fakeVFinder{ada: ada, asp: asp, kinds: kinds}
 }
@@ -111,23 +111,23 @@ func TestConfigValidatorError(t *testing.T) {
 			},
 			nil, 1, "service.name == “*”", false, sGlobalConfig},
 		{nil, nil,
-			map[string]AspectValidator{
-				"metrics":  &ac{},
-				"metrics2": &ac{},
+			map[Kind]AspectValidator{
+				MetricsKind: &ac{},
+				QuotasKind:  &ac{},
 			},
 			0, "service.name == “*”", false, sSvcConfig},
 		{nil, nil,
-			map[string]AspectValidator{
-				"metrics":  &ac{},
-				"metrics2": &ac{},
+			map[Kind]AspectValidator{
+				MetricsKind: &ac{},
+				QuotasKind:  &ac{},
 			},
 			1, "service.name == “*”", true, sSvcConfig},
 		{cerr, nil,
-			map[string]AspectValidator{
-				"metrics2": &ac{ce: cerr},
+			map[Kind]AspectValidator{
+				QuotasKind: &ac{ce: cerr},
 			},
 			2, "service.name == “*”", false, sSvcConfig},
-		{ct.Append("/:metrics", UnknownValidator("metrics")),
+		{ct.Append("/:metrics", unknownValidator("metrics")),
 			nil, nil, 2, "\"\"", false, sSvcConfig},
 	}
 
@@ -164,7 +164,7 @@ func TestFullConfigValidator(tt *testing.T) {
 	ctable := []struct {
 		cerr     *adapter.ConfigError
 		ada      map[string]adapter.ConfigValidator
-		asp      map[string]AspectValidator
+		asp      map[Kind]AspectValidator
 		selector string
 		strict   bool
 		cfg      string
@@ -176,10 +176,10 @@ func TestFullConfigValidator(tt *testing.T) {
 				"metrics":     &lc{},
 				"listchecker": &lc{},
 			},
-			map[string]AspectValidator{
-				"denyChecker": &ac{},
-				"metrics":     &ac{},
-				"listchecker": &ac{},
+			map[Kind]AspectValidator{
+				DenialsKind: &ac{},
+				MetricsKind: &ac{},
+				ListsKind:   &ac{},
 			},
 			"service.name == “*”", false, sSvcConfig2, nil},
 		{nil,
@@ -188,22 +188,22 @@ func TestFullConfigValidator(tt *testing.T) {
 				"metrics":     &lc{},
 				"listchecker": &lc{},
 			},
-			map[string]AspectValidator{
-				"denyChecker": &ac{},
-				"metrics":     &ac{},
-				"listchecker": &ac{},
+			map[Kind]AspectValidator{
+				DenialsKind: &ac{},
+				MetricsKind: &ac{},
+				ListsKind:   &ac{},
 			},
 			"", false, sSvcConfig2, nil},
-		{&adapter.ConfigError{Field: "NamedAdapter", Underlying: fmt.Errorf("listchecker//denychecker.2 not available")},
+		{&adapter.ConfigError{Field: "NamedAdapter", Underlying: fmt.Errorf("lists//denychecker.2 not available")},
 			map[string]adapter.ConfigValidator{
 				"denyChecker": &lc{},
 				"metrics":     &lc{},
 				"listchecker": &lc{},
 			},
-			map[string]AspectValidator{
-				"denyChecker": &ac{},
-				"metrics":     &ac{},
-				"listchecker": &ac{},
+			map[Kind]AspectValidator{
+				DenialsKind: &ac{},
+				MetricsKind: &ac{},
+				ListsKind:   &ac{},
 			},
 			"", false, sSvcConfig3, nil},
 		{&adapter.ConfigError{Field: ":Selector service.name == “*”", Underlying: fmt.Errorf("invalid expression")},
@@ -212,10 +212,10 @@ func TestFullConfigValidator(tt *testing.T) {
 				"metrics":     &lc{},
 				"listchecker": &lc{},
 			},
-			map[string]AspectValidator{
-				"denyChecker": &ac{},
-				"metrics":     &ac{},
-				"listchecker": &ac{},
+			map[Kind]AspectValidator{
+				DenialsKind: &ac{},
+				MetricsKind: &ac{},
+				ListsKind:   &ac{},
 			},
 			"service.name == “*”", false, sSvcConfig1, fmt.Errorf("invalid expression")},
 	}
@@ -268,7 +268,7 @@ func TestConfigParseError(t *testing.T) {
 }
 
 func TestDecoderError(t *testing.T) {
-	err := Decode(make(chan int), nil, true)
+	err := decode(make(chan int), nil, true)
 	if err == nil {
 		t.Error("Expected json encode error")
 	}
@@ -282,7 +282,7 @@ adapters:
     kind: denials
     impl: denyChecker
     params:
-      check_attribute: src.ip
+      check_expression: src.ip
       blacklist: true
 `
 const sGlobalConfig = sGlobalConfigValid + `
@@ -310,7 +310,7 @@ revision: "2022"
 rules:
 - selector: service.name == “*”
   aspects:
-  - kind: listchecker
+  - kind: lists
     inputs: {}
     params:
 `
@@ -320,7 +320,7 @@ revision: "2022"
 rules:
 - selector: service.name == “*”
   aspects:
-  - kind: listchecker
+  - kind: lists
     inputs: {}
     params:
     adapter: denychecker.2
@@ -335,17 +335,17 @@ rules:
     adapter: ""
     inputs: {}
     params:
-      check_attribute: src.ip
+      check_expression: src.ip
       blacklist: true
       unknown_field: true
   rules:
   - selector: src.name == "abc"
     aspects:
-    - kind: metrics2
+    - kind: quotas
       adapter: ""
       inputs: {}
       params:
-        check_attribute: src.ip
+        check_expression: src.ip
         blacklist: true
 `
 
@@ -391,4 +391,7 @@ func (e *fakeExpr) EvalPredicate(mapExpression string, attrs attribute.Bag) (boo
 func (e *fakeExpr) Validate(expression string) error { return e.err }
 func (e *fakeExpr) TypeCheck(string, expr.AttributeDescriptorFinder) (dpb.ValueType, error) {
 	return dpb.VALUE_TYPE_UNSPECIFIED, e.err
+}
+func (e *fakeExpr) AssertType(string, expr.AttributeDescriptorFinder, dpb.ValueType) error {
+	return e.err
 }

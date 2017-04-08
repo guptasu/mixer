@@ -12,7 +12,7 @@ go_repositories()
 
 git_repository(
     name = "org_pubref_rules_protobuf",
-    commit = "d42e895387c658eda90276aea018056fcdcb30e4", # Mar 07 2017 (gogo* support)
+    commit = "9ede1dbc38f0b89ae6cd8e206a22dd93cc1d5637", # Mar 31 2017 (gogo* support)
     remote = "https://github.com/pubref/rules_protobuf",
 )
 
@@ -114,7 +114,7 @@ new_git_repository(
 
 new_go_repository(
     name = "org_golang_google_grpc",
-    commit = "708a7f9f3283aa2d4f6132d287d78683babe55c8", # Dec 5, 2016 (v1.0.5)
+    commit = "cdee119ee21e61eef7093a41ba148fa83585e143", # Mar 14, 2017 (v1.2.0)
     importpath = "google.golang.org/grpc",
 )
 
@@ -254,4 +254,22 @@ new_go_repository(
     name = "com_github_cactus_statsd_client",
     commit = "91c326c3f7bd20f0226d3d1c289dd9f8ce28d33d", # release 3.1.0, 5/30/2016
     importpath = "github.com/cactus/go-statsd-client",
+)
+
+new_go_repository(
+    name = "com_github_redis_client",
+    commit = "1ac54a28f5934ea5e08f588647e734aba2383cb8", # Jan 28, 2017 (no releases)
+    importpath = "github.com/mediocregopher/radix.v2",
+)
+
+new_go_repository(
+    name = "com_github_mini_redis",
+    commit = "bfdf65a73693a032fe06492c5ac63ac08ccf5b7d", # March 25, 2017 (no releases)
+    importpath = "github.com/alicebob/miniredis",
+)
+
+new_go_repository(
+    name = "com_github_bsm_redeo",
+    commit = "1ce09fc76693fb3c1ca9b529c66f38920beb6fb8", # Aug 17, 2016 (no releases)
+    importpath = "github.com/bsm/redeo",
 )

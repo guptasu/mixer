@@ -30,7 +30,7 @@ type mtest struct {
 	scContent string
 	sc        string
 	ada       map[string]adapter.ConfigValidator
-	asp       map[string]config.AspectValidator
+	asp       map[config.Kind]config.AspectValidator
 	errStr    string
 }
 

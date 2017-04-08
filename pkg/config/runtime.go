@@ -23,7 +23,7 @@ import (
 )
 
 type (
-	// Runtime represents the runtime view of the config.
+	// Runtime represents the Runtime view of the config.
 	// It is pre-validated and immutable.
 	// It can be safely used concurrently.
 	Runtime struct {
@@ -33,9 +33,6 @@ type (
 		// Java Script representation of the SC
 		NormalizedConfig NormalizedConfig
 	}
-
-	// AspectSet is a set of aspects by name.
-	AspectSet map[string]bool
 )
 
 // NewRuntime returns a Runtime object given a validated config and a predicate eval.
@@ -46,17 +43,35 @@ func NewRuntime(v *Validated, evaluator expr.PredicateEvaluator) *Runtime {
 	}
 }
 
+// ResolveFn is a function that returns a list of Combined configs for an
+// attribute bag and aspect kind set pair. It is used, at Runtime, to retrieve
+// the set of configs that apply to an operation.
+type ResolveFn func(bag attribute.Bag, set KindSet) ([]*pb.Combined, error)
+
 // Resolve returns a list of CombinedConfig given an attribute bag.
 // It will only return config from the requested set of aspects.
 // For example the Check handler and Report handler will request
 // a disjoint set of aspects check: {iplistChecker, iam}, report: {Log, metrics}
-func (r *Runtime) Resolve(bag attribute.Bag, aspectSet AspectSet) (dlist []*pb.Combined, err error) {
+func (r *Runtime) Resolve(bag attribute.Bag, kindSet KindSet) (dlist []*pb.Combined, err error) {
 	if glog.V(2) {
-		glog.Infof("resolving for: %s", aspectSet)
+		glog.Infof("resolving for: %s", kindSet)
 		defer func() { glog.Infof("resolved (err=%v): %s", err, dlist) }()
 	}
 	dlist = make([]*pb.Combined, 0, r.numAspects)
-	return r.resolveRules(bag, aspectSet, r.serviceConfig.GetRules(), "/", dlist)
+	return r.resolveRules(bag, kindSet, r.serviceConfig.GetRules(), "/", dlist, false /* conditional full resolve */)
+}
+
+// ResolveUnconditional returns the list of CombinedConfigs for the supplied
+// attributes and kindset based on resolution of unconditional rules. That is,
+// it only attempts to find aspects in rules that have an empty selector. This
+// method is primarily used for preprocess aspect configuration retrieval.
+func (r *Runtime) ResolveUnconditional(bag attribute.Bag, set KindSet) (out []*pb.Combined, err error) {
+	if glog.V(2) {
+		glog.Infof("resolving (unconditional) for: %s", set)
+		defer func() { glog.Infof("resolved (unconditional, err=%v): %s", err, out) }()
+	}
+	out = make([]*pb.Combined, 0, r.numAspects)
+	return r.resolveRules(bag, set, r.serviceConfig.GetRules(), "/", out, true /* unconditional resolve */)
 }
 
 func (r *Runtime) GetNormalizedConfig() (NormalizedConfig) {
@@ -72,7 +87,9 @@ func (r *Runtime) evalPredicate(selector string, bag attribute.Bag) (bool, error
 }
 
 // resolveRules recurses through the config struct and returns a list of combined aspects
-func (r *Runtime) resolveRules(bag attribute.Bag, aspectSet AspectSet, rules []*pb.AspectRule, path string, dlist []*pb.Combined) ([]*pb.Combined, error) {
+func (r *Runtime) resolveRules(bag attribute.Bag, kindSet KindSet, rules []*pb.AspectRule,
+	path string, dlist []*pb.Combined, onlyEmptySelectors bool) ([]*pb.Combined, error) {
+
 	var selected bool
 	var lerr error
 	var err error
@@ -81,6 +98,10 @@ func (r *Runtime) resolveRules(bag attribute.Bag, aspectSet AspectSet, rules []*
 		glog.V(3).Infof("resolveRules (%v) ==> %v ", rule, path)
 
 		sel := rule.GetSelector()
+
+		if sel != "" && onlyEmptySelectors {
+			continue
+		}
 		if selected, lerr = r.evalPredicate(sel, bag); lerr != nil {
 			err = multierror.Append(err, lerr)
 			continue
@@ -88,21 +109,23 @@ func (r *Runtime) resolveRules(bag attribute.Bag, aspectSet AspectSet, rules []*
 		if !selected {
 			continue
 		}
+
 		path = path + "/" + sel
 		for _, aa := range rule.GetAspects() {
-			if !aspectSet[aa.Kind] {
-				glog.V(3).Infof("Aspect %s not selected [%v]", aa.Kind, aspectSet)
+			k, ok := ParseKind(aa.Kind)
+			if !ok || !kindSet.IsSet(k) {
+				glog.V(3).Infof("Aspect %s not selected [%v]", aa.Kind, kindSet)
 				continue
 			}
-			adp := r.adapterByName[adapterKey{aa.Kind, aa.Adapter}]
+			adp := r.adapterByName[adapterKey{k, aa.Adapter}]
 			glog.V(2).Infof("selected aspect %s -> %s", aa.Kind, adp)
-			dlist = append(dlist, &pb.Combined{adp, aa})
+			dlist = append(dlist, &pb.Combined{Builder: adp, Aspect: aa})
 		}
 		rs := rule.GetRules()
 		if len(rs) == 0 {
 			continue
 		}
-		if dlist, lerr = r.resolveRules(bag, aspectSet, rs, path, dlist); lerr != nil {
+		if dlist, lerr = r.resolveRules(bag, kindSet, rs, path, dlist, onlyEmptySelectors); lerr != nil {
 			err = multierror.Append(err, lerr)
 		}
 	}

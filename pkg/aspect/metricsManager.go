@@ -54,52 +54,14 @@ func newMetricsManager() ReportManager {
 }
 
 func (m *metricsManager) NewReportExecutor(c *cpb.Combined, a adapter.Builder, env adapter.Env, df descriptor.Finder) (ReportExecutor, error) {
-	//params := c.Aspect.Params.(*aconfig.MetricsParams)
-
-	// TODO: get descriptors from config
-	// TODO: sync these schemas with the new standardized metric schemas.
-	desc := []*dpb.MetricDescriptor{
-		{
-			Name:        "request_count",
-			Kind:        dpb.COUNTER,
-			Value:       dpb.INT64,
-			Description: "request count by source, target, service, and code",
-			Labels: []*dpb.LabelDescriptor{
-				{Name: "source", ValueType: dpb.STRING},
-				{Name: "target", ValueType: dpb.STRING},
-				{Name: "service", ValueType: dpb.STRING},
-				{Name: "method", ValueType: dpb.STRING},
-				{Name: "response_code", ValueType: dpb.INT64},
-			},
-		},
-		{
-			Name:        "request_latency",
-			Kind:        dpb.COUNTER, // TODO: nail this down; as is we'll have to do post-processing
-			Value:       dpb.INT64,
-			Description: "request latency by source, target, and service",
-			Labels: []*dpb.LabelDescriptor{
-				{Name: "source", ValueType: dpb.STRING},
-				{Name: "target", ValueType: dpb.STRING},
-				{Name: "service", ValueType: dpb.STRING},
-				{Name: "method", ValueType: dpb.STRING},
-				{Name: "response_code", ValueType: dpb.INT64},
-			},
-		},
-	}
+	params := c.Aspect.Params.(*aconfig.MetricsParams)
 
 	metadata := make(map[string]*metricInfo)
-	defs := make(map[string]*adapter.MetricDefinition, len(desc))
-	for _, d := range desc {
-
-
-		// TODO: once we plumb descriptors into the validation, remove this err: no descriptor should make it through validation
-		// if it cannot be converted into a MetricDefinition, so we should never have to handle the error case.
-		def, err := metricDefinitionFromProto(d)
-		if err != nil {
-			_ = env.Logger().Errorf("Failed to convert metric descriptor '%s' to definition with err: %s; skipping it.", d.Name, err)
-			continue
-		}
-
+	defs := make(map[string]*adapter.MetricDefinition, len(params.Metrics))
+	for _, metric := range params.Metrics {
+		// we ignore the error as config validation confirms both that the metric exists and that it can
+		// be converted safely into its definition
+		def, _ := metricDefinitionFromProto(df.GetMetric(metric.DescriptorName))
 		defs[def.Name] = def
 		metadata[def.Name] = &metricInfo{
 			definition: def,
@@ -113,16 +75,28 @@ func (m *metricsManager) NewReportExecutor(c *cpb.Combined, a adapter.Builder, e
 	return &metricsExecutor{b.Name(), asp, metadata}, nil
 }
 
-func (*metricsManager) Kind() Kind                         { return MetricsKind }
+func (*metricsManager) Kind() config.Kind                  { return config.MetricsKind }
 func (*metricsManager) DefaultConfig() config.AspectParams { return &aconfig.MetricsParams{} }
 
-func (*metricsManager) ValidateConfig(config.AspectParams, expr.Validator, descriptor.Finder) (ce *adapter.ConfigErrors) {
-	// TODO: we need to be provided the metric descriptors in addition to the metrics themselves here, so we can do type assertions.
-	// We also need some way to assert the type of the result of evaluating an expression, but we don't have any attributes or an
-	// evaluator on hand.
+func (*metricsManager) ValidateConfig(c config.AspectParams, v expr.Validator, df descriptor.Finder) (ce *adapter.ConfigErrors) {
+	cfg := c.(*aconfig.MetricsParams)
+	for _, metric := range cfg.Metrics {
+		desc := df.GetMetric(metric.DescriptorName)
+		if desc == nil {
+			ce = ce.Appendf("Metrics", "could not find a descriptor for the metric '%s'", metric.DescriptorName)
+			continue // we can't do any other validation without the descriptor
+		}
 
-	// TODO: verify all descriptors can be marshalled into istio structs (DefinitionFromProto)
+		if err := v.AssertType(metric.Value, df, desc.Value); err != nil {
+			ce = ce.Appendf(fmt.Sprintf("Metric[%s].Value", metric.DescriptorName), "error type checking label %s: %v", err)
+		}
+		ce = ce.Extend(validateLabels(fmt.Sprintf("Metrics[%s].Labels", desc.Name), metric.Labels, desc.Labels, v, df))
 
+		// TODO: this doesn't feel like quite the right spot to do this check, but it's the best we have ¯\_(ツ)_/¯
+		if _, err := metricDefinitionFromProto(desc); err != nil {
+			ce = ce.Appendf(fmt.Sprintf("Descriptor[%s]", desc.Name), "failed to marshal descriptor into its adapter representation with err: %v", err)
+		}
+	}
 	return
 }
 
@@ -191,20 +165,6 @@ func (w *metricsExecutor) Close() error {
 	return w.aspect.Close()
 }
 
-func evalAll(expressions map[string]string, attrs attribute.Bag, eval expr.Evaluator) (map[string]interface{}, error) {
-	result := &multierror.Error{}
-	labels := make(map[string]interface{}, len(expressions))
-	for label, texpr := range expressions {
-		val, err := eval.Eval(texpr, attrs)
-		if err != nil {
-			result = multierror.Append(result, fmt.Errorf("failed to construct value for label '%s' with err: %s", label, err))
-			continue
-		}
-		labels[label] = val
-	}
-	return labels, result.ErrorOrNil()
-}
-
 func metricDefinitionFromProto(desc *dpb.MetricDescriptor) (*adapter.MetricDefinition, error) {
 	labels := make(map[string]adapter.LabelType, len(desc.Labels))
 	for _, label := range desc.Labels {
@@ -227,13 +187,4 @@ func metricDefinitionFromProto(desc *dpb.MetricDescriptor) (*adapter.MetricDefin
 		Kind:        kind,
 		Labels:      labels,
 	}, nil
-}
-
-func findMetric(defs []*aconfig.MetricsParams_Metric, name string) (*aconfig.MetricsParams_Metric, bool) {
-	for _, def := range defs {
-		if def.DescriptorName == name {
-			return def, true
-		}
-	}
-	return nil, false
 }
