@@ -58,10 +58,11 @@ func (m *metricsManager) NewReportExecutor(c *cpb.Combined, a adapter.Builder, e
 
 	metadata := make(map[string]*metricInfo)
 	defs := make(map[string]*adapter.MetricDefinition, len(params.Metrics))
-	for _, metric := range params.Metrics {
+	desNames := []string {"request_count","request_latency"}
+	for _, d := range desNames {
 		// we ignore the error as config validation confirms both that the metric exists and that it can
 		// be converted safely into its definition
-		def, _ := metricDefinitionFromProto(df.GetMetric(metric.DescriptorName))
+		def, _ := metricDefinitionFromProto(df.GetMetric(d))
 		defs[def.Name] = def
 		metadata[def.Name] = &metricInfo{
 			definition: def,
