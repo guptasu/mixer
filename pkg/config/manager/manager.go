@@ -16,6 +16,7 @@ package configManager
 
 import (
 	"crypto/sha1"
+	"fmt"
 	"github.com/golang/glog"
 	"io/ioutil"
 	"istio.io/mixer/pkg/adapter"
@@ -27,7 +28,6 @@ import (
 	"istio.io/mixer/pkg/expr"
 	"sync"
 	"time"
-	"fmt"
 )
 
 // Resolver resolves configuration to a list of combined configs.
@@ -37,7 +37,7 @@ type Resolver interface {
 	// ResolveUnconditional resolves configuration for unconditioned rules.
 	// Unconditioned rules are those rules with the empty selector ("").
 	ResolveUnconditional(bag attribute.Bag, kindSet config.KindSet) ([]*pb.Combined, error)
-GetNormalizedConfig() config.NormalizedConfig
+	GetNormalizedConfig() config.NormalizedConfig
 }
 
 // ChangeListener listens for config change notifications.
@@ -59,7 +59,7 @@ type Manager struct {
 	globalConfig     string
 	serviceConfig    string
 	ticker           *time.Ticker
-userTypScrpt     string
+	userTypScrpt     string
 
 	cl    []ChangeListener
 	scSHA [sha1.Size]byte
