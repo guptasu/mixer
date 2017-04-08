@@ -8,6 +8,7 @@ go_library(
         "kind.go",
         "runtime.go",
         "validator.go",
+        "manager.go",
         "normalizedConfig.go",
     ],
     deps = [
@@ -31,6 +32,7 @@ go_test(
         "kind_test.go",
         "runtime_test.go",
         "validator_test.go",
+        "manager_test.go",
     ],
     library = ":go_default_library",
     deps = [

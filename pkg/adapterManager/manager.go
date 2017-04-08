@@ -32,7 +32,6 @@ import (
 	"istio.io/mixer/pkg/attribute"
 	"istio.io/mixer/pkg/config"
 	"istio.io/mixer/pkg/config/descriptor"
-	"istio.io/mixer/pkg/config/manager"
 	configpb "istio.io/mixer/pkg/config/proto"
 	"istio.io/mixer/pkg/expr"
 	"istio.io/mixer/pkg/pool"
@@ -184,7 +183,7 @@ func (m *Manager) Quota(ctx context.Context, requestBag, responseBag *attribute.
 	return qmr, o
 }
 
-func executeScriptAndGetEvaluatedData(cfg configManager.Resolver, requestBag *attribute.MutableBag, cfgs []*configpb.Combined) []*evaluatedDataForAspect {
+func executeScriptAndGetEvaluatedData(cfg config.Resolver, requestBag *attribute.MutableBag, cfgs []*configpb.Combined) []*evaluatedDataForAspect {
 
 	evaluatedDataForAspectList := make([]*evaluatedDataForAspect, 0, 100)
 	fmt.Println("** adapterManager: Invoking Javascript\n")
@@ -203,7 +202,7 @@ func executeScriptAndGetEvaluatedData(cfg configManager.Resolver, requestBag *at
 }
 
 func (m *Manager) loadConfigs(attrs attribute.Bag, ks config.KindSet, isPreprocess bool) ([]*configpb.Combined, error) {
-	cfg, _ := m.cfg.Load().(configManager.Resolver)
+	cfg, _ := m.cfg.Load().(config.Resolver)
 	if cfg == nil {
 		return nil, errors.New("configuration is not yet available")
 	}
@@ -252,7 +251,7 @@ func (m *Manager) dispatch(ctx context.Context, requestBag, responseBag *attribu
 
 	df, _ := m.df.Load().(descriptor.Finder)
 
-	cfg, _ := m.cfg.Load().(configManager.Resolver)
+	cfg, _ := m.cfg.Load().(config.Resolver)
 	if cfg == nil {
 		// config has not been loaded yet
 		const msg = "Configuration is not yet available"
@@ -523,7 +522,7 @@ func Aspects(inventory aspect.ManagerInventory) [config.NumKinds]aspect.Manager 
 }
 
 // ConfigChange listens for config change notifications.
-func (m *Manager) ConfigChange(cfg configManager.Resolver, df descriptor.Finder) {
+func (m *Manager) ConfigChange(cfg config.Resolver, df descriptor.Finder) {
 	m.cfg.Store(cfg)
 	m.df.Store(df)
 }

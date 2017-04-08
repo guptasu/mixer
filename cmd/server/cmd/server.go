@@ -35,7 +35,8 @@ import (
 	"istio.io/mixer/pkg/adapterManager"
 	"istio.io/mixer/pkg/api"
 	"istio.io/mixer/pkg/aspect"
-	"istio.io/mixer/pkg/config/manager"
+	"istio.io/mixer/pkg/config"
+	"istio.io/mixer/pkg/cnfgNormalizer"
 	"istio.io/mixer/pkg/expr"
 	"istio.io/mixer/pkg/pool"
 	"istio.io/mixer/pkg/tracing"
@@ -129,9 +130,9 @@ func runServer(sa *serverArgs, printf, fatalf shared.FormatFn) {
 	// get aspect registry with proper aspect --> api mappings
 	eval := expr.NewCEXLEvaluator()
 	adapterMgr := adapterManager.NewManager(adapter.Inventory(), aspect.Inventory(), eval, gp, adapterGP)
-	configManager := configManager.NewManager(eval, adapterMgr.AspectValidatorFinder, adapterMgr.BuilderValidatorFinder,
+	configManager := config.NewManager(eval, adapterMgr.AspectValidatorFinder, adapterMgr.BuilderValidatorFinder,
 		adapterMgr.SupportedKinds,
-		sa.globalConfigFile, sa.serviceConfigFile, time.Second*time.Duration(sa.configFetchIntervalSec), sa.userTypeScriptFile)
+		sa.globalConfigFile, sa.serviceConfigFile, time.Second*time.Duration(sa.configFetchIntervalSec), sa.userTypeScriptFile, cnfgNormalizer.NormalizedJavascriptConfigNormalizer{})
 
 
 	var serverCert *tls.Certificate

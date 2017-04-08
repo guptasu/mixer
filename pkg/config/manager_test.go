@@ -12,14 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package configManager
+package config
 
 import (
 	"strings"
 	"sync"
 	"testing"
 	"time"
-	"istio.io/mixer/pkg/config"
 	"istio.io/mixer/pkg/adapter"
 	"istio.io/mixer/pkg/config/descriptor"
 )
@@ -30,7 +29,7 @@ type mtest struct {
 	scContent string
 	sc        string
 	ada       map[string]adapter.ConfigValidator
-	asp       map[config.Kind]config.AspectValidator
+	asp       map[Kind]AspectValidator
 	errStr    string
 }
 

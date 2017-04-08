@@ -22,3 +22,10 @@ type NormalizedConfig interface {
 		callBack func(kind string, val interface{}))
 }
 
+type ConfigNormalizer interface {
+	Normalize(vd *Validated, fileLocation string) NormalizedConfig
+	GetNormalizedConfig() NormalizedConfig
+	ReloadNormalizedConfigFile(fileLocation string) NormalizedConfig
+}
+
+

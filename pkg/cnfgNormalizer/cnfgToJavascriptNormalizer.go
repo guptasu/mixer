@@ -36,6 +36,34 @@ type NormalizedJavascriptConfig struct {
 	JavaScript string
 }
 
+type NormalizedJavascriptConfigNormalizer struct {
+	normalizedJavascriptConfig NormalizedJavascriptConfig
+}
+
+func (n NormalizedJavascriptConfigNormalizer) Normalize(vd *config.Validated, fileLocation string) config.NormalizedConfig {
+	typeDefTSCode := getPredefinedTypesForDescriptors(vd)
+
+	attributeTypeDeclaration := getAttributesDeclaration()
+
+	fileForTypesFromAspectDescriptors := "TypesFromAspectDescriptors.ts"
+	fileForWellKnownAttribs := "WellKnownAttribs.ts"
+	userTSAllCode := getUserTSCodeFile(vd, fileForTypesFromAspectDescriptors, fileForWellKnownAttribs);
+
+	generatedJS := getJS(userTSAllCode, typeDefTSCode, attributeTypeDeclaration, fileForTypesFromAspectDescriptors, fileForWellKnownAttribs, fileLocation)
+
+	n.normalizedJavascriptConfig = NormalizedJavascriptConfig{JavaScript: generatedJS}
+	return n.normalizedJavascriptConfig
+}
+
+func (n NormalizedJavascriptConfigNormalizer) GetNormalizedConfig() config.NormalizedConfig {
+	return n.normalizedJavascriptConfig;
+}
+
+func (n NormalizedJavascriptConfigNormalizer) ReloadNormalizedConfigFile(fileLocation string) config.NormalizedConfig {
+	n.normalizedJavascriptConfig = NormalizedJavascriptConfig{JavaScript: GenerateJsFromTypeScript(fileLocation)}
+	return n.normalizedJavascriptConfig
+}
+
 // invoked at runtime
 func (n NormalizedJavascriptConfig) Evalaute(requestBag *attribute.MutableBag,
 	callBack func(kind string, val interface{})) {
@@ -52,22 +80,6 @@ func (n NormalizedJavascriptConfig) Evalaute(requestBag *attribute.MutableBag,
 	if errFromJS != nil {
 		fmt.Println("ERROR FROM JS", errFromJS)
 	}
-}
-
-// invoked at configuration time
-func Normalize(vd *config.Validated, fileLocation string) config.NormalizedConfig {
-
-	typeDefTSCode := getPredefinedTypesForDescriptors(vd)
-
-	attributeTypeDeclaration := getAttributesDeclaration()
-
-	fileForTypesFromAspectDescriptors := "TypesFromAspectDescriptors.ts"
-	fileForWellKnownAttribs := "WellKnownAttribs.ts"
-	userTSAllCode := getUserTSCodeFile(vd, fileForTypesFromAspectDescriptors, fileForWellKnownAttribs);
-
-	generatedJS := getJS(userTSAllCode, typeDefTSCode, attributeTypeDeclaration, fileForTypesFromAspectDescriptors, fileForWellKnownAttribs, fileLocation)
-
-	return NormalizedJavascriptConfig{JavaScript: generatedJS}
 }
 
 func getUserTSCodeFile(vd *config.Validated, imports ...string) string {
