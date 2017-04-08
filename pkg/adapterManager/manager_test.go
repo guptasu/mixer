@@ -134,7 +134,7 @@ func (f *fakeCheckExecutor) Execute(attrs attribute.Bag, mapper expr.Evaluator) 
 }
 func (f *fakeCheckExecutor) Close() error { return nil }
 
-func (f *fakeReportExecutor) Execute(attrs attribute.Bag, mapper expr.Evaluator) (output rpc.Status) {
+func (f *fakeReportExecutor) Execute(evaluatedValue interface{}, attrs attribute.Bag, mapper expr.Evaluator) (output rpc.Status) {
 	f.called++
 	return
 }
@@ -599,7 +599,7 @@ func TestExecute(t *testing.T) {
 		m.cfg.Store(&fakeResolver{cfg, nil})
 
 		o := m.dispatch(context.Background(), nil, nil, cfg,
-			func(executor aspect.Executor, evaluator expr.Evaluator) rpc.Status {
+			func(evaluatedValue interface{}, executor aspect.Executor, evaluator expr.Evaluator) rpc.Status {
 				return status.OK
 			})
 		if c.inErr != nil && status.IsOK(o) {

@@ -26,13 +26,14 @@ import (
 
 	"github.com/golang/glog"
 	rpc "github.com/googleapis/googleapis/google/rpc"
-
 	"istio.io/mixer/pkg/adapter"
 	"istio.io/mixer/pkg/aspect"
+
 	"istio.io/mixer/pkg/attribute"
 	"istio.io/mixer/pkg/config"
 	"istio.io/mixer/pkg/config/descriptor"
-	cpb "istio.io/mixer/pkg/config/proto"
+	"istio.io/mixer/pkg/config/manager"
+	configpb "istio.io/mixer/pkg/config/proto"
 	"istio.io/mixer/pkg/expr"
 	"istio.io/mixer/pkg/pool"
 	"istio.io/mixer/pkg/status"
@@ -71,6 +72,7 @@ type Manager struct {
 
 	// Configs for the aspects that'll be used to serve each API method.
 	cfg atomic.Value
+	js  atomic.Value
 	df  atomic.Value
 
 	// protects cache
@@ -86,6 +88,11 @@ type builderFinder interface {
 
 	// SupportedKinds returns kinds supported by a builder.
 	SupportedKinds(builder string) config.KindSet
+}
+
+type evaluatedDataForAspect struct {
+	cfg   *configpb.Combined
+	value interface{}
 }
 
 // NewManager creates a new adapterManager.
@@ -134,7 +141,7 @@ func (m *Manager) Check(ctx context.Context, requestBag, responseBag *attribute.
 		return status.WithError(err)
 	}
 	return m.dispatch(ctx, requestBag, responseBag, configs,
-		func(executor aspect.Executor, evaluator expr.Evaluator) rpc.Status {
+		func(evaluatedValue interface{}, executor aspect.Executor, evaluator expr.Evaluator) rpc.Status {
 			cw := executor.(aspect.CheckExecutor)
 			return cw.Execute(requestBag, evaluator)
 		})
@@ -148,9 +155,9 @@ func (m *Manager) Report(ctx context.Context, requestBag, responseBag *attribute
 		return status.WithError(err)
 	}
 	return m.dispatch(ctx, requestBag, responseBag, configs,
-		func(executor aspect.Executor, evaluator expr.Evaluator) rpc.Status {
+		func(evaluatedValue interface{}, executor aspect.Executor, evaluator expr.Evaluator) rpc.Status {
 			rw := executor.(aspect.ReportExecutor)
-			return rw.Execute(requestBag, evaluator)
+			return rw.Execute(evaluatedValue, requestBag, evaluator)
 		})
 }
 
@@ -167,7 +174,7 @@ func (m *Manager) Quota(ctx context.Context, requestBag, responseBag *attribute.
 	}
 
 	o := m.dispatch(ctx, requestBag, responseBag, configs,
-		func(executor aspect.Executor, evaluator expr.Evaluator) rpc.Status {
+		func(evaluatedValue interface{}, executor aspect.Executor, evaluator expr.Evaluator) rpc.Status {
 			qw := executor.(aspect.QuotaExecutor)
 			var o rpc.Status
 			o, qmr = qw.Execute(requestBag, evaluator, qma)
@@ -177,8 +184,26 @@ func (m *Manager) Quota(ctx context.Context, requestBag, responseBag *attribute.
 	return qmr, o
 }
 
-func (m *Manager) loadConfigs(attrs attribute.Bag, ks config.KindSet, isPreprocess bool) ([]*cpb.Combined, error) {
-	cfg, _ := m.cfg.Load().(config.Resolver)
+func executeScriptAndGetEvaluatedData(cfg configManager.Resolver, requestBag *attribute.MutableBag, cfgs []*configpb.Combined) []*evaluatedDataForAspect {
+
+	evaluatedDataForAspectList := make([]*evaluatedDataForAspect, 0, 100)
+	fmt.Println("** adapterManager: Invoking Javascript\n")
+	cfg.GetNormalizedConfig().Evalaute(requestBag, func(aspectName string, evaluatedValue interface{}) {
+		fmt.Printf("** Callback from Javascript received. aspectName : '%s', evaluatedValue interface : '%v'\n\n", aspectName, evaluatedValue)
+		for _, cfg := range cfgs {
+			if cfg.Aspect.Name == aspectName {
+				// Save all the evaluated data. We can then dispatch them to different aspects by fanning out to
+				// multiple go routines.
+				evaluatedDataForAspectList = append(evaluatedDataForAspectList, &evaluatedDataForAspect{cfg: cfg, value: evaluatedValue})
+			}
+		}
+	})
+
+	return evaluatedDataForAspectList
+}
+
+func (m *Manager) loadConfigs(attrs attribute.Bag, ks config.KindSet, isPreprocess bool) ([]*configpb.Combined, error) {
+	cfg, _ := m.cfg.Load().(configManager.Resolver)
 	if cfg == nil {
 		return nil, errors.New("configuration is not yet available")
 	}
@@ -205,7 +230,7 @@ func (m *Manager) Preprocess(ctx context.Context, requestBag, responseBag *attri
 		return status.WithError(err)
 	}
 	return m.dispatch(ctx, requestBag, responseBag, configs,
-		func(executor aspect.Executor, eval expr.Evaluator) rpc.Status {
+		func(evaluatedValue interface{}, executor aspect.Executor, eval expr.Evaluator) rpc.Status {
 			ppw := executor.(aspect.PreprocessExecutor)
 			result, rpcStatus := ppw.Execute(requestBag, eval)
 			if status.IsOK(rpcStatus) {
@@ -218,40 +243,48 @@ func (m *Manager) Preprocess(ctx context.Context, requestBag, responseBag *attri
 		})
 }
 
-type invokeExecutorFunc func(executor aspect.Executor, evaluator expr.Evaluator) rpc.Status
+type invokeExecutorFunc func(evaluatedValue interface{}, executor aspect.Executor, evaluator expr.Evaluator) rpc.Status
 
 // dispatch resolves config and invokes the specific set of aspects necessary to service the current request
-func (m *Manager) dispatch(ctx context.Context, requestBag, responseBag *attribute.MutableBag, cfgs []*cpb.Combined, invokeFunc invokeExecutorFunc) rpc.Status {
+func (m *Manager) dispatch(ctx context.Context, requestBag, responseBag *attribute.MutableBag, cfgs []*configpb.Combined, invokeFunc invokeExecutorFunc) rpc.Status {
 	// get a new context with the attribute bag attached
 	ctx = attribute.NewContext(ctx, requestBag)
 
 	df, _ := m.df.Load().(descriptor.Finder)
-	numCfgs := len(cfgs)
 
+	cfg, _ := m.cfg.Load().(configManager.Resolver)
+	if cfg == nil {
+		// config has not been loaded yet
+		const msg = "Configuration is not yet available"
+		glog.Error(msg)
+		return status.WithInternal(msg)
+	}
 	// TODO: consider implementing a fast path when there is only a single config.
 	//       we don't need to schedule goroutines, we could use the incoming attribute
 	//       bags without needing children & merging, etc.
 
+	evaluatedDataForAspectList := executeScriptAndGetEvaluatedData(cfg, requestBag, cfgs)
+	// This number is more than number of aspects since, there can be multiple calls for each descriptor within the aspect
+	totalCallsToAspect := len(evaluatedDataForAspectList)
 	// TODO: look into pooling both result array and channel, they're created per-request and are constant size for cfg lifetime.
-	results := make([]result, numCfgs)
-	resultChan := make(chan result, numCfgs)
+	results := make([]result, totalCallsToAspect)
+	resultChan := make(chan result, totalCallsToAspect)
 
-	// schedule all the work that needs to happen
-	for _, cfg := range cfgs {
-		c := cfg // ensure proper capture in the worker func below
+	for _, evaluatedDataForAspect := range evaluatedDataForAspectList {
+		tmpEvaluatedDataForAspect := evaluatedDataForAspect
 		m.gp.ScheduleWork(func() {
 			childRequestBag := requestBag.Child()
 			childResponseBag := responseBag.Child()
 
-			out := m.execute(ctx, c, childRequestBag, childResponseBag, df, invokeFunc)
-			resultChan <- result{c, out, childResponseBag}
+			out := m.execute(ctx, tmpEvaluatedDataForAspect.cfg, tmpEvaluatedDataForAspect.value, childRequestBag, childResponseBag, df, invokeFunc)
+			resultChan <- result{tmpEvaluatedDataForAspect.cfg, out, childResponseBag}
 
 			childRequestBag.Done()
 		})
 	}
 
 	// wait for all the work to be done or the context to be cancelled
-	for i := 0; i < numCfgs; i++ {
+	for i := 0; i < totalCallsToAspect; i++ {
 		select {
 		case <-ctx.Done():
 			if ctx.Err() == context.Canceled {
@@ -264,7 +297,7 @@ func (m *Manager) dispatch(ctx context.Context, requestBag, responseBag *attribu
 	}
 
 	// TODO: look into having a pool of these to avoid frequent allocs
-	bags := make([]*attribute.MutableBag, numCfgs)
+	bags := make([]*attribute.MutableBag, totalCallsToAspect)
 	for i, r := range results {
 		bags[i] = r.responseBag
 	}
@@ -310,13 +343,13 @@ func combineResults(results []result) rpc.Status {
 
 // result holds the values returned by the execution of an adapter
 type result struct {
-	cfg         *cpb.Combined
+	cfg         *configpb.Combined
 	status      rpc.Status
 	responseBag *attribute.MutableBag
 }
 
 // execute performs action described in the combined config using the attribute bag
-func (m *Manager) execute(ctx context.Context, cfg *cpb.Combined, requestBag, responseBag *attribute.MutableBag,
+func (m *Manager) execute(ctx context.Context, cfg *configpb.Combined, evaluatedValue interface{}, requestBag attribute.Bag, responseBag *attribute.MutableBag,
 	df descriptor.Finder, invokeFunc invokeExecutorFunc) (out rpc.Status) {
 	var mgr aspect.Manager
 	var found bool
@@ -351,7 +384,7 @@ func (m *Manager) execute(ctx context.Context, cfg *cpb.Combined, requestBag, re
 	// TODO: plumb ctx through asp.Execute
 	_ = ctx
 
-	return invokeFunc(executor, m.mapper)
+	return invokeFunc(evaluatedValue, executor, m.mapper)
 }
 
 // cacheKey is used to cache fully constructed aspects
@@ -363,7 +396,7 @@ type cacheKey struct {
 	aspectParamsSHA  [sha1.Size]byte
 }
 
-func newCacheKey(kind config.Kind, cfg *cpb.Combined) (*cacheKey, error) {
+func newCacheKey(kind config.Kind, cfg *configpb.Combined) (*cacheKey, error) {
 	ret := cacheKey{
 		kind: kind,
 		impl: cfg.Builder.GetImpl(),
@@ -394,7 +427,7 @@ func newCacheKey(kind config.Kind, cfg *cpb.Combined) (*cacheKey, error) {
 }
 
 // cacheGet gets an aspect executor from the cache, use adapter.Manager to construct an object in case of a cache miss
-func (m *Manager) cacheGet(cfg *cpb.Combined, mgr aspect.Manager, builder adapter.Builder, df descriptor.Finder) (executor aspect.Executor, err error) {
+func (m *Manager) cacheGet(cfg *configpb.Combined, mgr aspect.Manager, builder adapter.Builder, df descriptor.Finder) (executor aspect.Executor, err error) {
 	var key *cacheKey
 	if key, err = newCacheKey(mgr.Kind(), cfg); err != nil {
 		return nil, err
@@ -490,7 +523,7 @@ func Aspects(inventory aspect.ManagerInventory) [config.NumKinds]aspect.Manager 
 }
 
 // ConfigChange listens for config change notifications.
-func (m *Manager) ConfigChange(cfg config.Resolver, df descriptor.Finder) {
+func (m *Manager) ConfigChange(cfg configManager.Resolver, df descriptor.Finder) {
 	m.cfg.Store(cfg)
 	m.df.Store(df)
 }

@@ -17,7 +17,6 @@ package aspect
 import (
 	"fmt"
 	"time"
-
 	"github.com/golang/glog"
 	rpc "github.com/googleapis/googleapis/google/rpc"
 	multierror "github.com/hashicorp/go-multierror"
@@ -66,8 +65,6 @@ func (m *metricsManager) NewReportExecutor(c *cpb.Combined, a adapter.Builder, e
 		defs[def.Name] = def
 		metadata[def.Name] = &metricInfo{
 			definition: def,
-			value:      metric.Value,
-			labels:     metric.Labels,
 		}
 	}
 	b := a.(adapter.MetricsBuilder)
@@ -103,27 +100,44 @@ func (*metricsManager) ValidateConfig(c config.AspectParams, v expr.Validator, d
 	return
 }
 
-func (w *metricsExecutor) Execute(attrs attribute.Bag, mapper expr.Evaluator) rpc.Status {
+func printOldCodeOutput(descriptroName string, md *metricInfo, attrs attribute.Bag, mapper expr.Evaluator) {
+	metricValue2,err := mapper.Eval(md.value, attrs)
+	if err != nil {
+		fmt.Printf("failed to eval metric value for metric '%s' with err: %s--", descriptroName, err)
+	}
+	fmt.Println("** OLD CODE METRIC VALUE : \t\t\t\t", metricValue2)
+
+	labels, err := evalAll(md.labels, attrs, mapper)
+	if err != nil {
+		fmt.Printf("failed to eval labels for metric '%s' with err: %s", descriptroName, err)
+	}
+	fmt.Println("** OLD CODE LABELS : \t\t\t\t\t", labels)
+}
+
+func (w *metricsExecutor) Execute(evaluatedValue interface{}, attrs attribute.Bag, mapper expr.Evaluator) rpc.Status {
 	result := &multierror.Error{}
 	var values []adapter.Value
-
+	evaluatedMetricData := evaluatedValue.(map[string]interface{})
 	for name, md := range w.metadata {
-		metricValue, err := mapper.Eval(md.value, attrs)
-		if err != nil {
-			result = multierror.Append(result, fmt.Errorf("failed to eval metric value for metric '%s' with err: %s", name, err))
-			continue
+
+
+		if (evaluatedMetricData["descriptorName"].(string) != name) {
+			continue;
 		}
-		labels, err := evalAll(md.labels, attrs, mapper)
-		if err != nil {
-			result = multierror.Append(result, fmt.Errorf("failed to eval labels for metric '%s' with err: %s", name, err))
-			continue
-		}
+		// printOldCodeOutput(name, md, attrs, mapper) // for prototype debugging only
+		specificDescriptorEvaluatedMetricData := evaluatedMetricData["value"].(map[string]interface{})
+		metricValue := specificDescriptorEvaluatedMetricData["value"]
+
+		// TEMP HACK for Prototyping. Remove the value and everything else is labels
+		delete(specificDescriptorEvaluatedMetricData, "value")
+		specificDescriptorEvaluatedLabelsData := specificDescriptorEvaluatedMetricData
+		fmt.Printf("** MetricManager received Metric Value : %v and LABELS : %v\n\n", metricValue, specificDescriptorEvaluatedLabelsData)
 
 		// TODO: investigate either pooling these, or keeping a set around that has only its field's values updated.
 		// we could keep a map[metric name]value, iterate over the it updating only the fields in each value
 		values = append(values, adapter.Value{
 			Definition: md.definition,
-			Labels:     labels,
+			Labels:     specificDescriptorEvaluatedLabelsData,
 			// TODO: extract standard timestamp attributes for start/end once we det'm what they are
 			StartTime:   time.Now(),
 			EndTime:     time.Now(),

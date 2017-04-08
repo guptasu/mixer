@@ -25,6 +25,8 @@ gogoslick_proto_library(
     visibility = [
         "//pkg/aspect:__pkg__",
         "//pkg/config:__subpackages__",
+        "//pkg/adapterManager:__subpackages__",
+        "//pkg/cnfgNormalizer:__subpackages__",
     ],
     deps = [
         "@com_github_gogo_protobuf//gogoproto:go_default_library",

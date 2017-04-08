@@ -17,33 +17,34 @@ package config
 import (
 	"github.com/golang/glog"
 	multierror "github.com/hashicorp/go-multierror"
-
 	"istio.io/mixer/pkg/attribute"
 	pb "istio.io/mixer/pkg/config/proto"
 	"istio.io/mixer/pkg/expr"
 )
 
 type (
-	// runtime represents the runtime view of the config.
+	// Runtime represents the Runtime view of the config.
 	// It is pre-validated and immutable.
 	// It can be safely used concurrently.
-	runtime struct {
+	Runtime struct {
 		Validated
 		// used to evaluate selectors
 		eval expr.PredicateEvaluator
+		// Java Script representation of the SC
+		NormalizedConfig NormalizedConfig
 	}
 )
 
-// newRuntime returns a runtime object given a validated config and a predicate eval.
-func newRuntime(v *Validated, evaluator expr.PredicateEvaluator) *runtime {
-	return &runtime{
+// NewRuntime returns a Runtime object given a validated config and a predicate eval.
+func NewRuntime(v *Validated, evaluator expr.PredicateEvaluator) *Runtime {
+	return &Runtime{
 		Validated: *v,
 		eval:      evaluator,
 	}
 }
 
 // ResolveFn is a function that returns a list of Combined configs for an
-// attribute bag and aspect kind set pair. It is used, at runtime, to retrieve
+// attribute bag and aspect kind set pair. It is used, at Runtime, to retrieve
 // the set of configs that apply to an operation.
 type ResolveFn func(bag attribute.Bag, set KindSet) ([]*pb.Combined, error)
 
@@ -51,7 +52,7 @@ type ResolveFn func(bag attribute.Bag, set KindSet) ([]*pb.Combined, error)
 // It will only return config from the requested set of aspects.
 // For example the Check handler and Report handler will request
 // a disjoint set of aspects check: {iplistChecker, iam}, report: {Log, metrics}
-func (r *runtime) Resolve(bag attribute.Bag, kindSet KindSet) (dlist []*pb.Combined, err error) {
+func (r *Runtime) Resolve(bag attribute.Bag, kindSet KindSet) (dlist []*pb.Combined, err error) {
 	if glog.V(2) {
 		glog.Infof("resolving for: %s", kindSet)
 		defer func() { glog.Infof("resolved (err=%v): %s", err, dlist) }()
@@ -64,7 +65,7 @@ func (r *runtime) Resolve(bag attribute.Bag, kindSet KindSet) (dlist []*pb.Combi
 // attributes and kindset based on resolution of unconditional rules. That is,
 // it only attempts to find aspects in rules that have an empty selector. This
 // method is primarily used for preprocess aspect configuration retrieval.
-func (r *runtime) ResolveUnconditional(bag attribute.Bag, set KindSet) (out []*pb.Combined, err error) {
+func (r *Runtime) ResolveUnconditional(bag attribute.Bag, set KindSet) (out []*pb.Combined, err error) {
 	if glog.V(2) {
 		glog.Infof("resolving (unconditional) for: %s", set)
 		defer func() { glog.Infof("resolved (unconditional, err=%v): %s", err, out) }()
@@ -73,7 +74,11 @@ func (r *runtime) ResolveUnconditional(bag attribute.Bag, set KindSet) (out []*p
 	return r.resolveRules(bag, set, r.serviceConfig.GetRules(), "/", out, true /* unconditional resolve */)
 }
 
-func (r *runtime) evalPredicate(selector string, bag attribute.Bag) (bool, error) {
+func (r *Runtime) GetNormalizedConfig() (NormalizedConfig) {
+	return r.NormalizedConfig
+}
+
+func (r *Runtime) evalPredicate(selector string, bag attribute.Bag) (bool, error) {
 	// empty selector always selects
 	if selector == "" {
 		return true, nil
@@ -82,7 +87,7 @@ func (r *runtime) evalPredicate(selector string, bag attribute.Bag) (bool, error
 }
 
 // resolveRules recurses through the config struct and returns a list of combined aspects
-func (r *runtime) resolveRules(bag attribute.Bag, kindSet KindSet, rules []*pb.AspectRule,
+func (r *Runtime) resolveRules(bag attribute.Bag, kindSet KindSet, rules []*pb.AspectRule,
 	path string, dlist []*pb.Combined, onlyEmptySelectors bool) ([]*pb.Combined, error) {
 
 	var selected bool

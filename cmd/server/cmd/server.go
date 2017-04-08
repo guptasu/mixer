@@ -35,7 +35,7 @@ import (
 	"istio.io/mixer/pkg/adapterManager"
 	"istio.io/mixer/pkg/api"
 	"istio.io/mixer/pkg/aspect"
-	"istio.io/mixer/pkg/config"
+	"istio.io/mixer/pkg/config/manager"
 	"istio.io/mixer/pkg/expr"
 	"istio.io/mixer/pkg/pool"
 	"istio.io/mixer/pkg/tracing"
@@ -55,6 +55,7 @@ type serverArgs struct {
 	serverKeyFile          string
 	clientCertFiles        string
 	serviceConfigFile      string
+	userTypeScriptFile      string
 	globalConfigFile       string
 	configFetchIntervalSec uint
 }
@@ -105,6 +106,9 @@ func serverCmd(printf, fatalf shared.FormatFn) *cobra.Command {
 	serverCmd.PersistentFlags().StringVarP(&sa.globalConfigFile, "globalConfigFile", "", "globalConfig.yml", "Global Config")
 	_ = serverCmd.MarkPersistentFlagFilename("globalConfigFile", "yaml", "yml")
 
+	serverCmd.PersistentFlags().StringVarP(&sa.userTypeScriptFile, "userTypeScriptFile", "", "", "user written type script")
+	_ = serverCmd.MarkPersistentFlagFilename("userTypeScriptFile", "ts")
+
 	serverCmd.PersistentFlags().UintVarP(&sa.configFetchIntervalSec, "configFetchInterval", "", 5, "Configuration fetch interval in seconds")
 
 	return &serverCmd
@@ -125,9 +129,10 @@ func runServer(sa *serverArgs, printf, fatalf shared.FormatFn) {
 	// get aspect registry with proper aspect --> api mappings
 	eval := expr.NewCEXLEvaluator()
 	adapterMgr := adapterManager.NewManager(adapter.Inventory(), aspect.Inventory(), eval, gp, adapterGP)
-	configManager := config.NewManager(eval, adapterMgr.AspectValidatorFinder, adapterMgr.BuilderValidatorFinder,
+	configManager := configManager.NewManager(eval, adapterMgr.AspectValidatorFinder, adapterMgr.BuilderValidatorFinder,
 		adapterMgr.SupportedKinds,
-		sa.globalConfigFile, sa.serviceConfigFile, time.Second*time.Duration(sa.configFetchIntervalSec))
+		sa.globalConfigFile, sa.serviceConfigFile, time.Second*time.Duration(sa.configFetchIntervalSec), sa.userTypeScriptFile)
+
 
 	var serverCert *tls.Certificate
 	var clientCerts *x509.CertPool

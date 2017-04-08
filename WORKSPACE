@@ -162,6 +162,18 @@ new_go_repository(
 )
 
 new_go_repository(
+    name = "in_gopkg_sourcemap_v1",
+    commit = "6e83acea0053641eff084973fee085f0c193c61a", # Feb 13, 2017 (no releases)
+    importpath = "gopkg.in/sourcemap.v1",
+)
+
+new_go_repository(
+    name = "com_github_robertkrimen_otto",
+    commit = "1861f2408b93febb6dca3e39483fa6fe63d6e70f", # March 8, 2017 (no releases)
+    importpath = "github.com/robertkrimen/otto",
+)
+
+new_go_repository(
     name = "com_github_opentracing_opentracing_go",
     commit = "0c3154a3c2ce79d3271985848659870599dfb77c",  # Sep 26, 2016 (v1.0.0)
     importpath = "github.com/opentracing/opentracing-go",

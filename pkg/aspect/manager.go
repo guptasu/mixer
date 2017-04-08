@@ -93,7 +93,7 @@ type (
 		Executor
 
 		// Execute dispatches to the aspect manager.
-		Execute(attrs attribute.Bag, mapper expr.Evaluator) rpc.Status
+		Execute(evaluatedValue interface{}, attrs attribute.Bag, mapper expr.Evaluator) rpc.Status
 	}
 
 	// QuotaExecutor encapsulates a single QuotaManager aspect and allows it to be invoked.

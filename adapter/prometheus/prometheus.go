@@ -118,6 +118,7 @@ func (p *prom) Record(vals []adapter.Value) error {
 				continue
 			}
 			vec.With(promLabels(val.Labels)).Set(amt)
+			fmt.Printf("** PROMETHEUS reporting Gauge metric value %v , labels %v \n\n", amt, val.Labels)
 		case adapter.Counter:
 			vec := collector.(*prometheus.CounterVec)
 			amt, err := promValue(val)
@@ -126,8 +127,11 @@ func (p *prom) Record(vals []adapter.Value) error {
 				continue
 			}
 			vec.With(promLabels(val.Labels)).Add(amt)
+			fmt.Printf("** PROMETHEUS reporting Counter metric value %v , labels %v \n\n", amt, val.Labels)
 		}
 	}
+
+	fmt.Println("\n\n----------------------\n\n")
 
 	return result.ErrorOrNil()
 }

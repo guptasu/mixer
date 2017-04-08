@@ -136,7 +136,7 @@ func TestConfigValidatorError(t *testing.T) {
 
 			var ce *adapter.ConfigErrors
 			mgr := newVfinder(tt.ada, tt.asp)
-			p := newValidator(mgr.FindAspectValidator, mgr.FindAdapterValidator, mgr.AdapterToAspectMapperFunc, tt.strict, evaluator)
+			p := NewValidator(mgr.FindAspectValidator, mgr.FindAdapterValidator, mgr.AdapterToAspectMapperFunc, tt.strict, evaluator)
 			if tt.cfg == sSvcConfig {
 				ce = p.validateServiceConfig(fmt.Sprintf(tt.cfg, tt.selector), false)
 			} else {
@@ -223,9 +223,9 @@ func TestFullConfigValidator(tt *testing.T) {
 		tt.Run(fmt.Sprintf("[%d]", idx), func(t *testing.T) {
 			mgr := newVfinder(ctx.ada, ctx.asp)
 			fe.err = ctx.exprErr
-			p := newValidator(mgr.FindAspectValidator, mgr.FindAdapterValidator, mgr.AdapterToAspectMapperFunc, ctx.strict, fe)
+			p := NewValidator(mgr.FindAspectValidator, mgr.FindAdapterValidator, mgr.AdapterToAspectMapperFunc, ctx.strict, fe)
 			// sGlobalConfig only defines 1 adapter: denyChecker
-			_, ce := p.validate(ctx.cfg, sGlobalConfig)
+			_, ce := p.Validate(ctx.cfg, sGlobalConfig)
 			cok := ce == nil
 			ok := ctx.cerr == nil
 			if ok != cok {
@@ -248,7 +248,7 @@ func TestFullConfigValidator(tt *testing.T) {
 func TestConfigParseError(t *testing.T) {
 	mgr := &fakeVFinder{}
 	evaluator := newFakeExpr()
-	p := newValidator(mgr.FindAspectValidator, mgr.FindAdapterValidator, mgr.AdapterToAspectMapperFunc, false, evaluator)
+	p := NewValidator(mgr.FindAspectValidator, mgr.FindAdapterValidator, mgr.AdapterToAspectMapperFunc, false, evaluator)
 	ce := p.validateServiceConfig("<config>  </config>", false)
 
 	if ce == nil || !strings.Contains(ce.Error(), "error unmarshaling") {
@@ -261,7 +261,7 @@ func TestConfigParseError(t *testing.T) {
 		t.Error("Expected unmarshal Error", ce)
 	}
 
-	_, ce = p.validate("<config>  </config>", "<config>  </config>")
+	_, ce = p.Validate("<config>  </config>", "<config>  </config>")
 	if ce == nil || !strings.Contains(ce.Error(), "error unmarshaling") {
 		t.Error("Expected unmarshal Error", ce)
 	}

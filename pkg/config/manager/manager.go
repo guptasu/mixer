@@ -12,30 +12,32 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package config
+package configManager
 
 import (
 	"crypto/sha1"
-	"io/ioutil"
-	"sync"
-	"time"
-
 	"github.com/golang/glog"
-
+	"io/ioutil"
 	"istio.io/mixer/pkg/adapter"
 	"istio.io/mixer/pkg/attribute"
+	"istio.io/mixer/pkg/cnfgNormalizer"
+	"istio.io/mixer/pkg/config"
 	"istio.io/mixer/pkg/config/descriptor"
 	pb "istio.io/mixer/pkg/config/proto"
 	"istio.io/mixer/pkg/expr"
+	"sync"
+	"time"
+	"fmt"
 )
 
 // Resolver resolves configuration to a list of combined configs.
 type Resolver interface {
 	// Resolve resolves configuration to a list of combined configs.
-	Resolve(bag attribute.Bag, kindSet KindSet) ([]*pb.Combined, error)
+	Resolve(bag attribute.Bag, kindSet config.KindSet) ([]*pb.Combined, error)
 	// ResolveUnconditional resolves configuration for unconditioned rules.
 	// Unconditioned rules are those rules with the empty selector ("").
-	ResolveUnconditional(bag attribute.Bag, kindSet KindSet) ([]*pb.Combined, error)
+	ResolveUnconditional(bag attribute.Bag, kindSet config.KindSet) ([]*pb.Combined, error)
+GetNormalizedConfig() config.NormalizedConfig
 }
 
 // ChangeListener listens for config change notifications.
@@ -49,14 +51,15 @@ type ChangeListener interface {
 // api.Handler listens for config changes.
 type Manager struct {
 	eval             expr.Evaluator
-	aspectFinder     AspectValidatorFinder
-	builderFinder    BuilderValidatorFinder
+	aspectFinder     config.AspectValidatorFinder
+	builderFinder    config.BuilderValidatorFinder
 	descriptorFinder descriptor.Finder
-	findAspects      AdapterToAspectMapper
+	findAspects      config.AdapterToAspectMapper
 	loopDelay        time.Duration
 	globalConfig     string
 	serviceConfig    string
 	ticker           *time.Ticker
+userTypScrpt     string
 
 	cl    []ChangeListener
 	scSHA [sha1.Size]byte
@@ -77,8 +80,8 @@ type Manager struct {
 // as command line input parameters.
 // GlobalConfig specifies the location of Global Config.
 // ServiceConfig specifies the location of Service config.
-func NewManager(eval expr.Evaluator, aspectFinder AspectValidatorFinder, builderFinder BuilderValidatorFinder,
-	findAspects AdapterToAspectMapper, globalConfig string, serviceConfig string, loopDelay time.Duration) *Manager {
+func NewManager(eval expr.Evaluator, aspectFinder config.AspectValidatorFinder, builderFinder config.BuilderValidatorFinder,
+	findAspects config.AdapterToAspectMapper, globalConfig string, serviceConfig string, loopDelay time.Duration, userTypeScript string) *Manager {
 	m := &Manager{
 		eval:          eval,
 		aspectFinder:  aspectFinder,
@@ -87,6 +90,7 @@ func NewManager(eval expr.Evaluator, aspectFinder AspectValidatorFinder, builder
 		loopDelay:     loopDelay,
 		globalConfig:  globalConfig,
 		serviceConfig: serviceConfig,
+		userTypScrpt:  userTypeScript,
 	}
 	return m
 }
@@ -106,8 +110,8 @@ func read(fname string) ([sha1.Size]byte, string, error) {
 }
 
 // fetch config and return runtime if a new one is available.
-func (c *Manager) fetch() (*runtime, descriptor.Finder, error) {
-	var vd *Validated
+func (c *Manager) fetch() (*config.Runtime, descriptor.Finder, error) {
+	var vd *config.Validated
 	var cerr *adapter.ConfigErrors
 
 	gcSHA, gc, err2 := read(c.globalConfig)
@@ -124,16 +128,28 @@ func (c *Manager) fetch() (*runtime, descriptor.Finder, error) {
 		return nil, nil, nil
 	}
 
-	v := newValidator(c.aspectFinder, c.builderFinder, c.findAspects, true, c.eval)
-	if vd, cerr = v.validate(sc, gc); cerr != nil {
+	v := config.NewValidator(c.aspectFinder, c.builderFinder, c.findAspects, true, c.eval)
+	if vd, cerr = v.Validate(sc, gc); cerr != nil {
 		return nil, nil, cerr
 	}
 
-	c.descriptorFinder = descriptor.NewFinder(v.validated.globalConfig)
+	c.descriptorFinder = descriptor.NewFinder(v.GetValidatedGSC())
 
 	c.gcSHA = gcSHA
 	c.scSHA = scSHA
-	return newRuntime(vd, c.eval), c.descriptorFinder, nil
+	rt := config.NewRuntime(vd, c.eval)
+
+	if c.userTypScrpt != "" {
+		fmt.Println("**config/manager.go : Received user provided TypeScript\n")
+		rt.NormalizedConfig = &cnfgNormalizer.NormalizedJavascriptConfig{JavaScript: cnfgNormalizer.GenerateJsFromTypeScript(c.userTypScrpt)}
+	} else {
+		fmt.Println("**config/manager.go : Creating TypeScript from SC\n")
+		rt.NormalizedConfig = cnfgNormalizer.Normalize(vd, c.serviceConfig)
+	}
+
+	fmt.Println("**config/manager.go : Saving generated javascript in config.runtime object \n")
+
+	return rt, c.descriptorFinder, nil
 }
 
 // fetchAndNotify fetches a new config and notifies listeners if something has changed

@@ -1,4 +1,4 @@
-// Copyright 2017 the Istio Authors.
+// Copyright 2017 Istio Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,20 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package istio_mixer_v1_config
+package config
 
-// Combined config is given to aspect managers.
-type Combined struct {
-	Builder      *Adapter
-	Aspect       *Aspect
+import (
+	"istio.io/mixer/pkg/attribute"
+)
+type NormalizedConfig interface {
+	Evalaute(requestBag *attribute.MutableBag,
+		callBack func(kind string, val interface{}))
 }
 
-func (c *Combined) String() (ret string) {
-	if c.Builder != nil {
-		ret += "builder: " + c.Builder.String() + " "
-	}
-	if c.Aspect != nil {
-		ret += "aspect: " + c.Aspect.String()
-	}
-	return
-}
