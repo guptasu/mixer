@@ -113,7 +113,7 @@ func TestRuntime(t *testing.T) {
 			k, _ := ParseKind(a)
 			kinds = kinds.Set(k)
 		}
-		rt := NewRuntime(v, fe)
+		rt := newRuntime(v, fe)
 
 		al, err := rt.Resolve(bag, kinds)
 
@@ -210,7 +210,7 @@ func TestRuntime_ResolveUnconditional(t *testing.T) {
 			k, _ := ParseKind(a)
 			kinds = kinds.Set(k)
 		}
-		rt := NewRuntime(v, fe)
+		rt := newRuntime(v, fe)
 
 		al, err := rt.ResolveUnconditional(bag, kinds)
 		if err != nil {

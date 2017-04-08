@@ -443,7 +443,7 @@ func (e *cexl) AssertType(expr string, finder AttributeDescriptorFinder, expecte
 	return nil
 }
 
-// Validate validates expression for syntactic correctness.
+// validate validates expression for syntactic correctness.
 // TODO check if all functions and attributes in the expression are defined.
 // at present this violates the contract with Func.Call that ensures
 // arity and arg types. It is upto the policy author to write correct policies.

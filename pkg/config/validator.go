@@ -17,7 +17,7 @@
 // 1. Accepts new configuration from user
 // 2. Validates configuration
 // 3. Produces a "ValidatedConfig"
-// Runtime
+// runtime
 // 1. It is validated and actionable configuration
 // 2. It resolves the configuration to a list of Combined {aspect, adapter} configs
 //    given an attribute.Bag.
@@ -43,7 +43,7 @@ type (
 	// AspectParams describes configuration parameters for an aspect.
 	AspectParams proto.Message
 
-	// AspectValidator describes a type that is able to Validate Aspect configuration.
+	// AspectValidator describes a type that is able to validate Aspect configuration.
 	AspectValidator interface {
 		// DefaultConfig returns a default configuration struct for this
 		// adapter. This will be used by the configuration system to establish
@@ -69,8 +69,8 @@ type (
 	AdapterToAspectMapper func(builder string) KindSet
 )
 
-// NewValidator returns a validator given component validators.
-func NewValidator(managerFinder AspectValidatorFinder, adapterFinder BuilderValidatorFinder,
+// newValidator returns a validator given component validators.
+func newValidator(managerFinder AspectValidatorFinder, adapterFinder BuilderValidatorFinder,
 	findAspects AdapterToAspectMapper, strict bool, exprValidator expr.Validator) *validator {
 	return &validator{
 		managerFinder: managerFinder,
@@ -162,7 +162,7 @@ func (p *Validated) GetValidatedSC() (*pb.ServiceConfig) {
 
 
 // validateAspectRules validates the recursive configuration data structure.
-// It is primarily used by Validate ServiceConfig.
+// It is primarily used by validate ServiceConfig.
 func (p *validator) validateAspectRules(rules []*pb.AspectRule, path string, validatePresence bool) (ce *adapter.ConfigErrors) {
 	var acfg adapter.Config
 	for _, rule := range rules {
@@ -205,9 +205,9 @@ func (p *validator) validateAspectRules(rules []*pb.AspectRule, path string, val
 	return ce
 }
 
-// Validate validates a single serviceConfig and globalConfig together.
+// validate validates a single serviceConfig and globalConfig together.
 // It returns a fully validated Config if no errors are found.
-func (p *validator) Validate(serviceCfg string, globalCfg string) (rt *Validated, ce *adapter.ConfigErrors) {
+func (p *validator) validate(serviceCfg string, globalCfg string) (rt *Validated, ce *adapter.ConfigErrors) {
 	if re := p.validateGlobalConfig(globalCfg); re != nil {
 		return rt, ce.Appendf("GlobalConfig", "failed validation").Extend(re)
 	}
