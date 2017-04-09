@@ -20,7 +20,7 @@ CKSUM=$(cksum mixer/v1/config/cfg.proto)
 # protoc keeps the directory structure leading up to the proto file, so it creates
 # the dir ${WD}/mixer/v1/config/. We don't want that, so we'll move the pb.go file
 # out and remove the dir.
-mv ${WD}/cfg.proto mixer/v1/config/cfg.proto
+cp ${WD}/cfg.proto mixer/v1/config/cfg.proto
 protoc mixer/v1/config/cfg.proto --go_out=${WD}
 mv ${WD}/mixer/v1/config/cfg.pb.go ${WD}/cfg.pb.go
 rm -rd ${WD}/mixer
@@ -34,7 +34,7 @@ echo "// ${CKSUM}"  >> ${TMPF}
 cat ${PB} >> ${TMPF}
 mv ${TMPF} ${PB}
 
-sed -i 's/*google_protobuf.Struct/interface{}/g' ${PB}
-sed -i 's/mixer\/v1\/config\/descriptor/istio.io\/api\/mixer\/v1\/config\/descriptor/g' ${PB}
+sed -i' ' 's/*google_protobuf.Struct/interface{}/g' ${PB}
+sed -i' ' 's/mixer\/v1\/config\/descriptor/istio.io\/api\/mixer\/v1\/config\/descriptor/g' ${PB}
 
 goimports -w ${PB}

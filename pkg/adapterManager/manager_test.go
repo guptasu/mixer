@@ -32,8 +32,8 @@ import (
 	"istio.io/mixer/pkg/expr"
 	"istio.io/mixer/pkg/pool"
 	"istio.io/mixer/pkg/status"
-	"istio.io/mixer/bazel-mixer/pkg/cnfgNormalizer"
 	"github.com/ghodss/yaml"
+	"istio.io/mixer/pkg/cnfgNormalizer"
 )
 
 type (

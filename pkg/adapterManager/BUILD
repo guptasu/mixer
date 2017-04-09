@@ -18,6 +18,8 @@ go_library(
         "//pkg/config/descriptor:go_default_library",
         "//pkg/config/proto:go_default_library",
         "//pkg/expr:go_default_library",
+        "@com_github_ghodss_yaml//:go_default_library",
+        "//pkg/cnfgNormalizer:go_default_library",
         "//pkg/pool:go_default_library",
         "//pkg/status:go_default_library",
         "//pkg/aspect/config:go_default_library",

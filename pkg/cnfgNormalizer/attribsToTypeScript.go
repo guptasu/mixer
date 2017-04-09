@@ -22,7 +22,7 @@ import (
 )
 var (
 	attributesDescriptor = map[string]dpb.ValueType{
-		"response.http.code" : dpb.INT64,
+		"response.code" : dpb.INT64,
 		"response.latency" : dpb.INT64,
 		"api.method" : dpb.STRING,
 		"target.name" : dpb.STRING,
