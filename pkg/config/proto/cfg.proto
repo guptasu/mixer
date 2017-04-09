@@ -101,6 +101,8 @@ message Aspect {
   map<string, string> inputs = 3;
   // Struct representation of a proto defined by the aspect
   google.protobuf.Struct params = 4;
+
+    string name = 5;
 }
 
 // Adapter config defines specifics of adapter implementations
