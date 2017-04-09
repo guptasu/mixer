@@ -16,6 +16,7 @@ package config
 
 import (
 	"istio.io/mixer/pkg/attribute"
+	pb "istio.io/mixer/pkg/config/proto"
 )
 type NormalizedConfig interface {
 	Evalaute(requestBag *attribute.MutableBag,
@@ -23,8 +24,7 @@ type NormalizedConfig interface {
 }
 
 type ConfigNormalizer interface {
-	Normalize(vd *Validated, fileLocation string) NormalizedConfig
-	GetNormalizedConfig() NormalizedConfig
+	Normalize(sc *pb.ServiceConfig, fileLocation string) NormalizedConfig
 	ReloadNormalizedConfigFile(fileLocation string) NormalizedConfig
 }
 

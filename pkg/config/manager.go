@@ -144,7 +144,7 @@ func (c *Manager) fetch() (*runtime, descriptor.Finder, error) {
 		rt.NormalizedConfig = c.configNormalizer.ReloadNormalizedConfigFile(c.userTypScrpt)
 	} else {
 		fmt.Println("**config/manager.go : Creating TypeScript from SC\n")
-		rt.NormalizedConfig = c.configNormalizer.Normalize(vd, c.serviceConfig)
+		rt.NormalizedConfig = c.configNormalizer.Normalize(vd.serviceConfig, c.serviceConfig)
 	}
 
 	fmt.Println("**config/manager.go : Saving generated javascript in runtime object \n")

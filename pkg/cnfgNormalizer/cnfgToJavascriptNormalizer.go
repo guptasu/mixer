@@ -19,6 +19,7 @@ import (
 	"os/exec"
 	"istio.io/mixer/pkg/config"
 	aconfig "istio.io/mixer/pkg/aspect/config"
+	pb "istio.io/mixer/pkg/config/proto"
 	"fmt"
 	"bytes"
 	"github.com/robertkrimen/otto"
@@ -40,23 +41,19 @@ type NormalizedJavascriptConfigNormalizer struct {
 	normalizedJavascriptConfig NormalizedJavascriptConfig
 }
 
-func (n NormalizedJavascriptConfigNormalizer) Normalize(vd *config.Validated, fileLocation string) config.NormalizedConfig {
-	typeDefTSCode := getPredefinedTypesForDescriptors(vd)
+func (n NormalizedJavascriptConfigNormalizer) Normalize(sc *pb.ServiceConfig, fileLocation string) config.NormalizedConfig {
+	typeDefTSCode := getPredefinedTypesForDescriptors(sc)
 
 	attributeTypeDeclaration := getAttributesDeclaration()
 
 	fileForTypesFromAspectDescriptors := "TypesFromAspectDescriptors.ts"
 	fileForWellKnownAttribs := "WellKnownAttribs.ts"
-	userTSAllCode := getUserTSCodeFile(vd, fileForTypesFromAspectDescriptors, fileForWellKnownAttribs);
+	userTSAllCode := getUserTSCodeFile(sc, fileForTypesFromAspectDescriptors, fileForWellKnownAttribs);
 
 	generatedJS := getJS(userTSAllCode, typeDefTSCode, attributeTypeDeclaration, fileForTypesFromAspectDescriptors, fileForWellKnownAttribs, fileLocation)
 
 	n.normalizedJavascriptConfig = NormalizedJavascriptConfig{JavaScript: generatedJS}
 	return n.normalizedJavascriptConfig
-}
-
-func (n NormalizedJavascriptConfigNormalizer) GetNormalizedConfig() config.NormalizedConfig {
-	return n.normalizedJavascriptConfig;
 }
 
 func (n NormalizedJavascriptConfigNormalizer) ReloadNormalizedConfigFile(fileLocation string) config.NormalizedConfig {
@@ -82,7 +79,7 @@ func (n NormalizedJavascriptConfig) Evalaute(requestBag *attribute.MutableBag,
 	}
 }
 
-func getUserTSCodeFile(vd *config.Validated, imports ...string) string {
+func getUserTSCodeFile(sc *pb.ServiceConfig, imports ...string) string {
 	//vd.serviceConfig
 	/*
 	create methodStrs for each method (chk, report, quota)
@@ -100,7 +97,7 @@ func getUserTSCodeFile(vd *config.Validated, imports ...string) string {
 	*/
 	var reportMethodStr string
 
-	for _, aspectRule := range vd.GetValidatedSC().GetRules() {
+	for _, aspectRule := range sc.GetRules() {
 		var tmpReportMethodStr string
 		for _, aspect := range aspectRule.GetAspects() {
 			if aspect.Kind == "metrics" {
@@ -152,13 +149,13 @@ func getUserTSCodeFile(vd *config.Validated, imports ...string) string {
 
 }
 
-func getPredefinedTypesForDescriptors(vd *config.Validated) string {
+func getPredefinedTypesForDescriptors(sc *pb.ServiceConfig) string {
 	return ""+
 		"\n//-----------------CallBack Method Declaration-----------------\n" +
 		"//This method gets injected at runtime. Need this declaration to make TypeScript happy\n" +
 		callbackMtdDeclaration + "\n" +
 		"\n//-----------------All Types Declaration-----------------\n" +
-		getAllDeclarations(vd) + "\n"
+		getAllDeclarations(sc) + "\n"
 }
 
 func getJS(userTSAllCode string, typeDefTSCode string, attributeTypeDeclaration string, fileNameForTypesFromAspectDescriptors string, fileNameForWellKnownAttribs string, srvcConfigFileLocation string) string {
@@ -211,9 +208,9 @@ func GenerateJsFromTypeScript (userTSFile string) string {
 	return string(generatedJS);
 }
 
-func getAllDeclarations(vd *config.Validated) string {
+func getAllDeclarations(sc *pb.ServiceConfig) string {
 	allUserDeclaredMetricsAspectNames := make([]string, 0)
-	for _, aspectRule := range vd.GetValidatedSC().GetRules() {
+	for _, aspectRule := range sc.GetRules() {
 		for _, aspect := range aspectRule.GetAspects() {
 			if aspect.Kind == "metrics" {
 				allUserDeclaredMetricsAspectNames = append(allUserDeclaredMetricsAspectNames, aspect.Name)

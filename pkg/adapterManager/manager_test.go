@@ -20,7 +20,7 @@ import (
 	"strings"
 	"testing"
 	"time"
-
+	"io/ioutil"
 	rpc "github.com/googleapis/googleapis/google/rpc"
 
 	"istio.io/mixer/pkg/adapter"
@@ -32,6 +32,8 @@ import (
 	"istio.io/mixer/pkg/expr"
 	"istio.io/mixer/pkg/pool"
 	"istio.io/mixer/pkg/status"
+	"istio.io/mixer/bazel-mixer/pkg/cnfgNormalizer"
+	"github.com/ghodss/yaml"
 )
 
 type (
@@ -109,6 +111,7 @@ type (
 	fakeResolver struct {
 		ret []*cpb.Combined
 		err error
+		normalizedConfig config.NormalizedConfig
 	}
 )
 
@@ -118,6 +121,10 @@ func (f *fakeResolver) Resolve(bag attribute.Bag, kindSet config.KindSet) ([]*cp
 
 func (f *fakeResolver) ResolveUnconditional(bag attribute.Bag, kindSet config.KindSet) ([]*cpb.Combined, error) {
 	return f.ret, f.err
+}
+
+func (f *fakeResolver) GetNormalizedConfig() config.NormalizedConfig {
+	return f.normalizedConfig
 }
 
 func (f *fakeBuilder) Name() string { return f.name }
@@ -320,7 +327,7 @@ func TestManager(t *testing.T) {
 		agp := pool.NewGoroutinePool(1, true)
 		m := newManager(r, mgr, mapper, aspect.ManagerInventory{}, gp, agp)
 
-		m.cfg.Store(&fakeResolver{tt.cfg, nil})
+		m.cfg.Store(&fakeResolver{tt.cfg, nil, nil})
 
 		out := m.Check(context.Background(), requestBag, responseBag)
 		errStr := out.Message
@@ -377,7 +384,7 @@ func TestManager_Preprocess(t *testing.T) {
 		},
 	}
 
-	m.cfg.Store(&fakeResolver{cfg, nil})
+	m.cfg.Store(&fakeResolver{cfg, nil, nil})
 
 	out := m.Preprocess(context.Background(), requestBag, responseBag)
 
@@ -387,6 +394,82 @@ func TestManager_Preprocess(t *testing.T) {
 
 	if pe.called != 1 {
 		t.Errorf("Executor invoked %d times, want: 0", pe.called)
+	}
+
+	gp.Close()
+	agp.Close()
+}
+
+func TestReportWithJS(t *testing.T) {
+	scYaml := `
+subject: namespace:ns
+rules:
+        #- selector: service.name == “*”
+        #- selector: service.name == "myservice"
+- selector: true
+  aspects:
+  - name: prometheus_reporting_all_metrics
+    kind: metrics
+    adapter: prometheus
+    params:
+      metrics:
+      - descriptorName: request_count
+        # we want to increment this counter by 1 for each unique (source, target, service, method, response_code) tuple
+        value: response.latency | 100
+        labels:
+          source: source.name | "one"
+          target: target.name | "one"
+          service: api.name | "one"
+          method: api.method | "one"
+          response_code: response.http.code | 111
+      - descriptorName:  request_latency
+        value: response.latency | 2000
+        labels:
+          source: source.name | "two"
+          target: target.name | "two"
+          service: api.name | "two"
+          method: api.method | "two"
+          response_code: response.http.code | 222
+`
+	r := getReg(true)
+	requestBag := attribute.GetMutableBag(nil)
+	responseBag := attribute.GetMutableBag(nil)
+	gp := pool.NewGoroutinePool(1, true)
+	agp := pool.NewGoroutinePool(1, true)
+	mapper := &fakeEvaluator{}
+	re := &fakeReportExecutor{}
+	mgrs := newFakeMgrReg(nil, nil, re, nil)
+
+	m := newManager(r, mgrs, mapper, aspect.ManagerInventory{}, gp, agp)
+
+	cfg := []*cpb.Combined{
+		{
+			Aspect:  &cpb.Aspect{Name:"AspectOne", Kind: config.AccessLogsKindName},
+			Builder: &cpb.Adapter{Name: "Foo"},
+		},
+	}
+	sc := &cpb.ServiceConfig{}
+	if err := yaml.Unmarshal([]byte(scYaml), sc); err != nil {
+		t.Errorf("failed to parse service config yaml due to error %v \n\n %s", err, scYaml)
+	}
+	jsConfigNormalizer := cnfgNormalizer.NormalizedJavascriptConfigNormalizer{}
+	tmpfile, _ := ioutil.TempFile("", "TestReportWithJS")
+	fileName := tmpfile.Name()
+	//defer func() { _ = os.Remove(gc) }()
+	_, _ = tmpfile.Write([]byte(scYaml))
+	_ = tmpfile.Close()
+
+	normalizedConfig := jsConfigNormalizer.Normalize(sc, fileName)
+	m.cfg.Store(&fakeResolver{cfg, nil, normalizedConfig})
+
+	out := m.Report(context.Background(), requestBag, responseBag)
+
+	if !status.IsOK(out) {
+		t.Errorf("Report failed with %v", out)
+	}
+
+	if re.called != 1 {
+		t.Errorf("Executor invoked %d times, expected once", re.called)
 	}
 
 	gp.Close()
@@ -411,7 +494,7 @@ func TestReport(t *testing.T) {
 			Builder: &cpb.Adapter{Name: "Foo"},
 		},
 	}
-	m.cfg.Store(&fakeResolver{cfg, nil})
+	m.cfg.Store(&fakeResolver{cfg, nil, nil})
 
 	out := m.Report(context.Background(), requestBag, responseBag)
 
@@ -445,7 +528,7 @@ func TestQuota(t *testing.T) {
 			Builder: &cpb.Adapter{Name: "Foo"},
 		},
 	}
-	m.cfg.Store(&fakeResolver{cfg, nil})
+	m.cfg.Store(&fakeResolver{cfg, nil, nil})
 
 	qmr, out := m.Quota(context.Background(), requestBag, responseBag, nil)
 
@@ -503,7 +586,7 @@ func TestManager_BulkExecute(t *testing.T) {
 		agp := pool.NewGoroutinePool(1, true)
 		m := newManager(r, mgr, mapper, aspect.ManagerInventory{}, gp, agp)
 
-		m.cfg.Store(&fakeResolver{c.cfgs, nil})
+		m.cfg.Store(&fakeResolver{c.cfgs, nil, nil})
 
 		out := m.Check(context.Background(), requestBag, responseBag)
 		errStr := out.Message
@@ -552,7 +635,7 @@ func testRecovery(t *testing.T, name string, throwOnNewAspect bool, throwOnExecu
 			Aspect:  &cpb.Aspect{Kind: name},
 		},
 	}
-	m.cfg.Store(&fakeResolver{cfg, nil})
+	m.cfg.Store(&fakeResolver{cfg, nil, nil})
 
 	out := m.Check(context.Background(), nil, nil)
 	if status.IsOK(out) {
@@ -596,7 +679,7 @@ func TestExecute(t *testing.T) {
 		cfg := []*cpb.Combined{
 			{&cpb.Adapter{Name: c.name}, &cpb.Aspect{Kind: c.name}},
 		}
-		m.cfg.Store(&fakeResolver{cfg, nil})
+		m.cfg.Store(&fakeResolver{cfg, nil, nil})
 
 		o := m.dispatch(context.Background(), nil, nil, cfg,
 			func(evaluatedValue interface{}, executor aspect.Executor, evaluator expr.Evaluator) rpc.Status {
@@ -629,7 +712,7 @@ func TestExecute_Cancellation(t *testing.T) {
 	cfg := []*cpb.Combined{
 		{&cpb.Adapter{Name: ""}, &cpb.Aspect{Kind: ""}},
 	}
-	m.cfg.Store(&fakeResolver{cfg, nil})
+	m.cfg.Store(&fakeResolver{cfg, nil, nil})
 
 	reqBag := attribute.GetMutableBag(nil)
 	respBag := attribute.GetMutableBag(nil)
@@ -675,7 +758,7 @@ func TestExecute_TimeoutWaitingForResults(t *testing.T) {
 		&cpb.Adapter{Name: name},
 		&cpb.Aspect{Kind: name},
 	}}
-	m.cfg.Store(&fakeResolver{cfg, nil})
+	m.cfg.Store(&fakeResolver{cfg, nil, nil})
 
 	if out := m.Check(ctx, attribute.GetMutableBag(nil), attribute.GetMutableBag(nil)); status.IsOK(out) {
 		t.Error("handler.Execute(canceledContext, ...) = _, nil; wanted any err")
