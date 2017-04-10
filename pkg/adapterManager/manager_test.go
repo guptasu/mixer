@@ -20,7 +20,6 @@ import (
 	"strings"
 	"testing"
 	"time"
-	"io/ioutil"
 	rpc "github.com/googleapis/googleapis/google/rpc"
 
 	"istio.io/mixer/pkg/adapter"
@@ -32,8 +31,6 @@ import (
 	"istio.io/mixer/pkg/expr"
 	"istio.io/mixer/pkg/pool"
 	"istio.io/mixer/pkg/status"
-	"github.com/ghodss/yaml"
-	"istio.io/mixer/pkg/cnfgNormalizer"
 )
 
 type (
@@ -394,82 +391,6 @@ func TestManager_Preprocess(t *testing.T) {
 
 	if pe.called != 1 {
 		t.Errorf("Executor invoked %d times, want: 0", pe.called)
-	}
-
-	gp.Close()
-	agp.Close()
-}
-
-func TestReportWithJS(t *testing.T) {
-	scYaml := `
-subject: namespace:ns
-rules:
-        #- selector: service.name == “*”
-        #- selector: service.name == "myservice"
-- selector: true
-  aspects:
-  - name: prometheus_reporting_all_metrics
-    kind: metrics
-    adapter: prometheus
-    params:
-      metrics:
-      - descriptorName: request_count
-        # we want to increment this counter by 1 for each unique (source, target, service, method, response_code) tuple
-        value: response.latency | 100
-        labels:
-          source: source.name | "one"
-          target: target.name | "one"
-          service: api.name | "one"
-          method: api.method | "one"
-          response_code: response.http.code | 111
-      - descriptorName:  request_latency
-        value: response.latency | 2000
-        labels:
-          source: source.name | "two"
-          target: target.name | "two"
-          service: api.name | "two"
-          method: api.method | "two"
-          response_code: response.http.code | 222
-`
-	r := getReg(true)
-	requestBag := attribute.GetMutableBag(nil)
-	responseBag := attribute.GetMutableBag(nil)
-	gp := pool.NewGoroutinePool(1, true)
-	agp := pool.NewGoroutinePool(1, true)
-	mapper := &fakeEvaluator{}
-	re := &fakeReportExecutor{}
-	mgrs := newFakeMgrReg(nil, nil, re, nil)
-
-	m := newManager(r, mgrs, mapper, aspect.ManagerInventory{}, gp, agp)
-
-	cfg := []*cpb.Combined{
-		{
-			Aspect:  &cpb.Aspect{Name:"AspectOne", Kind: config.AccessLogsKindName},
-			Builder: &cpb.Adapter{Name: "Foo"},
-		},
-	}
-	sc := &cpb.ServiceConfig{}
-	if err := yaml.Unmarshal([]byte(scYaml), sc); err != nil {
-		t.Errorf("failed to parse service config yaml due to error %v \n\n %s", err, scYaml)
-	}
-	jsConfigNormalizer := cnfgNormalizer.NormalizedJavascriptConfigNormalizer{}
-	tmpfile, _ := ioutil.TempFile("", "TestReportWithJS")
-	fileName := tmpfile.Name()
-	//defer func() { _ = os.Remove(gc) }()
-	_, _ = tmpfile.Write([]byte(scYaml))
-	_ = tmpfile.Close()
-
-	normalizedConfig := jsConfigNormalizer.Normalize(sc, fileName)
-	m.cfg.Store(&fakeResolver{cfg, nil, normalizedConfig})
-
-	out := m.Report(context.Background(), requestBag, responseBag)
-
-	if !status.IsOK(out) {
-		t.Errorf("Report failed with %v", out)
-	}
-
-	if re.called != 1 {
-		t.Errorf("Executor invoked %d times, expected once", re.called)
 	}
 
 	gp.Close()
