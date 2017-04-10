@@ -146,13 +146,13 @@ func TestGetQuota(t *testing.T) {
 	})
 }
 
-//func TestGetAttribute(t *testing.T) {
-//	execute(t, cases{
-//		{"empty", &pb.GlobalConfig{Attributes: []*dpb.AttributeDescriptor{&attributeDesc}}, getAttr("attr"), &attributeDesc},
-//		{"missing", &pb.GlobalConfig{Attributes: []*dpb.AttributeDescriptor{&attributeDesc}}, getAttr("foo"), nil},
-//		{"no attributes", &pb.GlobalConfig{}, getAttr("attr"), nil},
-//	})
-//}
+func TestGetAttribute(t *testing.T) {
+	execute(t, cases{
+		{"empty", &pb.GlobalConfig{Attributes: []*dpb.AttributeDescriptor{&attributeDesc}}, getAttr("attr"), &attributeDesc},
+		{"missing", &pb.GlobalConfig{Attributes: []*dpb.AttributeDescriptor{&attributeDesc}}, getAttr("foo"), nil},
+		{"no attributes", &pb.GlobalConfig{}, getAttr("attr"), nil},
+	})
+}
 
 func execute(t *testing.T, tests cases) {
 	for idx, tt := range tests {

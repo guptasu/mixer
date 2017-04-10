@@ -133,7 +133,7 @@ func (c *Manager) fetch() (*runtime, descriptor.Finder, error) {
 		return nil, nil, cerr
 	}
 
-	c.descriptorFinder = descriptor.NewFinder(v.GetValidatedGSC())
+	c.descriptorFinder = descriptor.NewFinder(v.validated.globalConfig)
 
 	c.gcSHA = gcSHA
 	c.scSHA = scSHA

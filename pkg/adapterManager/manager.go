@@ -202,9 +202,7 @@ func executeScriptAndGetEvaluatedData(cfg config.Resolver, requestBag *attribute
 }
 
 func (m *Manager) loadConfigs(attrs attribute.Bag, ks config.KindSet, isPreprocess bool) ([]*configpb.Combined, error) {
-	tmpCfg := m.cfg.Load()
-	cfg, tmperr := tmpCfg.(config.Resolver)
-	fmt.Println(tmperr)
+	cfg, _ := m.cfg.Load().(config.Resolver)
 	if cfg == nil {
 		return nil, errors.New("configuration is not yet available")
 	}
