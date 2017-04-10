@@ -2,6 +2,9 @@ var Attributes = (function () {
     function Attributes(attribs) {
         // Fill the set of attribues that are part of the call (data is available
         // inside the attribs).
+        if (attribs.Get('response.code')[1]) {
+            this.ResponseCode = attribs.Get('response.code')[0];
+        }
         if (attribs.Get('response.latency')[1]) {
             this.ResponseLatency = attribs.Get('response.latency')[0];
         }
@@ -16,9 +19,6 @@ var Attributes = (function () {
         }
         if (attribs.Get('source.name')[1]) {
             this.SourceName = attribs.Get('source.name')[0];
-        }
-        if (attribs.Get('response.code')[1]) {
-            this.ResponseCode = attribs.Get('response.code')[0];
         }
     }
     return Attributes;
