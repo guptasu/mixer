@@ -188,7 +188,6 @@ rules:
 	_, _ = tmpfile.Write([]byte(scYaml))
 	_ = tmpfile.Close()
 
-
 	tmpfile, _ = ioutil.TempFile("", "TestReportWithJS")
 	fileGSCName := tmpfile.Name()
 	//defer func() { _ = os.Remove(gc) }()
@@ -226,5 +225,6 @@ rules:
 	for n := 0; n < b.N; n++ {
 		_ = adapterMgr.Report(context.Background(), requestBag, responseBag)
 	}
-	b.Fail()
+	//b.Fail()
+	//b.Error("")
 }
