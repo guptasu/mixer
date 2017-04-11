@@ -16,7 +16,6 @@ package adapterManager
 
 import (
 	"context"
-	"fmt"
 	"io/ioutil"
 	"istio.io/mixer/adapter"
 	"istio.io/mixer/pkg/aspect"
@@ -183,20 +182,19 @@ rules:
           response_code: response.code | 111
 `
 
-	tmpfile, _ := ioutil.TempFile("", "TestReportWithJS")
+	tmpfile, _ := ioutil.TempFile("", "TestReportWithJSServCnfg")
 	fileSCName := tmpfile.Name()
 	//defer func() { _ = os.Remove(gc) }()
 	_, _ = tmpfile.Write([]byte(scYaml))
 	_ = tmpfile.Close()
 
 
-	tmpfile, _ = ioutil.TempFile("", "TestReportWithJS")
+	tmpfile, _ = ioutil.TempFile("", "TestReportWithJSGlobalcnfg")
 	fileGSCName := tmpfile.Name()
 	//defer func() { _ = os.Remove(gc) }()
 	_, _ = tmpfile.Write([]byte(globalCnfg))
 	_ = tmpfile.Close()
 
-	fmt.Println(fileSCName, fileGSCName)
 
 	apiPoolSize := 1
 	adapterPoolSize := 1
@@ -218,7 +216,6 @@ rules:
 		time.Second*time.Duration(1),
 		"",
 		cnfgNormalizer.NormalizedJavascriptConfigNormalizer{})
-	fmt.Println(cnfgMgr)
 
 	cnfgMgr.Register(adapterMgr)
 	cnfgMgr.Start()
