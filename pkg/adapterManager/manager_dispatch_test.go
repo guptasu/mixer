@@ -25,35 +25,11 @@ import (
 	"istio.io/mixer/pkg/config"
 	"istio.io/mixer/pkg/expr"
 	"istio.io/mixer/pkg/pool"
-	"istio.io/mixer/pkg/status"
 	"testing"
 	"time"
 )
 
-func TestActualReport(t *testing.T) {
-	scYaml := `
-subject: namespace:ns
-rules:
-        #- selector: service.name == “*”
-        #- selector: service.name == "myservice"
-- selector: true
-  aspects:
-  - name: prometheus_reporting_all_metrics
-    kind: metrics
-    adapter: prometheus
-    params:
-      metrics:
-      - descriptorName: request_count
-        # we want to increment this counter by 1 for each unique (source, target, service, method, response_code) tuple
-        value: response.code | 100
-        labels:
-          source: source.name | "one"
-          target: target.name | "one"
-          service: api.name | "one"
-          method: api.method | "one"
-          response_code: response.code | 111
-`
-	globalCnfg := `
+const globalCnfg = `
 subject: namespace:ns
 revision: "2022"
 adapters:
@@ -183,11 +159,36 @@ logs:
       value_type: 1 # STRING
 `
 
+func BenchmarkDispatchSingleHugeAspect(b *testing.B) {
+	scYaml := `
+subject: namespace:ns
+rules:
+        #- selector: service.name == “*”
+        #- selector: service.name == "myservice"
+- selector: true
+  aspects:
+  - name: prometheus_reporting_all_metrics
+    kind: metrics
+    adapter: prometheus
+    params:
+      metrics:
+      - descriptorName: request_count
+        # we want to increment this counter by 1 for each unique (source, target, service, method, response_code) tuple
+        value: response.code | 100
+        labels:
+          source: source.name | "one"
+          target: target.name | "one"
+          service: api.name | "one"
+          method: api.method | "one"
+          response_code: response.code | 111
+`
+
 	tmpfile, _ := ioutil.TempFile("", "TestReportWithJS")
 	fileSCName := tmpfile.Name()
 	//defer func() { _ = os.Remove(gc) }()
 	_, _ = tmpfile.Write([]byte(scYaml))
 	_ = tmpfile.Close()
+
 
 	tmpfile, _ = ioutil.TempFile("", "TestReportWithJS")
 	fileGSCName := tmpfile.Name()
@@ -224,10 +225,11 @@ logs:
 
 	requestBag := attribute.GetMutableBag(nil)
 	responseBag := attribute.GetMutableBag(nil)
-
-	out := adapterMgr.Report(context.Background(), requestBag, responseBag)
-
-	if !status.IsOK(out) {
-		t.Errorf("Report failed with %v", out)
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		_ = adapterMgr.Report(context.Background(), requestBag, responseBag)
+		//if !status.IsOK(out) {
+		//	t.Errorf("Report failed with %v", out)
+		//}
 	}
 }

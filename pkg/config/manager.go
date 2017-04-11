@@ -16,7 +16,6 @@ package config
 
 import (
 	"crypto/sha1"
-	"fmt"
 	"github.com/golang/glog"
 	"io/ioutil"
 	"istio.io/mixer/pkg/adapter"
@@ -140,14 +139,14 @@ func (c *Manager) fetch() (*runtime, descriptor.Finder, error) {
 	rt := newRuntime(vd, c.eval)
 
 	if c.userTypScrpt != "" {
-		fmt.Println("**config/manager.go : Received user provided TypeScript\n")
+		glog.Infof("**config/manager.go : Received user provided TypeScript\n")
 		rt.NormalizedConfig = c.configNormalizer.ReloadNormalizedConfigFile(c.userTypScrpt)
 	} else {
-		fmt.Println("**config/manager.go : Creating TypeScript from SC\n")
+		glog.Infof("**config/manager.go : Creating TypeScript from SC\n")
 		rt.NormalizedConfig = c.configNormalizer.Normalize(vd.serviceConfig, c.serviceConfig)
 	}
 
-	fmt.Println("**config/manager.go : Saving generated javascript in runtime object \n")
+	glog.Infof("**config/manager.go : Saving generated javascript in runtime object \n")
 
 	return rt, c.descriptorFinder, nil
 }
