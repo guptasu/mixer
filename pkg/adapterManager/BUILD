@@ -46,7 +46,7 @@ go_test(
     name = "e2e_tests",
     size = "small",
     srcs = [
-        "manager_dispatch_benchmark.go"
+        "manager_dispatch_test.go"
     ],
     library = ":go_default_library",
     deps = [
