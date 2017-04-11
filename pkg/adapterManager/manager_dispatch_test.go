@@ -16,7 +16,6 @@ package adapterManager
 
 import (
 	"context"
-	"fmt"
 	"io/ioutil"
 	"istio.io/mixer/adapter"
 	"istio.io/mixer/pkg/aspect"
@@ -182,19 +181,19 @@ rules:
           response_code: response.code | 111
 `
 
-	tmpfile, _ := ioutil.TempFile("", "TestReportWithJS")
+	tmpfile, _ := ioutil.TempFile("", "TestReportWithJSServCnfg")
 	fileSCName := tmpfile.Name()
 	//defer func() { _ = os.Remove(gc) }()
 	_, _ = tmpfile.Write([]byte(scYaml))
 	_ = tmpfile.Close()
 
-	tmpfile, _ = ioutil.TempFile("", "TestReportWithJS")
+
+	tmpfile, _ = ioutil.TempFile("", "TestReportWithJSGlobalcnfg")
 	fileGSCName := tmpfile.Name()
 	//defer func() { _ = os.Remove(gc) }()
 	_, _ = tmpfile.Write([]byte(globalCnfg))
 	_ = tmpfile.Close()
 
-	fmt.Println(fileSCName, fileGSCName)
 
 	apiPoolSize := 1
 	adapterPoolSize := 1
@@ -214,7 +213,6 @@ rules:
 		fileGSCName,
 		fileSCName,
 		time.Second*time.Duration(1))
-	fmt.Println(cnfgMgr)
 
 	cnfgMgr.Register(adapterMgr)
 	cnfgMgr.Start()
@@ -224,7 +222,8 @@ rules:
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		_ = adapterMgr.Report(context.Background(), requestBag, responseBag)
+		//if !status.IsOK(out) {
+		//	t.Errorf("Report failed with %v", out)
+		//}
 	}
-	//b.Fail()
-	//b.Error("")
 }
