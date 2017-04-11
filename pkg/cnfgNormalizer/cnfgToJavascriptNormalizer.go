@@ -34,7 +34,8 @@ var (
 )
 
 type NormalizedJavascriptConfig struct {
-	JavaScript string
+	// JavaScript string
+	VM *otto.Otto
 }
 
 type NormalizedJavascriptConfigNormalizer struct {
@@ -52,27 +53,34 @@ func (n NormalizedJavascriptConfigNormalizer) Normalize(sc *pb.ServiceConfig, fi
 
 	generatedJS := getJS(userTSAllCode, typeDefTSCode, attributeTypeDeclaration, fileForTypesFromAspectDescriptors, fileForWellKnownAttribs, fileLocation)
 
-	n.normalizedJavascriptConfig = NormalizedJavascriptConfig{JavaScript: generatedJS}
+	var vm *otto.Otto
+	vm = otto.New()
+	vm.Run(generatedJS)
+
+
+	n.normalizedJavascriptConfig = NormalizedJavascriptConfig{VM: vm}
 	return n.normalizedJavascriptConfig
 }
 
 func (n NormalizedJavascriptConfigNormalizer) ReloadNormalizedConfigFile(fileLocation string) config.NormalizedConfig {
-	n.normalizedJavascriptConfig = NormalizedJavascriptConfig{JavaScript: GenerateJsFromTypeScript(fileLocation)}
+	generatedJS:= GenerateJsFromTypeScript(fileLocation)
+	var vm *otto.Otto
+	vm = otto.New()
+	vm.Run(generatedJS)
+
+	n.normalizedJavascriptConfig = NormalizedJavascriptConfig{VM: vm}
 	return n.normalizedJavascriptConfig
 }
 
 // invoked at runtime
 func (n NormalizedJavascriptConfig) Evalaute(requestBag *attribute.MutableBag,
 	callBack func(kind string, val interface{})) {
-	vm := otto.New()
-	vm.Run(n.JavaScript)
-	vm.Set(callbackMtdName, callBack)
-
-	attribConstructor, _ := vm.Get("ConstructAttributes")
+	n.VM.Set(callbackMtdName, callBack)
+	attribConstructor, _ := n.VM.Get("ConstructAttributes")
 	attributesFromJS, errFromJS := attribConstructor.Call(otto.NullValue(), requestBag)
 	//fmt.Println(attributesFromJS)
 
-	checkFn, _ := vm.Get("report")
+	checkFn, _ := n.VM.Get("report")
 	_, errFromJS = checkFn.Call(otto.NullValue(), attributesFromJS)
 	if errFromJS != nil {
 		fmt.Println("ERROR FROM JS", errFromJS)

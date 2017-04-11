@@ -23,7 +23,7 @@ import (
 	"strings"
 	"sync"
 	"time"
-	"github.com/golang/glog"
+	///"github.com/golang/glog"
 	multierror "github.com/hashicorp/go-multierror"
 	"github.com/prometheus/client_golang/prometheus"
 
@@ -118,7 +118,7 @@ func (p *prom) Record(vals []adapter.Value) error {
 				continue
 			}
 			vec.With(promLabels(val.Labels)).Set(amt)
-			glog.Infof("** PROMETHEUS reporting Gauge metric value %v , labels %v \n\n", amt, val.Labels)
+			//glog.Infof("** PROMETHEUS reporting Gauge metric value %v , labels %v \n\n", amt, val.Labels)
 		case adapter.Counter:
 			vec := collector.(*prometheus.CounterVec)
 			amt, err := promValue(val)
@@ -127,7 +127,7 @@ func (p *prom) Record(vals []adapter.Value) error {
 				continue
 			}
 			vec.With(promLabels(val.Labels)).Add(amt)
-			glog.Infof("** PROMETHEUS reporting Counter metric value %v , labels %v \n\n", amt, val.Labels)
+			//glog.Infof("** PROMETHEUS reporting Counter metric value %v , labels %v \n\n", amt, val.Labels)
 		}
 	}
 
