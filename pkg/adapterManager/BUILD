@@ -41,3 +41,19 @@ go_test(
         "@com_github_istio_api//:mixer/v1/config/descriptor",
     ],
 )
+
+go_test(
+    name = "e2e_tests",
+    size = "small",
+    srcs = [
+        "manager_dispatch_benchmark.go"
+    ],
+    library = ":go_default_library",
+    deps = [
+        "//pkg/config/descriptor:go_default_library",
+        "//adapter:go_default_library",
+        "@com_github_googleapis_googleapis//:google/rpc",
+        "@com_github_istio_api//:mixer/v1/config",
+        "@com_github_istio_api//:mixer/v1/config/descriptor",
+    ],
+)
