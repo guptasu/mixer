@@ -218,6 +218,7 @@ rules:
 		cnfgNormalizer.NormalizedJavascriptConfigNormalizer{})
 
 	cnfgMgr.Register(adapterMgr)
+	b.ReportAllocs()
 	cnfgMgr.Start()
 
 	requestBag := attribute.GetMutableBag(nil)
