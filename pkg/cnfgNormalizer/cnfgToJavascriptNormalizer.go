@@ -15,21 +15,21 @@
 package cnfgNormalizer
 
 import (
-	"io/ioutil"
-	"os/exec"
-	"istio.io/mixer/pkg/config"
-	aconfig "istio.io/mixer/pkg/aspect/config"
-	pb "istio.io/mixer/pkg/config/proto"
-	"fmt"
 	"bytes"
+	"fmt"
 	"github.com/robertkrimen/otto"
+	"io/ioutil"
+	aconfig "istio.io/mixer/pkg/aspect/config"
 	"istio.io/mixer/pkg/attribute"
-	"path/filepath"
+	"istio.io/mixer/pkg/config"
+	pb "istio.io/mixer/pkg/config/proto"
 	"os"
+	"os/exec"
+	"path/filepath"
 )
 
 var (
-	callbackMtdName = "CallBackFromUserScript_go"
+	callbackMtdName        = "CallBackFromUserScript_go"
 	callbackMtdDeclaration = "var " + callbackMtdName + " = function(aspectName: string, val: any){};"
 )
 
@@ -49,7 +49,7 @@ func (n NormalizedJavascriptConfigNormalizer) Normalize(sc *pb.ServiceConfig, fi
 
 	fileForTypesFromAspectDescriptors := "TypesFromAspectDescriptors.ts"
 	fileForWellKnownAttribs := "WellKnownAttribs.ts"
-	userTSAllCode := getUserTSCodeFile(sc, fileForTypesFromAspectDescriptors, fileForWellKnownAttribs);
+	userTSAllCode := getUserTSCodeFile(sc, fileForTypesFromAspectDescriptors, fileForWellKnownAttribs)
 
 	generatedJS := getJS(userTSAllCode, typeDefTSCode, attributeTypeDeclaration, fileForTypesFromAspectDescriptors, fileForWellKnownAttribs, fileLocation)
 
@@ -57,13 +57,12 @@ func (n NormalizedJavascriptConfigNormalizer) Normalize(sc *pb.ServiceConfig, fi
 	vm = otto.New()
 	vm.Run(generatedJS)
 
-
 	n.normalizedJavascriptConfig = NormalizedJavascriptConfig{VM: vm}
 	return n.normalizedJavascriptConfig
 }
 
 func (n NormalizedJavascriptConfigNormalizer) ReloadNormalizedConfigFile(fileLocation string) config.NormalizedConfig {
-	generatedJS:= GenerateJsFromTypeScript(fileLocation)
+	generatedJS := GenerateJsFromTypeScript(fileLocation)
 	var vm *otto.Otto
 	vm = otto.New()
 	vm.Run(generatedJS)
@@ -76,12 +75,8 @@ func (n NormalizedJavascriptConfigNormalizer) ReloadNormalizedConfigFile(fileLoc
 func (n NormalizedJavascriptConfig) Evalaute(requestBag *attribute.MutableBag,
 	callBack func(kind string, val interface{})) {
 	n.VM.Set(callbackMtdName, callBack)
-	attribConstructor, _ := n.VM.Get("ConstructAttributes")
-	attributesFromJS, errFromJS := attribConstructor.Call(otto.NullValue(), requestBag)
-	//fmt.Println(attributesFromJS)
-
 	checkFn, _ := n.VM.Get("report")
-	_, errFromJS = checkFn.Call(otto.NullValue(), attributesFromJS)
+	_, errFromJS := checkFn.Call(otto.NullValue(), constructAttributesForJS(requestBag))
 	if errFromJS != nil {
 		fmt.Println("ERROR FROM JS", errFromJS)
 	}
@@ -90,18 +85,18 @@ func (n NormalizedJavascriptConfig) Evalaute(requestBag *attribute.MutableBag,
 func getUserTSCodeFile(sc *pb.ServiceConfig, imports ...string) string {
 	//vd.serviceConfig
 	/*
-	create methodStrs for each method (chk, report, quota)
-	for each rule r:
-	  create tmpMethodStrs for each method (chk, report, quota)
-          for each aspect a:
-	    generate JS k via Aspect Managers
-	    add k to appropriate tmpMethodStrs.
-	  for each non empty tmpMethodStrs {
-	    insert : if (rule) {
-	      tmpMethodStr
-	    }
-	  }
-	  Do recurrs for each nested rules.
+		create methodStrs for each method (chk, report, quota)
+		for each rule r:
+		  create tmpMethodStrs for each method (chk, report, quota)
+	          for each aspect a:
+		    generate JS k via Aspect Managers
+		    add k to appropriate tmpMethodStrs.
+		  for each non empty tmpMethodStrs {
+		    insert : if (rule) {
+		      tmpMethodStr
+		    }
+		  }
+		  Do recurrs for each nested rules.
 	*/
 	var reportMethodStr string
 
@@ -147,7 +142,7 @@ func getUserTSCodeFile(sc *pb.ServiceConfig, imports ...string) string {
 	userTSAllCode := fmt.Sprintf(allJSMethodFormat, reportMethodStr)
 
 	var importStringBuffer bytes.Buffer
-	for _,fileToImport := range imports {
+	for _, fileToImport := range imports {
 		importStringBuffer.WriteString(fmt.Sprintf("/// <reference path=\"%s\"/>\n\n", fileToImport))
 
 	}
@@ -158,7 +153,7 @@ func getUserTSCodeFile(sc *pb.ServiceConfig, imports ...string) string {
 }
 
 func getPredefinedTypesForDescriptors(sc *pb.ServiceConfig) string {
-	return ""+
+	return "" +
 		"\n//-----------------CallBack Method Declaration-----------------\n" +
 		"//This method gets injected at runtime. Need this declaration to make TypeScript happy\n" +
 		callbackMtdDeclaration + "\n" +
@@ -167,7 +162,7 @@ func getPredefinedTypesForDescriptors(sc *pb.ServiceConfig) string {
 }
 
 func getJS(userTSAllCode string, typeDefTSCode string, attributeTypeDeclaration string, fileNameForTypesFromAspectDescriptors string, fileNameForWellKnownAttribs string, srvcConfigFileLocation string) string {
-	generatedDirName := filepath.Join(filepath.Dir(srvcConfigFileLocation), getFileNameWithoutExt(srvcConfigFileLocation) + "_generated")
+	generatedDirName := filepath.Join(filepath.Dir(srvcConfigFileLocation), getFileNameWithoutExt(srvcConfigFileLocation)+"_generated")
 	tempTypeDefsTSFile := filepath.Join(generatedDirName, fileNameForTypesFromAspectDescriptors)
 	tempAttribsDefsTSFile := filepath.Join(generatedDirName, fileNameForWellKnownAttribs)
 	tempUserTSFile := filepath.Join(generatedDirName, getFileNameWithDifferentExt(srvcConfigFileLocation, ".ts"))
@@ -182,14 +177,13 @@ func getJS(userTSAllCode string, typeDefTSCode string, attributeTypeDeclaration 
 	ioutil.WriteFile(tempAttribsDefsTSFile, []byte(attributeTypeDeclaration), 0644)
 	_ = exec.Command("clang-format", "-i", tempAttribsDefsTSFile).Run()
 
-	return GenerateJsFromTypeScript(tempUserTSFile);
+	return GenerateJsFromTypeScript(tempUserTSFile)
 }
-
 
 func getFileNameWithDifferentExt(filePath string, ext string) string {
 	tmp := filepath.Base(filePath)
 
-	return tmp[0 : len(tmp)-len(filepath.Ext(tmp))] + ext
+	return tmp[0:len(tmp)-len(filepath.Ext(tmp))] + ext
 }
 
 func getFileNameWithoutExt(filePath string) string {
@@ -200,12 +194,13 @@ func getFileNameWithoutExt(filePath string) string {
 func getOutFileNameWithDifferentExt(filePath string, ext string) string {
 	tmp := filepath.Base(filePath)
 
-	return filepath.Join(filepath.Dir(filePath), tmp[0 : len(tmp)-len(filepath.Ext(tmp))] + ext)
+	return filepath.Join(filepath.Dir(filePath), tmp[0:len(tmp)-len(filepath.Ext(tmp))]+ext)
 }
 
-func GenerateJsFromTypeScript (userTSFile string) string {
+func GenerateJsFromTypeScript(userTSFile string) string {
 	tempGeneratedJSOutFile := getOutFileNameWithDifferentExt(userTSFile, ".js")
-	err := exec.Command("tsc", "--lib", "es7", "--outFile",  tempGeneratedJSOutFile, userTSFile).Run()
+	//err := exec.Command("tsc", "--lib", "es7", "--outFile", tempGeneratedJSOutFile, userTSFile).Run()
+	err := exec.Command("tsc", "--outFile", tempGeneratedJSOutFile, userTSFile).Run()
 	if err != nil {
 		fmt.Println("tst generation failed", err)
 	}
@@ -213,7 +208,7 @@ func GenerateJsFromTypeScript (userTSFile string) string {
 	if err != nil {
 		fmt.Println("cannot read generated JS file", err)
 	}
-	return string(generatedJS);
+	return string(generatedJS)
 }
 
 func getAllDeclarations(sc *pb.ServiceConfig) string {

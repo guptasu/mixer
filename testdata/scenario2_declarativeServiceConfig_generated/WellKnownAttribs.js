@@ -2,27 +2,24 @@ var Attributes = (function () {
     function Attributes(attribs) {
         // Fill the set of attribues that are part of the call (data is available
         // inside the attribs).
-        if (attribs.Get('response.code')[1]) {
-            this.ResponseCode = attribs.Get('response.code')[0];
+        if (attribs['api.method'] !== undefined) {
+            this.ApiMethod = attribs['api.method'];
         }
-        if (attribs.Get('response.latency')[1]) {
-            this.ResponseLatency = attribs.Get('response.latency')[0];
+        if (attribs['target.name'] !== undefined) {
+            this.TargetName = attribs['target.name'];
         }
-        if (attribs.Get('api.method')[1]) {
-            this.ApiMethod = attribs.Get('api.method')[0];
+        if (attribs['api.name'] !== undefined) {
+            this.ApiName = attribs['api.name'];
         }
-        if (attribs.Get('target.name')[1]) {
-            this.TargetName = attribs.Get('target.name')[0];
+        if (attribs['source.name'] !== undefined) {
+            this.SourceName = attribs['source.name'];
         }
-        if (attribs.Get('api.name')[1]) {
-            this.ApiName = attribs.Get('api.name')[0];
+        if (attribs['response.code'] !== undefined) {
+            this.ResponseCode = attribs['response.code'];
         }
-        if (attribs.Get('source.name')[1]) {
-            this.SourceName = attribs.Get('source.name')[0];
+        if (attribs['response.latency'] !== undefined) {
+            this.ResponseLatency = attribs['response.latency'];
         }
     }
     return Attributes;
 }());
-function ConstructAttributes(attr) {
-    return new Attributes(attr);
-}

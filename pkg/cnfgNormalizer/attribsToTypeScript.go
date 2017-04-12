@@ -19,6 +19,7 @@ import (
 	"fmt"
 	dpb "istio.io/api/mixer/v1/config/descriptor"
 	"strings"
+	"istio.io/mixer/pkg/attribute"
 )
 var (
 	attributesDescriptor = map[string]dpb.ValueType{
@@ -56,8 +57,8 @@ func GetTypeFromAttributes() string {
 		attributesTypeFields.WriteString(fmt.Sprintf("%s: %s;\n", attrUpperCamelCaseName, valueTypeToJSType[attrType]))
 
 		constructorCode.WriteString(fmt.Sprintf(`
-		if (attribs.Get('%s')[1]) {
-		  this.%s = attribs.Get('%s')[0]
+		if (attribs['%s'] !== undefined) {
+		  this.%s = attribs['%s']
 		}
 		`, attrName, attrUpperCamelCaseName, attrName))
 
@@ -72,10 +73,15 @@ func GetTypeFromAttributes() string {
 
 	        %s
 	      }
-	    }
-            function ConstructAttributes(attr: any) : Attributes {
-              return new Attributes(attr)
-            }`, attributesTypeFields.String(), constructorCode.String())
+	    }`, attributesTypeFields.String(), constructorCode.String())
 
 	return AttributesClass
+}
+
+func constructAttributesForJS(requestBag *attribute.MutableBag) map[string]interface{} {
+	attribs := make(map[string]interface{})
+	for _, attribName := range requestBag.Names() {
+          attribs[dotCaseToCamelCase(attribName)],_ = requestBag.Get(attribName)
+	}
+	return attribs
 }

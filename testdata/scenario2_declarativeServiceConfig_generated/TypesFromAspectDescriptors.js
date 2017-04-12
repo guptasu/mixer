@@ -14,8 +14,8 @@ var RequestLatency = (function () {
     return RequestLatency;
 }());
 function RecordRequestCountInPrometheusReportingAllMetrics(val) {
-    CallBackFromUserScript_go("prometheus_reporting_all_metrics", { descriptorName: "request_count", value: val });
+    CallBackFromUserScript_go('prometheus_reporting_all_metrics', { descriptorName: 'request_count', value: val });
 }
 function RecordRequestLatencyInPrometheusReportingAllMetrics(val) {
-    CallBackFromUserScript_go("prometheus_reporting_all_metrics", { descriptorName: "request_latency", value: val });
+    CallBackFromUserScript_go('prometheus_reporting_all_metrics', { descriptorName: 'request_latency', value: val });
 }

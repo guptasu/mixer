@@ -23,11 +23,13 @@ class RequestLatency {
 }
 
 function RecordRequestCountInPrometheusReportingAllMetrics(val: RequestCount){
-    CallBackFromUserScript_go("prometheus_reporting_all_metrics",
-                              {descriptorName : "request_count", value : val})}
+    CallBackFromUserScript_go(
+        'prometheus_reporting_all_metrics',
+        {descriptorName: 'request_count', value: val})}
 
 function RecordRequestLatencyInPrometheusReportingAllMetrics(
     val: RequestLatency) {
-  CallBackFromUserScript_go("prometheus_reporting_all_metrics",
-                            {descriptorName : "request_latency", value : val})
+  CallBackFromUserScript_go(
+      'prometheus_reporting_all_metrics',
+      {descriptorName: 'request_latency', value: val})
 }
