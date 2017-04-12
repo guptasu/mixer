@@ -1,17 +1,25 @@
 
 class Attributes {
   // All the well known attribute names.
+  ResponseCode: number;
+  ResponseLatency: number;
   ApiMethod: string;
   TargetName: string;
   ApiName: string;
   SourceName: string;
-  ResponseCode: number;
-  ResponseLatency: number;
 
   constructor(attribs: any) {
     // Fill the set of attribues that are part of the call (data is available
     // inside the attribs).
 
+
+    if (attribs['response.code'] !== undefined) {
+      this.ResponseCode = attribs['response.code']
+    }
+
+    if (attribs['response.latency'] !== undefined) {
+      this.ResponseLatency = attribs['response.latency']
+    }
 
     if (attribs['api.method'] !== undefined) {
       this.ApiMethod = attribs['api.method']
@@ -27,14 +35,6 @@ class Attributes {
 
     if (attribs['source.name'] !== undefined) {
       this.SourceName = attribs['source.name']
-    }
-
-    if (attribs['response.code'] !== undefined) {
-      this.ResponseCode = attribs['response.code']
-    }
-
-    if (attribs['response.latency'] !== undefined) {
-      this.ResponseLatency = attribs['response.latency']
     }
   }
 }

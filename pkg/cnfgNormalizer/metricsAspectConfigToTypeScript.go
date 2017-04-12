@@ -19,6 +19,7 @@ import (
 	"fmt"
 	dpb "istio.io/api/mixer/v1/config/descriptor"
 	aconfig "istio.io/mixer/pkg/aspect/config"
+	pb "istio.io/mixer/pkg/config/proto"
 	"strings"
 )
 
@@ -61,31 +62,35 @@ func GenerateUserCodeForMetrics(metricsParams *aconfig.MetricsParams, aspectName
 	//var allMetricsStr bytes.Buffer
 	var metricsStr bytes.Buffer
 	for _, metric := range params.Metrics {
-		var labelStr bytes.Buffer
-		labelStr.WriteString(fmt.Sprintf("%s: %s", "value", getJSForExpression(metric.Value)))
-		labelLen := len(metric.Labels)
-		if labelLen != 0 {
-			labelStr.WriteString(",\n")
-		}
-		for key, value := range metric.Labels {
-			labelStr.WriteString(fmt.Sprintf(`%s: %s`, key, getJSForExpression(value)))
-			labelLen--
-			if labelLen != 0 {
-				labelStr.WriteString(",\n")
-			}
-		}
 		methodToInvoke := getMethodNameFromDescriptorAndAspectName(metric.DescriptorName, aspectName)
 		callStr := fmt.Sprintf(`
-				%s({
-	  			  %s
-				})`, methodToInvoke, labelStr.String())
+				%s(
+	  			  %s(%s)
+				)`, methodToInvoke, getMethodNameForConstructionOfDescriptor(metric.DescriptorName, aspectName), "attributes")
 		metricsStr.WriteString(callStr + "\n")
 
 	}
 	return metricsStr.String()
 }
 
-func GetMetricAspectAllDeclarations(callbackMtdName string, declaredMetricAspectNames []string) string {
+func createObject(metric *aconfig.MetricsParams_Metric) bytes.Buffer {
+	var labelStr bytes.Buffer
+	labelStr.WriteString(fmt.Sprintf("%s: %s", "value", getJSForExpression(metric.Value)))
+	labelLen := len(metric.Labels)
+	if labelLen != 0 {
+		labelStr.WriteString(",\n")
+	}
+	for key, value := range metric.Labels {
+		labelStr.WriteString(fmt.Sprintf(`%s: %s`, key, getJSForExpression(value)))
+		labelLen--
+		if labelLen != 0 {
+			labelStr.WriteString(",\n")
+		}
+	}
+	return labelStr
+}
+
+func GetMetricAspectAllDeclarations(callbackMtdName string, declaredMetricAspectNames []string, declaredMetricAspects []*pb.Aspect) string {
 	var metricsStr bytes.Buffer
 	for _, metricDescriptor := range desc {
 		metricsStr.WriteString(createClassForDescriptor(metricDescriptor))
@@ -93,12 +98,32 @@ func GetMetricAspectAllDeclarations(callbackMtdName string, declaredMetricAspect
 	for _, metricDescriptor := range desc {
 		metricsStr.WriteString(createMethodForDescriptor(metricDescriptor, callbackMtdName, declaredMetricAspectNames))
 	}
-
+	for _, metricAspect := range declaredMetricAspects {
+		params := metricAspect.Params.(*aconfig.MetricsParams)
+		for _, metric := range params.Metrics {
+			metricsStr.WriteString(createDescrptorConstructionMethod(metric, metricAspect.Name) + "\n")
+		}
+	}
 	return metricsStr.String()
 }
 
 func getMethodNameFromDescriptorAndAspectName(descriptorNameSnakeCase string, aspectNameSnakeCase string) string {
 	return fmt.Sprintf("Record%sIn%s", snake2UpperCamelCase(descriptorNameSnakeCase), snake2UpperCamelCase(aspectNameSnakeCase))
+}
+
+
+func getMethodNameForConstructionOfDescriptor(descriptorNameSnakeCase string, aspectNameSnakeCase string) string {
+	return fmt.Sprintf("Construct%sFor%s", snake2UpperCamelCase(descriptorNameSnakeCase), snake2UpperCamelCase(aspectNameSnakeCase))
+}
+
+func createDescrptorConstructionMethod(metricDescriptorObject *aconfig.MetricsParams_Metric, aspectName string) string {
+	methodNameForConstructor := getMethodNameForConstructionOfDescriptor(metricDescriptorObject.DescriptorName, aspectName)
+	var fieldBuffer = createObject(metricDescriptorObject)
+	return fmt.Sprintf(`
+                                function %s(attributes: Attributes) {
+	                          return {%s}
+	                        }
+				`, methodNameForConstructor, fieldBuffer.String())
 }
 
 func createClassForDescriptor(metricDescriptor *dpb.MetricDescriptor) string {

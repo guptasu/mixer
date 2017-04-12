@@ -213,15 +213,17 @@ func GenerateJsFromTypeScript(userTSFile string) string {
 
 func getAllDeclarations(sc *pb.ServiceConfig) string {
 	allUserDeclaredMetricsAspectNames := make([]string, 0)
+	allUserDeclaredMetricsAspects := make([]*pb.Aspect, 0)
 	for _, aspectRule := range sc.GetRules() {
 		for _, aspect := range aspectRule.GetAspects() {
 			if aspect.Kind == "metrics" {
+				allUserDeclaredMetricsAspects = append(allUserDeclaredMetricsAspects, aspect)
 				allUserDeclaredMetricsAspectNames = append(allUserDeclaredMetricsAspectNames, aspect.Name)
 			}
 			// TODO... need to go nested inside the rules within the aspects
 		}
 	}
-	return GetMetricAspectAllDeclarations(callbackMtdName, allUserDeclaredMetricsAspectNames)
+	return GetMetricAspectAllDeclarations(callbackMtdName, allUserDeclaredMetricsAspectNames, allUserDeclaredMetricsAspects)
 }
 
 func getAttributesDeclaration() string {
