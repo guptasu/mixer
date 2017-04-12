@@ -22,14 +22,11 @@ class RequestLatency {
   response_code: number;
 }
 
-function RecordRequestCountInPrometheusReportingAllMetrics(val: RequestCount){
+function RecordRequestCountInMyAspect1(val: RequestCount){
     CallBackFromUserScript_go(
-        'prometheus_reporting_all_metrics',
-        {descriptorName: 'request_count', value: val})}
+        'MyAspect1', {descriptorName: 'request_count', value: val})}
 
-function RecordRequestLatencyInPrometheusReportingAllMetrics(
-    val: RequestLatency) {
+function RecordRequestLatencyInMyAspect1(val: RequestLatency) {
   CallBackFromUserScript_go(
-      'prometheus_reporting_all_metrics',
-      {descriptorName: 'request_latency', value: val})
+      'MyAspect1', {descriptorName: 'request_latency', value: val})
 }

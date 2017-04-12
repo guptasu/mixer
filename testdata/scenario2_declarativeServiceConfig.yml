@@ -4,7 +4,7 @@ rules:
         #- selector: service.name == "myservice"
 - selector: true
   aspects:
-  - name: prometheus_reporting_all_metrics
+  - name: MyAspect1
     kind: metrics
     adapter: prometheus
     params:
