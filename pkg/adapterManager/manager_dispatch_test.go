@@ -277,9 +277,9 @@ BenchmarkDispatchSimpleOneAspect-12     	   10000	    157341 ns/op
 BenchmarkDispatchSimple50Aspect-12      	     300	   5482677 ns/op
 BenchmarkDispatchComplexOneAspect-12    	   10000	    176707 ns/op
 BenchmarkDispatchComplex50Aspect-12     	     200	   6755903 ns/op
-*/
 
-/*
+--------------------------------------------------------------------------------------
+
 Numbers with existing code (no Javascript stuff):
 BenchmarkDispatchSimpleOneAspect-12     	   10000	    169966 ns/op
 BenchmarkDispatchSimple50Aspect-12      	     200	   6987477 ns/op
