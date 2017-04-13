@@ -274,7 +274,13 @@ func benchmarkDispatchSingleHugeAspect(b *testing.B, aspectStringFmt string, loo
 	}
 }
 
-
+/*
+Numbers with JS code:
+BenchmarkDispatchSimpleOneAspect-12     	   10000	    157341 ns/op
+BenchmarkDispatchSimple50Aspect-12      	     300	   5482677 ns/op
+BenchmarkDispatchComplexOneAspect-12    	   10000	    176707 ns/op
+BenchmarkDispatchComplex50Aspect-12     	     200	   6755903 ns/op
+*/
 func BenchmarkDispatchSimpleOneAspect(b *testing.B) {
 	benchmarkDispatchSingleHugeAspect(b, scYamlSimpleOneAspectStrFromat, 1)
 }
