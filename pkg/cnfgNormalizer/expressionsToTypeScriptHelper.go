@@ -51,11 +51,11 @@ func EvalJSExpession(e *expr.Expression, fMap map[string]expr.FuncBase, getPropM
 		return fmt.Sprintf("%s == %s", leftStr, rightStr), nil
 	}
 	if e.Fn.Name == "OR" {
-		//(age < 18) ? "Too young":"Old enough"
 		allArgs := e.Fn.Args
 		if len(allArgs) > 0 {
-			chkIfExists := fmt.Sprintf(getPropMtdName+"%s !== undefined", getAttributeFieldName(allArgs[0].Var.Name))
-			leftexp, _ := EvalJSExpession(e.Fn.Args[0], fMap, getPropMtdName)
+			var chkIfExists string
+			leftexp,_ := EvalJSExpession(e.Fn.Args[0], fMap, getPropMtdName)
+			chkIfExists = fmt.Sprintf("%s !== undefined", leftexp)
 			rightexp, _ := EvalJSExpession(e.Fn.Args[1], fMap, getPropMtdName)
 			return fmt.Sprintf("%s ? %s : %s", chkIfExists, leftexp, rightexp), nil
 		}

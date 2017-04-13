@@ -16,5 +16,5 @@ rules:
           source: source.name | "unknown"
           target: target.name | "unknown"
           service: api.name | "unknown"
-          method: api.method | "unknown"
+          method: api.method | api.name | "unknown"
           response_code: response.code | 200

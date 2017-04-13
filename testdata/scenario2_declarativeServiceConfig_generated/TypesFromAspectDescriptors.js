@@ -22,16 +22,22 @@ function RecordRequestLatencyInMyAspect1(val) {
 function ConstructRequestCountForMyAspect1(attributes) {
     return {
         value: 1,
-        response_code: attributes.ResponseCode !== undefined ?
-            attributes.ResponseCode :
-            200,
-        service: attributes.ApiName !== undefined ? attributes.ApiName :
-            'unknown',
-        source: attributes.SourceName !== undefined ? attributes.SourceName :
-            'unknown',
-        target: attributes.TargetName !== undefined ? attributes.TargetName :
-            'unknown',
-        method: attributes.ApiMethod !== undefined ? attributes.ApiMethod :
-            'unknown'
+        service: ((attributes.ApiName) !== undefined) ? (attributes.ApiName) :
+            ('unknown'),
+        source: ((attributes.SourceName) !== undefined) ?
+            (attributes.SourceName) :
+            ('unknown'),
+        target: ((attributes.TargetName) !== undefined) ?
+            (attributes.TargetName) :
+            ('unknown'),
+        method: ((((attributes.ApiMethod) !== undefined) ?
+            (attributes.ApiMethod) :
+            (attributes.SourceName)) !== undefined) ?
+            (((attributes.ApiMethod) !== undefined) ? (attributes.ApiMethod) :
+                (attributes.SourceName)) :
+            ('unknown'),
+        response_code: ((attributes.ResponseCode) !== undefined) ?
+            (attributes.ResponseCode) :
+            (200)
     };
 }
