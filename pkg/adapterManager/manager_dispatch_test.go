@@ -25,6 +25,9 @@ import (
 	"istio.io/mixer/pkg/pool"
 	"testing"
 	"time"
+	"strings"
+	//"fmt"
+	"strconv"
 )
 
 const globalCnfg = `
@@ -157,21 +160,19 @@ logs:
       value_type: 1 # STRING
 `
 
-func BenchmarkDispatchSingleHugeAspect(b *testing.B) {
-	scYaml := `
+const scYamlInitialSection = `
 subject: namespace:ns
 rules:
-        #- selector: service.name == “*”
-        #- selector: service.name == "myservice"
 - selector: true
   aspects:
-  - name: prometheus_reporting_all_metrics
+`
+const scYamlSimpleOneAspectStrFromat = `
+  - name: prometheus_reporting_all_metrics$s
     kind: metrics
     adapter: prometheus
     params:
       metrics:
       - descriptorName: request_count
-        # we want to increment this counter by 1 for each unique (source, target, service, method, response_code) tuple
         value: response.code | 100
         labels:
           source: source.name | "one"
@@ -181,9 +182,51 @@ rules:
           response_code: response.code | 111
 `
 
+// SOMETHING IS BREAKING WITH THIS HUGE LIST>>> NEED TO TEST MORE>..
+//const scYamlOneLargeExprAspectStrFormat = `
+//  - name: prometheus_reporting_all_metrics$s
+//    kind: metrics
+//    adapter: prometheus
+//    params:
+//      metrics:
+//      - descriptorName: request_count
+//        value: response.code | 100
+//        labels:
+//          source: source.name | target.name | source.name | target.name | source.name | target.name | source.name | target.name | source.name | target.name | source.name | target.name | source.name | target.name | source.name | target.name | "one"
+//          target: target.name | source.name | target.name | source.name | target.name | source.name | target.name | source.name | target.name | source.name | target.name | source.name | target.name | source.name | target.name | source.name | "one"
+//          service: api.name | target.name | api.name | target.name | api.name | target.name | api.name | target.name | api.name | target.name | api.name | target.name | api.name | target.name | api.name | target.name | api.name | target.name | "one"
+//          method: api.method | target.name | api.method | target.name | api.method | target.name | api.method | target.name | api.method | target.name | api.method | target.name | api.method | target.name | api.method | target.name | api.method | target.name | "one"
+//          response_code: response.code | response.code | response.code | response.code | response.code | response.code | response.code | response.code | response.code | response.code | response.code | response.code | response.code | response.code | 111
+//`
+
+
+const scYamlOneLargeExprAspectStrFormat = `
+  - name: prometheus_reporting_all_metrics$s
+    kind: metrics
+    adapter: prometheus
+    params:
+      metrics:
+      - descriptorName: request_count
+        value: response.code | 100
+        labels:
+          source: source.name | target.name | source.name | target.name | "one"
+          target: source.name | target.name | source.name | "one"
+          service: target.name | api.name | target.name | "one"
+          method: api.method | target.name | api.method | target.name | "one"
+          response_code: response.code | response.code | response.code | response.code | response.code | response.code | response.code | response.code | 111
+`
+
+func benchmarkDispatchSingleHugeAspect(b *testing.B, aspectStringFmt string, loopSize int64) {
+
 	tmpfile, _ := ioutil.TempFile("", "TestReportWithJSServCnfg")
 	fileSCName := tmpfile.Name()
-	//defer func() { _ = os.Remove(gc) }()
+	var scYaml string = scYamlInitialSection
+
+	var i int64
+	for i = 0; i < loopSize; i++ {
+		scYaml = scYaml + strings.Replace(aspectStringFmt, "$s", strconv.FormatInt(i, 10), 1)
+	}
+	//fmt.Println(scYaml)
 	_, _ = tmpfile.Write([]byte(scYaml))
 	_ = tmpfile.Close()
 
@@ -226,4 +269,35 @@ rules:
 		//	t.Errorf("Report failed with %v", out)
 		//}
 	}
+}
+
+/*
+Numbers with JS code:
+BenchmarkDispatchSimpleOneAspect-12     	   10000	    157341 ns/op
+BenchmarkDispatchSimple50Aspect-12      	     300	   5482677 ns/op
+BenchmarkDispatchComplexOneAspect-12    	   10000	    176707 ns/op
+BenchmarkDispatchComplex50Aspect-12     	     200	   6755903 ns/op
+*/
+
+/*
+Numbers with existing code (no Javascript stuff):
+BenchmarkDispatchSimpleOneAspect-12     	   10000	    169966 ns/op
+BenchmarkDispatchSimple50Aspect-12      	     200	   6987477 ns/op
+BenchmarkDispatchComplexOneAspect-12    	    5000	    212257 ns/op
+BenchmarkDispatchComplex50Aspect-12     	     200	   8960063 ns/op
+*/
+func BenchmarkDispatchSimpleOneAspect(b *testing.B) {
+	benchmarkDispatchSingleHugeAspect(b, scYamlSimpleOneAspectStrFromat, 1)
+}
+
+func BenchmarkDispatchSimple50Aspect(b *testing.B) {
+	benchmarkDispatchSingleHugeAspect(b, scYamlSimpleOneAspectStrFromat, 50)
+}
+
+func BenchmarkDispatchComplexOneAspect(b *testing.B) {
+	benchmarkDispatchSingleHugeAspect(b, scYamlOneLargeExprAspectStrFormat, 1)
+}
+
+func BenchmarkDispatchComplex50Aspect(b *testing.B) {
+	benchmarkDispatchSingleHugeAspect(b, scYamlOneLargeExprAspectStrFormat, 50)
 }
