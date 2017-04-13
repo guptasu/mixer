@@ -22,20 +22,16 @@ function RecordRequestLatencyInMyAspect1(val) {
 function ConstructRequestCountForMyAspect1(attributes) {
     return {
         value: 1,
-        source: attributes.SourceName !== undefined ? attributes.SourceName :
+        method: attributes.ApiMethod !== undefined ? attributes.ApiMethod :
             'unknown',
-        target: attributes.TargetName !== undefined ? attributes.TargetName :
-            'unknown',
-        method: attributes.ApiMethod !== undefined ?
-            attributes.ApiMethod :
-            attributes.ApiName !== undefined ? attributes.ApiMethod !== undefined ?
-                attributes.ApiMethod :
-                attributes.ApiName :
-                'unknown',
         response_code: attributes.ResponseCode !== undefined ?
             attributes.ResponseCode :
             200,
         service: attributes.ApiName !== undefined ? attributes.ApiName :
+            'unknown',
+        source: attributes.SourceName !== undefined ? attributes.SourceName :
+            'unknown',
+        target: attributes.TargetName !== undefined ? attributes.TargetName :
             'unknown'
     };
 }
@@ -43,15 +39,6 @@ var Attributes = (function () {
     function Attributes(attribs) {
         // Fill the set of attribues that are part of the call (data is available
         // inside the attribs).
-        if (attribs['api.name'] !== undefined) {
-            this.ApiName = attribs['api.name'];
-        }
-        if (attribs['source.name'] !== undefined) {
-            this.SourceName = attribs['source.name'];
-        }
-        if (attribs['response.code'] !== undefined) {
-            this.ResponseCode = attribs['response.code'];
-        }
         if (attribs['response.latency'] !== undefined) {
             this.ResponseLatency = attribs['response.latency'];
         }
@@ -60,6 +47,15 @@ var Attributes = (function () {
         }
         if (attribs['target.name'] !== undefined) {
             this.TargetName = attribs['target.name'];
+        }
+        if (attribs['api.name'] !== undefined) {
+            this.ApiName = attribs['api.name'];
+        }
+        if (attribs['source.name'] !== undefined) {
+            this.SourceName = attribs['source.name'];
+        }
+        if (attribs['response.code'] !== undefined) {
+            this.ResponseCode = attribs['response.code'];
         }
     }
     return Attributes;
