@@ -29,7 +29,7 @@ import (
 )
 
 var (
-	callbackMtdName        = "CallBackFromUserScript_go"
+	callbackMtdName        = "__interal__callback_fn"
 	callbackMtdDeclaration = "var " + callbackMtdName + " = function(aspectName: string, val: any){};"
 )
 
