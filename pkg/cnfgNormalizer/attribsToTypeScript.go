@@ -49,31 +49,17 @@ func dotCaseToCamelCase(s string) string {
 
 func GetTypeFromAttributes() string {
 	var attributesTypeFields bytes.Buffer
-	var constructorCode bytes.Buffer
 
 	for attrName, attrType := range attributesDescriptor {
 		attrUpperCamelCaseName := dotCaseToCamelCase(attrName)
-
 		attributesTypeFields.WriteString(fmt.Sprintf("%s: %s;\n", attrUpperCamelCaseName, valueTypeToJSType[attrType]))
-
-		constructorCode.WriteString(fmt.Sprintf(`
-		if (attribs['%s'] !== undefined) {
-		  this.%s = attribs['%s']
-		}
-		`, attrName, attrUpperCamelCaseName, attrName))
-
 	}
 
 	AttributesClass := fmt.Sprintf(`
 	    class Attributes {
 	      // All the well known attribute names.
 	      %s
-	      constructor (attribs: any) {
-	        // Fill the set of attribues that are part of the call (data is available inside the attribs).
-
-	        %s
-	      }
-	    }`, attributesTypeFields.String(), constructorCode.String())
+	    }`, attributesTypeFields.String())
 
 	return AttributesClass
 }
