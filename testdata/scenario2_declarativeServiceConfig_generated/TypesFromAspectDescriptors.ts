@@ -7,11 +7,11 @@ var CallBackFromUserScript_go = function(aspectName: string, val: any) {};
 //-----------------All Types Declaration-----------------
 class RequestCount {
   value: number;
+  response_code: number;
   source: string;
   target: string;
   service: string;
   method: string;
-  response_code: number;
 }
 class RequestLatency {
   value: number;

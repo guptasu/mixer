@@ -32,12 +32,12 @@ var (
 			Kind:        dpb.COUNTER,
 			Value:       dpb.INT64,
 			Description: "request count by source, target, service, and code",
-			Labels: []*dpb.LabelDescriptor{
-				{Name: "source", ValueType: dpb.STRING},
-				{Name: "target", ValueType: dpb.STRING},
-				{Name: "service", ValueType: dpb.STRING},
-				{Name: "method", ValueType: dpb.STRING},
-				{Name: "response_code", ValueType: dpb.INT64},
+			Labels: map[string]dpb.ValueType{
+				"source": dpb.STRING,
+				"target": dpb.STRING,
+				"service": dpb.STRING,
+				"method": dpb.STRING,
+				"response_code": dpb.INT64,
 			},
 		},
 		{
@@ -45,12 +45,12 @@ var (
 			Kind:        dpb.COUNTER,
 			Value:       dpb.INT64,
 			Description: "request latency by source, target, and service",
-			Labels: []*dpb.LabelDescriptor{
-				{Name: "source", ValueType: dpb.STRING},
-				{Name: "target", ValueType: dpb.STRING},
-				{Name: "service", ValueType: dpb.STRING},
-				{Name: "method", ValueType: dpb.STRING},
-				{Name: "response_code", ValueType: dpb.INT64},
+			Labels: map[string]dpb.ValueType{
+				"source": dpb.STRING,
+				"target": dpb.STRING,
+				"service": dpb.STRING,
+				"method": dpb.STRING,
+				"response_code": dpb.INT64,
 			},
 		},
 	}
@@ -130,8 +130,8 @@ func createClassForDescriptor(metricDescriptor *dpb.MetricDescriptor) string {
 	var metricsStr bytes.Buffer
 	var fieldsStr bytes.Buffer
 	fieldsStr.WriteString(fmt.Sprintf("%s: %s;", "value", getJSType(metricDescriptor.Value)))
-	for _, label := range metricDescriptor.Labels {
-		fieldsStr.WriteString(fmt.Sprintf("%s: %s;", label.Name, getJSType(label.ValueType)))
+	for name, valType := range metricDescriptor.Labels {
+		fieldsStr.WriteString(fmt.Sprintf("%s: %s;", name, getJSType(valType)))
 	}
 	metricsStr.WriteString(fmt.Sprintf("class %s {%s}\n", snake2UpperCamelCase(metricDescriptor.Name), fieldsStr.String()))
 	return metricsStr.String()
