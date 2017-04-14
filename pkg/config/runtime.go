@@ -15,6 +15,8 @@
 package config
 
 import (
+	"fmt"
+
 	"github.com/golang/glog"
 	multierror "github.com/hashicorp/go-multierror"
 	"istio.io/mixer/pkg/attribute"
@@ -54,8 +56,8 @@ type ResolveFn func(bag attribute.Bag, set KindSet) ([]*pb.Combined, error)
 // a disjoint set of aspects check: {iplistChecker, iam}, report: {Log, metrics}
 func (r *runtime) Resolve(bag attribute.Bag, kindSet KindSet) (dlist []*pb.Combined, err error) {
 	if glog.V(2) {
-		glog.Infof("resolving for: %s", kindSet)
-		defer func() { glog.Infof("resolved (err=%v): %s", err, dlist) }()
+		glog.Infof("resolving for kinds: %s", kindSet)
+		defer func() { glog.Infof("resolved configs (err=%v): %s", err, dlist) }()
 	}
 	dlist = make([]*pb.Combined, 0, r.numAspects)
 	return r.resolveRules(bag, kindSet, r.serviceConfig.GetRules(), "/", dlist, false /* conditional full resolve */)
@@ -67,8 +69,8 @@ func (r *runtime) Resolve(bag attribute.Bag, kindSet KindSet) (dlist []*pb.Combi
 // method is primarily used for preprocess aspect configuration retrieval.
 func (r *runtime) ResolveUnconditional(bag attribute.Bag, set KindSet) (out []*pb.Combined, err error) {
 	if glog.V(2) {
-		glog.Infof("resolving (unconditional) for: %s", set)
-		defer func() { glog.Infof("resolved (unconditional, err=%v): %s", err, out) }()
+		glog.Infof("unconditionally resolving for kinds: %s", set)
+		defer func() { glog.Infof("unconditionally resolved configs (err=%v): %s", err, out) }()
 	}
 	out = make([]*pb.Combined, 0, r.numAspects)
 	return r.resolveRules(bag, set, r.serviceConfig.GetRules(), "/", out, true /* unconditional resolve */)
@@ -95,6 +97,10 @@ func (r *runtime) resolveRules(bag attribute.Bag, kindSet KindSet, rules []*pb.A
 	var err error
 
 	for _, rule := range rules {
+		// We write detailed logs about a single rule into a string rather than printing as we go to ensure
+		// they're all in a single log line and not interleaved with logs from other requests.
+		logMsg := ""
+
 		glog.V(3).Infof("resolveRules (%v) ==> %v ", rule, path)
 
 		sel := rule.GetSelector()
@@ -109,18 +115,30 @@ func (r *runtime) resolveRules(bag attribute.Bag, kindSet KindSet, rules []*pb.A
 		if !selected {
 			continue
 		}
+		if glog.V(3) {
+			logMsg = fmt.Sprintf("Rule (%v) applies, using aspect kinds %v:", rule.GetSelector(), kindSet)
+		}
 
 		path = path + "/" + sel
 		for _, aa := range rule.GetAspects() {
 			k, ok := ParseKind(aa.Kind)
 			if !ok || !kindSet.IsSet(k) {
-				glog.V(3).Infof("Aspect %s not selected [%v]", aa.Kind, kindSet)
+				if glog.V(3) {
+					logMsg = fmt.Sprintf("%s\n- did not select aspect kind %s named '%s', wrong kind", logMsg, aa.Kind, aa.Adapter)
+				}
 				continue
 			}
 			adp := r.adapterByName[adapterKey{k, aa.Adapter}]
-			glog.V(2).Infof("selected aspect %s -> %s", aa.Kind, adp)
+			if glog.V(3) {
+				logMsg = fmt.Sprintf("%s\n- selected aspect kind %s with config: %v", logMsg, aa.Kind, adp)
+			}
 			dlist = append(dlist, &pb.Combined{Builder: adp, Aspect: aa})
 		}
+
+		if glog.V(3) {
+			glog.Info(logMsg)
+		}
+
 		rs := rule.GetRules()
 		if len(rs) == 0 {
 			continue

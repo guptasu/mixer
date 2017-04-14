@@ -14,6 +14,12 @@
 
 package config
 
+import (
+	"fmt"
+
+	"istio.io/mixer/pkg/pool"
+)
+
 // Kind of aspect
 type Kind uint
 
@@ -24,7 +30,7 @@ type KindSet uint
 const (
 	AccessLogsKind Kind = iota
 	ApplicationLogsKind
-	AttributeGenerationKind
+	AttributesKind
 	DenialsKind
 	ListsKind
 	MetricsKind
@@ -35,24 +41,24 @@ const (
 
 // Name of all supported aspect kinds.
 const (
-	AccessLogsKindName          = "access-logs"
-	ApplicationLogsKindName     = "application-logs"
-	AttributeGenerationKindName = "attribute-generation"
-	DenialsKindName             = "denials"
-	ListsKindName               = "lists"
-	MetricsKindName             = "metrics"
-	QuotasKindName              = "quotas"
+	AccessLogsKindName      = "access-logs"
+	ApplicationLogsKindName = "application-logs"
+	AttributesKindName      = "attributes"
+	DenialsKindName         = "denials"
+	ListsKindName           = "lists"
+	MetricsKindName         = "metrics"
+	QuotasKindName          = "quotas"
 )
 
 // kindToString maps from kinds to their names.
 var kindToString = map[Kind]string{
-	AccessLogsKind:          AccessLogsKindName,
-	ApplicationLogsKind:     ApplicationLogsKindName,
-	AttributeGenerationKind: AttributeGenerationKindName,
-	DenialsKind:             DenialsKindName,
-	ListsKind:               ListsKindName,
-	MetricsKind:             MetricsKindName,
-	QuotasKind:              QuotasKindName,
+	AccessLogsKind:      AccessLogsKindName,
+	ApplicationLogsKind: ApplicationLogsKindName,
+	AttributesKind:      AttributesKindName,
+	DenialsKind:         DenialsKindName,
+	ListsKind:           ListsKindName,
+	MetricsKind:         MetricsKindName,
+	QuotasKind:          QuotasKindName,
 }
 
 // stringToKinds maps from kind name to kind enum.
@@ -77,6 +83,27 @@ func (ks KindSet) IsSet(k Kind) bool {
 // Set returns a new KindSet with the given aspect kind enabled.
 func (ks KindSet) Set(k Kind) KindSet {
 	return ks | (1 << k)
+}
+
+func (ks KindSet) String() string {
+	buf := pool.GetBuffer()
+	defer pool.PutBuffer(buf) // fine to pay the defer overhead; this is out of request path
+
+	fmt.Fprint(buf, "[")
+	for k, v := range kindToString {
+		if ks.IsSet(k) {
+			fmt.Fprintf(buf, "%s, ", v)
+		}
+	}
+
+	// Make sure the empty KindSet is printed as "[]" rather than "".
+	if buf.Len() <= len("[") {
+		return "[]"
+	}
+	// Otherwise trim off the trailing ", " and close the bracket we opened.
+	buf.Truncate(buf.Len() - 2)
+	fmt.Fprint(buf, "]")
+	return buf.String()
 }
 
 func init() {
