@@ -7,11 +7,11 @@ var __interal__callback_fn = function(aspectName: string, val: any) {};
 //-----------------All Types Declaration-----------------
 class RequestCount {
   value: number;
-  response_code: number;
   source: string;
   target: string;
   service: string;
   method: string;
+  response_code: number;
 }
 class RequestLatency {
   value: number;
@@ -34,16 +34,16 @@ function RecordRequestLatencyInMyAspect1(val: RequestLatency) {
 function ConstructRequestCountForMyAspect1(attributes: Attributes) {
   return {
     value: 1,
+        method: attributes.ApiMethod !== undefined ? attributes.ApiMethod
+                                                   : "unknown",
+        response_code: attributes.ResponseCode !== undefined
+            ? attributes.ResponseCode
+            : 200,
         service: attributes.ApiName !== undefined ? attributes.ApiName
                                                   : "unknown",
         source: attributes.SourceName !== undefined ? attributes.SourceName
                                                     : "unknown",
         target: attributes.TargetName !== undefined ? attributes.TargetName
-                                                    : "unknown",
-        method: attributes.ApiMethod !== undefined ? attributes.ApiMethod
-                                                   : "unknown",
-        response_code: attributes.ResponseCode !== undefined
-            ? attributes.ResponseCode
-            : 200
+                                                    : "unknown"
   }
 }
