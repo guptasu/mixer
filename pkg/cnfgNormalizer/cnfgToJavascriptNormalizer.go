@@ -171,12 +171,20 @@ func getJS(userTSAllCode string, typeDefTSCode string, attributeTypeDeclaration 
 		fmt.Println("cannot create directory", generatedDirName)
 	}
 	ioutil.WriteFile(tempUserTSFile, []byte(userTSAllCode), 0644)
-	_ = exec.Command("clang-format", "-i", tempUserTSFile).Run()
+	err = exec.Command("clang-format", "-i", tempUserTSFile).Run()
+	if err != nil {
+		fmt.Println("cannot run clang-format", tempUserTSFile, err)
+	}
 	ioutil.WriteFile(tempTypeDefsTSFile, []byte(typeDefTSCode), 0644)
-	_ = exec.Command("clang-format", "-i", tempTypeDefsTSFile).Run()
+	err = exec.Command("clang-format", "-i", tempTypeDefsTSFile).Run()
+	if err != nil {
+		fmt.Println("cannot run clang-format", tempTypeDefsTSFile, err)
+	}
 	ioutil.WriteFile(tempAttribsDefsTSFile, []byte(attributeTypeDeclaration), 0644)
-	_ = exec.Command("clang-format", "-i", tempAttribsDefsTSFile).Run()
-
+	err = exec.Command("clang-format", "-i", tempAttribsDefsTSFile).Run()
+	if err != nil {
+		fmt.Println("cannot run clang-format", tempAttribsDefsTSFile, err)
+	}
 	return GenerateJsFromTypeScript(tempUserTSFile)
 }
 
