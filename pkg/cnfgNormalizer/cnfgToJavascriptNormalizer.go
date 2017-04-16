@@ -26,6 +26,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	//"github.com/augustoroman/v8"
 )
 
 var (
@@ -38,8 +39,72 @@ type NormalizedJavascriptConfig struct {
 	VM *otto.Otto
 }
 
+// invoked at runtime
+func (n NormalizedJavascriptConfig) Evalaute(requestBag *attribute.MutableBag,
+	callBack func(kind string, val interface{})) {
+	n.VM.Set(callbackMtdName, callBack)
+	checkFn, _ := n.VM.Get("report")
+	_, errFromJS := checkFn.Call(otto.NullValue(), constructAttributesForJS(requestBag))
+	if errFromJS != nil {
+		fmt.Println("ERROR FROM JS", errFromJS)
+	}
+}
+
+func CreateNormalizedJavascriptConfig(js string) NormalizedJavascriptConfig {
+
+	var vm *otto.Otto
+	vm = otto.New()
+	vm.Run(js)
+
+	return NormalizedJavascriptConfig{VM: vm}
+}
+/*
+type NormalizedJavascriptConfigWithV8 struct {
+	v8Context *v8.Context
+	reportMtd *v8.Value
+}
+
+// invoked at runtime
+func (n NormalizedJavascriptConfigWithV8) Evalaute(requestBag *attribute.MutableBag,
+	callBack func(kind string, val interface{})) {
+
+	tmpCallBack := func(in v8.CallbackArgs) (*v8.Value, error) {
+		//fmt.Printf("Args: %s", in.Args)
+		callBack(in.Arg(0).String(), in.Arg(1))
+		return nil, nil
+	}
+	n.v8Context.Global().Set(callbackMtdName, n.v8Context.Bind(callbackMtdName, tmpCallBack))
+
+
+	attribsV8Value, err := n.v8Context.Create(constructAttributesForJS(requestBag))
+	if err != nil {
+		fmt.Println("ERROR constructing/binding attribs object", err)
+	}
+	_, errFromJS := n.reportMtd.Call(nil, attribsV8Value)
+	if errFromJS != nil {
+		fmt.Println("ERROR FROM JS with v8 engine", errFromJS)
+	}
+}
+
+func CreateNormalizedJavascriptConfigWithV8(js string) NormalizedJavascriptConfigWithV8 {
+
+	ctx := v8.NewIsolate().NewContext()
+
+	_, err := ctx.Eval(js, "")
+	if err != nil {
+		fmt.Println("ERROR parsing JS", err)
+		//return nil
+	}
+	reportMtd,err := ctx.Global().Get("report")
+	if err != nil {
+		fmt.Println("ERROR finding report method", err)
+		//return nil
+	}
+	return NormalizedJavascriptConfigWithV8{v8Context: ctx, reportMtd:reportMtd}
+}
+*/
 type NormalizedJavascriptConfigNormalizer struct {
-	normalizedJavascriptConfig NormalizedJavascriptConfig
+	normalizedConfig config.NormalizedConfig
 }
 
 func (n NormalizedJavascriptConfigNormalizer) Normalize(sc *pb.ServiceConfig, fileLocation string) config.NormalizedConfig {
@@ -53,33 +118,16 @@ func (n NormalizedJavascriptConfigNormalizer) Normalize(sc *pb.ServiceConfig, fi
 
 	generatedJS := getJS(userTSAllCode, typeDefTSCode, attributeTypeDeclaration, fileForTypesFromAspectDescriptors, fileForWellKnownAttribs, fileLocation)
 
-	var vm *otto.Otto
-	vm = otto.New()
-	vm.Run(generatedJS)
-
-	n.normalizedJavascriptConfig = NormalizedJavascriptConfig{VM: vm}
-	return n.normalizedJavascriptConfig
+	//n.normalizedConfig = CreateNormalizedJavascriptConfigWithV8(generatedJS)
+	n.normalizedConfig = CreateNormalizedJavascriptConfig(generatedJS)
+	return n.normalizedConfig
 }
 
 func (n NormalizedJavascriptConfigNormalizer) ReloadNormalizedConfigFile(fileLocation string) config.NormalizedConfig {
 	generatedJS := GenerateJsFromTypeScript(fileLocation)
-	var vm *otto.Otto
-	vm = otto.New()
-	vm.Run(generatedJS)
-
-	n.normalizedJavascriptConfig = NormalizedJavascriptConfig{VM: vm}
-	return n.normalizedJavascriptConfig
-}
-
-// invoked at runtime
-func (n NormalizedJavascriptConfig) Evalaute(requestBag *attribute.MutableBag,
-	callBack func(kind string, val interface{})) {
-	n.VM.Set(callbackMtdName, callBack)
-	checkFn, _ := n.VM.Get("report")
-	_, errFromJS := checkFn.Call(otto.NullValue(), constructAttributesForJS(requestBag))
-	if errFromJS != nil {
-		fmt.Println("ERROR FROM JS", errFromJS)
-	}
+	//n.normalizedConfig = CreateNormalizedJavascriptConfigWithV8(generatedJS)
+	n.normalizedConfig = CreateNormalizedJavascriptConfig(generatedJS)
+	return n.normalizedConfig
 }
 
 func getUserTSCodeFile(sc *pb.ServiceConfig, imports ...string) string {
