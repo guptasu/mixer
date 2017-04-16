@@ -255,6 +255,12 @@ BenchmarkDispatchSimple50Aspect-12      	     300	   5482677 ns/op
 BenchmarkDispatchComplexOneAspect-12    	   10000	    176707 ns/op
 BenchmarkDispatchComplex50Aspect-12     	     200	   6755903 ns/op
 
+Numbers with JS and V8 engine
+BenchmarkDispatchSimpleOneAspect-8    	   10000	    173206 ns/op
+BenchmarkDispatchSimple50Aspect-8     	     300	   5452768 ns/op
+BenchmarkDispatchComplexOneAspect-8   	   10000	    190211 ns/op
+BenchmarkDispatchComplex50Aspect-8    	     200	   5927000 ns/op
+
 --------------------------------------------------------------------------------------
 
 Numbers with existing code (no Javascript stuff):
