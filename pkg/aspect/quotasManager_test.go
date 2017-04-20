@@ -23,8 +23,6 @@ import (
 	"testing"
 	"time"
 
-	ptypes "github.com/gogo/protobuf/types"
-
 	dpb "istio.io/api/mixer/v1/config/descriptor"
 	"istio.io/mixer/pkg/adapter"
 	atest "istio.io/mixer/pkg/adapter/test"
@@ -79,21 +77,18 @@ func (b *fakeQuotaBuilder) NewQuotasAspect(env adapter.Env, config adapter.Confi
 
 var (
 	quotaRequestCount = &dpb.QuotaDescriptor{
-		Name:       "RequestCount",
-		MaxAmount:  5,
-		Expiration: &ptypes.Duration{Seconds: 1},
-		Labels:     []*dpb.LabelDescriptor{},
+		Name:   "RequestCount",
+		Labels: map[string]dpb.ValueType{},
 	}
 
 	quotaWithLabels = &dpb.QuotaDescriptor{
-		Name:       "desc with labels",
-		Expiration: &ptypes.Duration{Seconds: 1},
-		Labels: []*dpb.LabelDescriptor{
-			{Name: "source", ValueType: dpb.STRING},
-			{Name: "target", ValueType: dpb.STRING},
-			{Name: "service", ValueType: dpb.STRING},
-			{Name: "method", ValueType: dpb.STRING},
-			{Name: "response_code", ValueType: dpb.INT64},
+		Name: "desc with labels",
+		Labels: map[string]dpb.ValueType{
+			"source":        dpb.STRING,
+			"target":        dpb.STRING,
+			"service":       dpb.STRING,
+			"method":        dpb.STRING,
+			"response_code": dpb.INT64,
 		},
 	}
 )
@@ -116,6 +111,8 @@ func newQuotaConfig(desc string, labels map[string]string) *cpb.Combined {
 					{
 						DescriptorName: desc,
 						Labels:         labels,
+						MaxAmount:      5,
+						Expiration:     time.Duration(1) * time.Second,
 					},
 				},
 			},
@@ -163,9 +160,8 @@ func TestQuotasManager_ValidateConfig(t *testing.T) {
 		quotaRequestCount.Name: quotaRequestCount,
 		quotaWithLabels.Name:   quotaWithLabels,
 		"invalid desc": &dpb.QuotaDescriptor{
-			Name:       "invalid desc",
-			Expiration: nil,
-			Labels:     []*dpb.LabelDescriptor{},
+			Name:   "invalid desc",
+			Labels: map[string]dpb.ValueType{},
 		},
 		// our attributes
 		"duration": &dpb.AttributeDescriptor{Name: "duration", ValueType: dpb.DURATION},
@@ -239,7 +235,6 @@ func TestQuotasManager_ValidateConfig(t *testing.T) {
 		{"failed type checking (bad expr)", &aconfig.QuotasParams{Quotas: []*aconfig.QuotasParams_Quota{&invalidExpr}}, v, df, "failed to parse expression"},
 		{"label eval'd type doesn't match desc", &aconfig.QuotasParams{Quotas: []*aconfig.QuotasParams_Quota{&wrongLabelType}}, v, df, "expected type STRING"},
 		{"wrong dimensions for metric", &aconfig.QuotasParams{Quotas: []*aconfig.QuotasParams_Quota{&extraLabel}}, v, df, "wrong dimensions"},
-		{"can't convert proto to adapter rep", &aconfig.QuotasParams{Quotas: []*aconfig.QuotasParams_Quota{&badDesc}}, v, df, "failed to marshal descriptor"},
 	}
 
 	for idx, tt := range tests {
@@ -387,7 +382,7 @@ func TestQuotas_DescToDef(t *testing.T) {
 		{
 			&dpb.QuotaDescriptor{
 				Name:   "bad label",
-				Labels: []*dpb.LabelDescriptor{{ValueType: dpb.VALUE_TYPE_UNSPECIFIED}},
+				Labels: map[string]dpb.ValueType{"invalid": dpb.VALUE_TYPE_UNSPECIFIED},
 			},
 			nil,
 			"VALUE_TYPE_UNSPECIFIED",
@@ -397,16 +392,12 @@ func TestQuotas_DescToDef(t *testing.T) {
 				Name:        "NAME",
 				DisplayName: "DISPLAYNAME",
 				Description: "DESCRIPTION",
-				MaxAmount:   123,
-				Labels:      []*dpb.LabelDescriptor{{Name: "string", ValueType: dpb.STRING}},
-				Expiration:  ptypes.DurationProto(time.Duration(42) * time.Second),
+				Labels:      map[string]dpb.ValueType{"string": dpb.STRING},
 			},
 			&adapter.QuotaDefinition{
 				Name:        "NAME",
 				DisplayName: "DISPLAYNAME",
 				Description: "DESCRIPTION",
-				MaxAmount:   123,
-				Expiration:  time.Duration(42) * time.Second,
 				Labels:      map[string]adapter.LabelType{"string": adapter.String},
 			},
 			"",

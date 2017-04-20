@@ -1,6 +1,6 @@
 #!groovy
 
-@Library('testutils@stable-96c1bdb')
+@Library('testutils@stable-cd138c4')
 
 import org.istio.testutils.Utilities
 import org.istio.testutils.GitUtilities
@@ -49,7 +49,8 @@ def presubmit(gitUtils, bazel, utils) {
       sh('bin/racetest.sh')
     }
     stage('Code Coverage') {
-      sh('bin/codecov.sh')
+      sh('bin/codecov.sh > codecov.report')
+      sh('bazel-bin/bin/toolbox/presubmit/package_coverage_check')
       utils.publishCodeCoverage('MIXER_CODECOV_TOKEN')
     }
     stage('Docker Test Push') {
@@ -90,8 +91,9 @@ def stablePostsubmit(gitUtils, bazel, utils) {
   goBuildNode(gitUtils, 'istio.io/mixer') {
     bazel.updateBazelRc()
     stage('Docker Push') {
+      def date = new Date().format("YYYY-MM-dd-HH.mm.ss")
       def images = 'mixer,mixer_debug'
-      def tags = "${env.GIT_SHORT_SHA},\$(date +%Y-%m-%d-%H.%M.%S),latest"
+      def tags = "${env.GIT_SHORT_SHA},${date},latest"
       utils.publishDockerImagesToDockerHub(images, tags)
       utils.publishDockerImagesToContainerRegistry(images, tags, '', 'gcr.io/istio-io')
     }

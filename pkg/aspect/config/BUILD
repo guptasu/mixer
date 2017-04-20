@@ -4,9 +4,10 @@ gogoslick_proto_library(
     name = "go_default_library",
     importmap = {
         "gogoproto/gogo.proto": "github.com/gogo/protobuf/gogoproto",
+        "google/protobuf/duration.proto": "github.com/gogo/protobuf/types",
     },
     imports = [
-        "../../../../external/com_github_gogo_protobuf",
+        "external/com_github_gogo_protobuf",
         "external/com_github_google_protobuf/src",
     ],
     inputs = [
@@ -16,6 +17,7 @@ gogoslick_proto_library(
     protos = [
         "accessLogs.proto",
         "applicationLogs.proto",
+        "attrgen.proto",
         "denials.proto",
         "lists.proto",
         "metrics.proto",
@@ -29,5 +31,6 @@ gogoslick_proto_library(
     deps = [
         "@com_github_gogo_protobuf//gogoproto:go_default_library",
         "@com_github_gogo_protobuf//sortkeys:go_default_library",
+        "@com_github_gogo_protobuf//types:go_default_library",
     ],
 )

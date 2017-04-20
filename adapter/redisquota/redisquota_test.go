@@ -29,7 +29,7 @@ import (
 )
 
 // TODO: add more unit tests here and try to reuse the tests with memQuota adapter
-func TestAllocAndRelease(t *testing.T) {
+func TestAllocAndReleaseFixedWindow(t *testing.T) {
 	s, err := miniredis.Run()
 	if err != nil {
 		t.Errorf("Unable to start mini redis: %v", err)
@@ -80,18 +80,13 @@ func TestAllocAndRelease(t *testing.T) {
 		{"Q1", "5b", 0, 0, false, 0, 0, 5, 5},
 		{"Q1", "5c", 0, 0, false, 0, 0, 15, 5},
 
-		// The following tests works in real redis server, but the mock redis does not implement timeout function,
-		// which means that even set EXPIRE to key, key will persist forever. So unit tests cannot pass.
-		/*
-			{"Q3", "6", 10, 10, false, time.Second * 2, 0, 0, 0},
-			{"Q3", "7", 10, 0, false, 0, 1, 0, 0},
-			{"Q3", "8", 10, 10, false, time.Second * 2, 3, 0, 0},
-			{"Q3", "9", 100, 10, true, time.Second * 2, 5, 0, 0},
-			{"Q3", "10", 10, 0, false, 0, 6, 10, 10},
-			{"Q3", "11", 0, 0, false, 0, 7, 1000, 0},
-			{"Q3", "11", 0, 0, false, 0, 7, 1000, 0},
-		*/
-
+		{"Q3", "6", 10, 10, false, time.Second * 2, 0, 0, 0},
+		{"Q3", "7", 10, 0, false, 0, 1, 0, 0},
+		{"Q3", "8", 10, 10, false, time.Second * 2, 3, 0, 0},
+		{"Q3", "9", 100, 10, true, time.Second * 2, 5, 0, 0},
+		{"Q3", "10", 10, 0, false, 0, 6, 10, 10},
+		{"Q3", "11", 0, 0, false, 0, 7, 1000, 0},
+		{"Q3", "11", 0, 0, false, 0, 7, 1000, 0},
 	}
 
 	labels := make(map[string]interface{})
@@ -156,16 +151,150 @@ func TestAllocAndRelease(t *testing.T) {
 			}
 		})
 
-		//For test on real redis.
-		/*
-			if i == 9 || i == 12 || i == 13 {
-				time.Sleep(time.Second)
-			}
-			if i == 10 || i == 11 {
-				time.Sleep(2 * time.Second)
-			}
-		*/
+		// To simulate time proceed for mock redis.
+		if i == 9 || i == 12 || i == 13 {
+			s.FastForward(time.Second)
 
+		}
+		if i == 10 || i == 11 {
+			s.FastForward(time.Second * 2)
+
+		}
+	}
+
+	if err := a.Close(); err != nil {
+		t.Errorf("Unable to close aspect: %v", err)
+	}
+
+	if err := b.Close(); err != nil {
+		t.Errorf("Unable to close builder: %v", err)
+	}
+}
+
+func TestAllocAndReleaseRollingWindow(t *testing.T) {
+	s, err := miniredis.Run()
+	if err != nil {
+		t.Errorf("Unable to start mini redis: %v", err)
+	}
+	defer s.Close()
+
+	definitions := make(map[string]*adapter.QuotaDefinition)
+
+	definitions["Q3"] = &adapter.QuotaDefinition{
+		MaxAmount:  10,
+		Expiration: time.Second * 60,
+	}
+
+	b := newBuilder()
+	c := b.DefaultConfig().(*config.Params)
+	c.RedisServerUrl = s.Addr()
+	c.MinDeduplicationDuration = time.Duration(3600) * time.Second
+	c.RateLimitAlgorithm = "rolling-window"
+
+	a, err := b.NewQuotasAspect(test.NewEnv(t), c, definitions)
+	if err != nil {
+		t.Errorf("Unable to create aspect: %v", err)
+	}
+
+	asp := a.(*redisQuota)
+
+	cases := []struct {
+		name            string
+		dedup           string
+		allocAmount     int64
+		allocResult     int64
+		allocBestEffort bool
+		exp             time.Duration
+		seconds         int64
+		releaseAmount   int64
+		releaseResult   int64
+	}{
+		{"Q3", "6", 10, 10, false, time.Second * 60, 1, 0, 0},
+		{"Q3", "7", 10, 0, false, 0, 2, 0, 0},
+		{"Q3", "8", 10, 0, false, 0, 60, 0, 0},
+		{"Q3", "9", 10, 10, false, time.Second * 60, 61, 0, 0},
+		{"Q3", "10", 100, 10, true, time.Second * 60, 179, 0, 0},
+		{"Q3", "11", 10, 0, false, 0, 181, 0, 0},
+	}
+
+	labels := make(map[string]interface{})
+	labels["L1"] = "string"
+	labels["L2"] = int64(2)
+	labels["L3"] = float64(3.0)
+	labels["L4"] = true
+	labels["L5"] = time.Now()
+	labels["L6"] = []byte{0, 1}
+	labels["L7"] = map[string]string{"Foo": "Bar"}
+
+	now := time.Now()
+	s.FastForward(1)
+
+	for i, c := range cases {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			qa := adapter.QuotaArgs{
+				Definition:      definitions[c.name],
+				DeduplicationID: "A" + c.dedup,
+				QuotaAmount:     c.allocAmount,
+				Labels:          labels,
+			}
+
+			asp.common.GetTime = func() time.Time {
+				return now.Add(time.Duration(c.seconds) * time.Second)
+			}
+
+			var qr adapter.QuotaResult
+			var err error
+
+			if c.allocBestEffort {
+				qr, err = a.AllocBestEffort(qa)
+			} else {
+				qr, err = a.Alloc(qa)
+			}
+
+			if err != nil {
+				t.Errorf("Expecting success, got %v", err)
+			}
+
+			if qr.Amount != c.allocResult {
+				t.Errorf("Expecting %d, got %d", c.allocResult, qr.Amount)
+			}
+
+			if qr.Expiration != c.exp {
+				t.Errorf("Expecting %v, got %v", c.exp, qr.Expiration)
+			}
+
+			qa = adapter.QuotaArgs{
+				Definition:      definitions[c.name],
+				DeduplicationID: "R" + c.dedup,
+				QuotaAmount:     c.releaseAmount,
+				Labels:          labels,
+			}
+
+			var amount int64
+			amount, err = a.ReleaseBestEffort(qa)
+			if err != nil {
+				t.Errorf("Expecting success, got %v", err)
+			}
+
+			if amount != c.releaseResult {
+				t.Errorf("Expecting %d, got %d", c.releaseResult, amount)
+			}
+		})
+
+		// To simulate time proceed for mock redis.
+		if i == 0 || i == 2 {
+			s.FastForward(1)
+		}
+		if i == 1 {
+			s.FastForward(58)
+		}
+		if i == 3 {
+			s.FastForward(118)
+		}
+		if i == 4 {
+			s.FastForward(2)
+
+		}
 	}
 
 	if err := a.Close(); err != nil {
@@ -285,4 +414,10 @@ func TestBadConfig(t *testing.T) {
 	if err := b.ValidateConfig(c); err == nil {
 		t.Error("Expecting failure, got success")
 	}
+
+	c.RateLimitAlgorithm = "unknown"
+	if err := b.ValidateConfig(c); err == nil {
+		t.Error("Expecting failure, got success")
+	}
+
 }

@@ -1,14 +1,32 @@
 subject: namespace:ns
 revision: "2022"
 rules:
-        #- selector: service.name == “*”
-        #- selector: service.name == "myservice"
-- selector: true
+- selector: # must be empty for preprocessing adapters
   aspects:
+  # when running local without a kubeconfig file specified in globalconfig,
+  # this aspect should be commented out. It is only needed when the attributes
+  # it produces are needed elsewhere in the config.
+  - kind: attributes
+    params:
+      input_expressions:
+        sourceUID: source.uid | ""
+        targetUID: target.uid | ""
+        originUID: origin.uid | ""
+        targetService: request.headers["authority"] | request.host | ""
+      attribute_bindings:
+        source.ip: sourcePodIp
+        source.service: sourceService
+        source.name: sourcePodName
+        source.namespace: sourceNamespace
+        source.labels: sourceLabels
+        source.serviceAccount: sourceServiceAccountName
+        target.service: targetService
   - kind: quotas
     params:
       quotas:
       - descriptor_name: RequestCount
+        max_amount: 5
+        expiration: 1s
   - kind: metrics
     adapter: prometheus
     params:
@@ -23,7 +41,7 @@ rules:
           method: api.method | "unknown"
           response_code: response.code | 200
       - descriptor_name:  request_latency
-        value: response.latency | "0ms"
+        value: response.duration | "0ms"
         labels:
           source: source.name | "unknown"
           target: target.name | "unknown"
