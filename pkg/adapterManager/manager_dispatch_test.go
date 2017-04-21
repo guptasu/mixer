@@ -216,6 +216,15 @@ const scYamlOneLargeExprAspectStrFormat = `
           response_code: response.code | response.code | response.code | response.code | response.code | response.code | response.code | response.code | 111
 `
 
+func configStore(url, serviceConfigFile, globalConfigFile string) (store config.KeyValueStore) {
+	if url != "" {
+		store, _ = config.NewStore(url)
+		return store
+	}
+	store, _ = config.NewCompatFSStore(globalConfigFile, serviceConfigFile)
+	return store
+}
+
 func benchmarkDispatchSingleHugeAspect(b *testing.B, aspectStringFmt string, loopSize int64) {
 
 	tmpfile, _ := ioutil.TempFile("", "TestReportWithJSServCnfg")
@@ -251,11 +260,11 @@ func benchmarkDispatchSingleHugeAspect(b *testing.B, aspectStringFmt string, loo
 
 	eval := expr.NewCEXLEvaluator()
 	adapterMgr := NewManager(adapter.Inventory(), aspect.Inventory(), eval, gp, adapterGP)
+	store := configStore("", fileSCName, fileGSCName)
 	cnfgMgr := config.NewManager(eval, adapterMgr.AspectValidatorFinder, adapterMgr.BuilderValidatorFinder,
-		adapterMgr.SupportedKinds,
-		fileGSCName,
-		fileSCName,
-		time.Second*time.Duration(1))
+		adapterMgr.SupportedKinds, store,
+		time.Second*time.Duration(1),
+	"target.service", "svc.cluster.local")
 
 	cnfgMgr.Register(adapterMgr)
 	cnfgMgr.Start()
@@ -265,9 +274,6 @@ func benchmarkDispatchSingleHugeAspect(b *testing.B, aspectStringFmt string, loo
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		_ = adapterMgr.Report(context.Background(), requestBag, responseBag)
-		//if !status.IsOK(out) {
-		//	t.Errorf("Report failed with %v", out)
-		//}
 	}
 }
 
