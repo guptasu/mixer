@@ -41,13 +41,17 @@ type NormalizedJavascriptConfig struct {
 
 // invoked at runtime
 func (n NormalizedJavascriptConfig) Evalaute(requestBag *attribute.MutableBag,
-	callBack func(kind string, val interface{})) {
-	n.VM.Set(callbackMtdName, callBack)
+	callBack func(kind string, val interface{})) [][]interface {} {
+
 	checkFn, _ := n.VM.Get("report")
-	_, errFromJS := checkFn.Call(otto.NullValue(), constructAttributesForJS(requestBag))
+	resultValue, errFromJS := checkFn.Call(otto.NullValue(), constructAttributesForJS(requestBag))
 	if errFromJS != nil {
 		fmt.Println("ERROR FROM JS", errFromJS)
 	}
+
+	evaluatedData,_ := resultValue.Export()
+	v := evaluatedData.(map[string]interface{})["result"]
+	return v.([][]interface {})
 }
 
 func CreateNormalizedJavascriptConfig(js string) NormalizedJavascriptConfig {
@@ -176,8 +180,10 @@ func getUserTSCodeFile(sc *pb.ServiceConfig, imports ...string) string {
 		}
 	}
 	allJSMethodFormat := `
-		function report(attributes: Attributes) {
+		function report(attributes: Attributes) : ReportResult {
+		    var result = new ReportResult();
 		    %s
+		    return result;
 		}
 		function check(attributes) {
 		    // TODO

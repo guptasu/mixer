@@ -187,7 +187,7 @@ func executeScriptAndGetEvaluatedData(cfg config.Resolver, requestBag *attribute
 
 	evaluatedDataForAspectList := make([]*evaluatedDataForAspect, 0, 100)
 	glog.Infof("** adapterManager: Invoking Javascript\n")
-	cfg.GetNormalizedConfig().Evalaute(requestBag, func(aspectName string, evaluatedValue interface{}) {
+	result := cfg.GetNormalizedConfig().Evalaute(requestBag, func(aspectName string, evaluatedValue interface{}) {
 		glog.Infof("** Callback from Javascript received. aspectName : '%s', evaluatedValue interface : '%v'\n\n", aspectName, evaluatedValue)
 		for _, cfg := range cfgs {
 			if cfg.Aspect.Name == aspectName {
@@ -198,6 +198,18 @@ func executeScriptAndGetEvaluatedData(cfg config.Resolver, requestBag *attribute
 		}
 	})
 
+	for _,v := range result {
+		aspectName := v[0]
+		aspectEvaluatedValue := v[1]
+		for _, cfg := range cfgs {
+			if cfg.Aspect.Name == aspectName {
+				// Save all the evaluated data. We can then dispatch them to different aspects by fanning out to
+				// multiple go routines.
+
+				evaluatedDataForAspectList = append(evaluatedDataForAspectList, &evaluatedDataForAspect{cfg: cfg, value: aspectEvaluatedValue})
+			}
+		}
+	}
 	return evaluatedDataForAspectList
 }
 

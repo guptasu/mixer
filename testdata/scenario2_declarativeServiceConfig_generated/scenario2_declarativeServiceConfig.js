@@ -13,26 +13,35 @@ var RequestLatency = (function () {
     }
     return RequestLatency;
 }());
-function RecordRequestCountInMyAspect1(val) {
-    __interal__callback_fn("MyAspect1", { descriptorName: "request_count", value: val });
-}
-function RecordRequestLatencyInMyAspect1(val) {
-    __interal__callback_fn("MyAspect1", { descriptorName: "request_latency", value: val });
-}
+var ReportResult = (function () {
+    function ReportResult() {
+        this.result = [];
+    }
+    ReportResult.prototype.InsertRequestCountForMyAspect1 = function (val) {
+        this.result.push(['MyAspect1', { descriptorName: 'request_count', value: val }]);
+    };
+    ReportResult.prototype.InsertRequestLatencyForMyAspect1 = function (val) {
+        this.result.push(['MyAspect1', { descriptorName: 'request_latency', value: val }]);
+    };
+    ReportResult.prototype.Build = function () {
+        return this.result;
+    };
+    return ReportResult;
+}());
 function ConstructRequestCountForMyAspect1(attributes) {
     return {
         value: 1,
-        method: attributes.ApiMethod !== undefined ? attributes.ApiMethod
-            : "unknown",
-        response_code: attributes.ResponseCode !== undefined
-            ? attributes.ResponseCode
-            : 200,
-        service: attributes.ApiName !== undefined ? attributes.ApiName
-            : "unknown",
-        source: attributes.SourceName !== undefined ? attributes.SourceName
-            : "unknown",
-        target: attributes.TargetName !== undefined ? attributes.TargetName
-            : "unknown"
+        target: attributes.TargetName !== undefined ? attributes.TargetName :
+            'unknown',
+        method: attributes.ApiMethod !== undefined ? attributes.ApiMethod :
+            'unknown',
+        response_code: attributes.ResponseCode !== undefined ?
+            attributes.ResponseCode :
+            200,
+        service: attributes.ApiName !== undefined ? attributes.ApiName :
+            'unknown',
+        source: attributes.SourceName !== undefined ? attributes.SourceName :
+            'unknown'
     };
 }
 var Attributes = (function () {
@@ -43,9 +52,11 @@ var Attributes = (function () {
 /// <reference path="TypesFromAspectDescriptors.ts"/>
 /// <reference path="WellKnownAttribs.ts"/>
 function report(attributes) {
+    var result = new ReportResult();
     if (true) {
-        RecordRequestCountInMyAspect1(ConstructRequestCountForMyAspect1(attributes));
+        result.InsertRequestCountForMyAspect1(ConstructRequestCountForMyAspect1(attributes));
     }
+    return result;
 }
 function check(attributes) {
     // TODO

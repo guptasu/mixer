@@ -2,12 +2,16 @@
 
 /// <reference path="WellKnownAttribs.ts"/>
 
-function report(attributes: Attributes) {
+
+function report(attributes: Attributes): ReportResult {
+  var result = new ReportResult();
 
   if (true) {
-
-    RecordRequestCountInMyAspect1(ConstructRequestCountForMyAspect1(attributes))
+    result.InsertRequestCountForMyAspect1(
+        ConstructRequestCountForMyAspect1(attributes))
   }
+
+  return result;
 }
 function check(attributes) {
   // TODO

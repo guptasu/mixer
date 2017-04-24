@@ -64,7 +64,7 @@ func GenerateUserCodeForMetrics(metricsParams *aconfig.MetricsParams, aspectName
 	for _, metric := range params.Metrics {
 		methodToInvoke := getMethodNameFromDescriptorAndAspectName(metric.DescriptorName, aspectName)
 		callStr := fmt.Sprintf(`
-				%s(
+				result.%s(
 	  			  %s(%s)
 				)`, methodToInvoke, getMethodNameForConstructionOfDescriptor(metric.DescriptorName, aspectName), "attributes")
 		metricsStr.WriteString(callStr + "\n")
@@ -95,9 +95,7 @@ func GetMetricAspectAllDeclarations(callbackMtdName string, declaredMetricAspect
 	for _, metricDescriptor := range desc {
 		metricsStr.WriteString(createClassForDescriptor(metricDescriptor))
 	}
-	for _, metricDescriptor := range desc {
-		metricsStr.WriteString(createMethodForDescriptor(metricDescriptor, callbackMtdName, declaredMetricAspectNames))
-	}
+	metricsStr.WriteString(createReportResultClass(declaredMetricAspectNames))
 	for _, metricAspect := range declaredMetricAspects {
 		params := metricAspect.Params.(*aconfig.MetricsParams)
 		for _, metric := range params.Metrics {
@@ -107,8 +105,31 @@ func GetMetricAspectAllDeclarations(callbackMtdName string, declaredMetricAspect
 	return metricsStr.String()
 }
 
+func createReportResultClass(declaredMetricAspectNames []string) string {
+	template := `
+          class ReportResult {
+              private result : [string,any][]
+
+              constructor(){
+                  this.result = [];
+              }
+
+              %s
+
+              Build() {
+                  return this.result;
+              }
+          }
+	`
+	var metricsStr bytes.Buffer
+	for _, metricDescriptor := range desc {
+		metricsStr.WriteString(createMethodForDescriptor(metricDescriptor, declaredMetricAspectNames))
+	}
+
+	return fmt.Sprintf(template,metricsStr.String())
+}
 func getMethodNameFromDescriptorAndAspectName(descriptorNameSnakeCase string, aspectNameSnakeCase string) string {
-	return fmt.Sprintf("Record%sIn%s", snake2UpperCamelCase(descriptorNameSnakeCase), snake2UpperCamelCase(aspectNameSnakeCase))
+	return fmt.Sprintf("Insert%sFor%s", snake2UpperCamelCase(descriptorNameSnakeCase), snake2UpperCamelCase(aspectNameSnakeCase))
 }
 
 
@@ -137,16 +158,16 @@ func createClassForDescriptor(metricDescriptor *dpb.MetricDescriptor) string {
 	return metricsStr.String()
 }
 
-func createMethodForDescriptor(metricDescriptor *dpb.MetricDescriptor, callbackMtdName string, declaredMetricAspectNames []string) string {
+func createMethodForDescriptor(metricDescriptor *dpb.MetricDescriptor, declaredMetricAspectNames []string) string {
 	var metricsDescriptorFunction bytes.Buffer
 	descriptorNameUpperCamel := snake2UpperCamelCase(metricDescriptor.Name)
 	for _, aspectIDSnakeCaseAssumed := range declaredMetricAspectNames {
 		metricsDescriptorFunction.WriteString(fmt.Sprintf(`
-	function %s(val: %s) {
-	  %s("%s", {descriptorName: "%s", value: val})
+	%s(val: %s) {
+	  this.result.push(["%s", {descriptorName: "%s", value: val}])
 	}
 	`, getMethodNameFromDescriptorAndAspectName(metricDescriptor.Name, aspectIDSnakeCaseAssumed),
-			descriptorNameUpperCamel, callbackMtdName, aspectIDSnakeCaseAssumed, metricDescriptor.Name))
+			descriptorNameUpperCamel, aspectIDSnakeCaseAssumed, metricDescriptor.Name))
 	}
 	return metricsDescriptorFunction.String()
 }

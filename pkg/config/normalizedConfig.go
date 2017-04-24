@@ -20,7 +20,7 @@ import (
 )
 type NormalizedConfig interface {
 	Evalaute(requestBag *attribute.MutableBag,
-		callBack func(kind string, val interface{}))
+		callBack func(kind string, val interface{})) [][]interface {}
 }
 
 type ConfigNormalizer interface {

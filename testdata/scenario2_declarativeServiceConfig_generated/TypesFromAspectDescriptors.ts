@@ -7,11 +7,11 @@ var __interal__callback_fn = function(aspectName: string, val: any) {};
 //-----------------All Types Declaration-----------------
 class RequestCount {
   value: number;
+  response_code: number;
   source: string;
   target: string;
   service: string;
   method: string;
-  response_code: number;
 }
 class RequestLatency {
   value: number;
@@ -22,28 +22,39 @@ class RequestLatency {
   response_code: number;
 }
 
-function RecordRequestCountInMyAspect1(val: RequestCount){
-    __interal__callback_fn("MyAspect1",
-                           {descriptorName : "request_count", value : val})}
+class ReportResult {
+  private result: [string, any][]
 
-function RecordRequestLatencyInMyAspect1(val: RequestLatency) {
-  __interal__callback_fn("MyAspect1",
-                         {descriptorName : "request_latency", value : val})
+  constructor() {
+    this.result = [];
+  }
+
+
+  InsertRequestCountForMyAspect1(val: RequestCount){this.result.push(
+      ['MyAspect1', {descriptorName: 'request_count', value: val}])}
+
+  InsertRequestLatencyForMyAspect1(val: RequestLatency){this.result.push(
+      ['MyAspect1', {descriptorName: 'request_latency', value: val}])}
+
+
+  Build() {
+    return this.result;
+  }
 }
 
 function ConstructRequestCountForMyAspect1(attributes: Attributes) {
   return {
     value: 1,
-        method: attributes.ApiMethod !== undefined ? attributes.ApiMethod
-                                                   : "unknown",
-        response_code: attributes.ResponseCode !== undefined
-            ? attributes.ResponseCode
-            : 200,
-        service: attributes.ApiName !== undefined ? attributes.ApiName
-                                                  : "unknown",
-        source: attributes.SourceName !== undefined ? attributes.SourceName
-                                                    : "unknown",
-        target: attributes.TargetName !== undefined ? attributes.TargetName
-                                                    : "unknown"
+        target: attributes.TargetName !== undefined ? attributes.TargetName :
+                                                      'unknown',
+        method: attributes.ApiMethod !== undefined ? attributes.ApiMethod :
+                                                     'unknown',
+        response_code: attributes.ResponseCode !== undefined ?
+        attributes.ResponseCode :
+        200,
+        service: attributes.ApiName !== undefined ? attributes.ApiName :
+                                                    'unknown',
+        source: attributes.SourceName !== undefined ? attributes.SourceName :
+                                                      'unknown'
   }
 }
