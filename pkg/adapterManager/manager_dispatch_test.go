@@ -17,38 +17,31 @@ package adapterManager
 import (
 	"context"
 	"io/ioutil"
-	"istio.io/mixer/adapter"
+	//"os"
+	pkgAdapter "istio.io/mixer/pkg/adapter"
+	"istio.io/mixer/pkg/adapterManager/noopMetricKindAdapter"
 	"istio.io/mixer/pkg/aspect"
 	"istio.io/mixer/pkg/attribute"
-	"istio.io/mixer/pkg/cnfgNormalizer"
 	"istio.io/mixer/pkg/config"
 	"istio.io/mixer/pkg/expr"
 	"istio.io/mixer/pkg/pool"
-	"testing"
-	"time"
-	"strings"
-	//"fmt"
 	"strconv"
+	"strings"
+	"testing"
+	"bytes"
+	"time"
+	"istio.io/mixer/pkg/cnfgNormalizer"
 )
 
-const globalCnfg = `
+const (
+	globalCnfgForMetricAspect = `
 subject: namespace:ns
 revision: "2022"
 adapters:
-  - name: default
-    kind: quotas
-    impl: memQuota
-    params:
-  - name: default
-    impl: stdioLogger
-    params:
-      logStream: 0 # STDERR
-  - name: prometheus
+  - name: noopMetricKindAdapter
     kind: metrics
-    impl: prometheus
-    params:
-  - name: default
-    impl: denyChecker
+    impl: noopMetricKindAdapter
+
 manifests:
   - name: istio-proxy
     revision: "1"
@@ -57,25 +50,8 @@ manifests:
       value_type: 1 # STRING
     - name: target.name
       value_type: 1 # STRING
-    - name: origin.ip
-      value_type: 6 # IP_ADDRESS
-    - name: origin.user
-      value_type: 1 # STRING
-    - name: request.time
-      value_type: 5 # TIMESTAMP
-    - name: request.method
-      value_type: 1 # STRING
-    - name: request.path
-      value_type: 1 # STRING
-    - name: request.scheme
-      value_type: 1 # STRING
-    - name: response.size
-      value_type: 2 # INT64
     - name: response.code
       value_type: 2 # INT64
-    - name: response.duration
-      value_type: 10 # DURATION
-    # TODO: we really need to remove these, they're not part of the attribute vocab.
     - name: api.name
       value_type: 1 # STRING
     - name: api.method
@@ -101,50 +77,17 @@ metrics:
       service: 1 # STRING
       method: 1 # STRING
       response_code: 2 # INT64
-quotas:
-  - name: RequestCount
-    max_amount: 5
-    expiration:
-      seconds: 1
-logs:
-  - name: accesslog.common
-    display_name: Apache Common Log Format
-    log_template: '{{or (.originIp) "-"}} - {{or (.sourceUser) "-"}} [{{or (.timestamp.Format "02/Jan/2006:15:04:05 -0700") "-"}}] "{{or (.method) "-"}} {{or (.url) "-"}} {{or (.protocol) "-"}}" {{or (.responseCode) "-"}} {{or (.responseSize) "-"}}'
-    labels:
-      originIp: 6 # IP_ADDRESS
-      sourceUser: 1 # STRING
-      timestamp: 5 # TIMESTAMP
-      method: 1 # STRING
-      url: 1 # STRING
-      protocol: 1 # STRING
-      responseCode: 2 # INT64
-      responseSize: 2 # INT64
-  - name: accesslog.combined
-    display_name: Apache Combined Log Format
-    log_template: '{{or (.originIp) "-"}} - {{or (.sourceUser) "-"}} [{{or (.timestamp.Format "02/Jan/2006:15:04:05 -0700") "-"}}] "{{or (.method) "-"}} {{or (.url) "-"}} {{or (.protocol) "-"}}" {{or (.responseCode) "-"}} {{or (.responseSize) "-"}} {{or (.referer) "-"}} {{or (.userAgent) "-"}}'
-    labels:
-      originIp: 6 # IP_ADDRESS
-      sourceUser: 1 # STRING
-      timestamp: 5 # TIMESTAMP
-      method: 1 # STRING
-      url: 1 # STRING
-      protocol: 1 # STRING
-      responseCode: 2 # INT64
-      responseSize: 2 # INT64
-      referer: 1 # STRING
-      userAgent: 1 # STRING
 `
-
-const scYamlInitialSection = `
+	srvcCnfgConstInitialSection = `
 subject: namespace:ns
 rules:
 - selector: true
   aspects:
 `
-const scYamlSimpleOneAspectStrFromat = `
+	srvcCnfgYamlSimpleAspectStrFromat = `
   - name: prometheus_reporting_all_metrics$s
     kind: metrics
-    adapter: prometheus
+    adapter: noopMetricKindAdapter
     params:
       metrics:
       - descriptorName: request_count
@@ -157,28 +100,10 @@ const scYamlSimpleOneAspectStrFromat = `
           response_code: response.code | 111
 `
 
-// SOMETHING IS BREAKING WITH THIS HUGE LIST>>> NEED TO TEST MORE>..
-//const scYamlOneLargeExprAspectStrFormat = `
-//  - name: prometheus_reporting_all_metrics$s
-//    kind: metrics
-//    adapter: prometheus
-//    params:
-//      metrics:
-//      - descriptorName: request_count
-//        value: response.code | 100
-//        labels:
-//          source: source.name | target.name | source.name | target.name | source.name | target.name | source.name | target.name | source.name | target.name | source.name | target.name | source.name | target.name | source.name | target.name | "one"
-//          target: target.name | source.name | target.name | source.name | target.name | source.name | target.name | source.name | target.name | source.name | target.name | source.name | target.name | source.name | target.name | source.name | "one"
-//          service: api.name | target.name | api.name | target.name | api.name | target.name | api.name | target.name | api.name | target.name | api.name | target.name | api.name | target.name | api.name | target.name | api.name | target.name | "one"
-//          method: api.method | target.name | api.method | target.name | api.method | target.name | api.method | target.name | api.method | target.name | api.method | target.name | api.method | target.name | api.method | target.name | api.method | target.name | "one"
-//          response_code: response.code | response.code | response.code | response.code | response.code | response.code | response.code | response.code | response.code | response.code | response.code | response.code | response.code | response.code | 111
-//`
-
-
-const scYamlOneLargeExprAspectStrFormat = `
+	srvcCnfgYamlComplexAspectStrFromat = `
   - name: prometheus_reporting_all_metrics$s
     kind: metrics
-    adapter: prometheus
+    adapter: noopMetricKindAdapter
     params:
       metrics:
       - descriptorName: request_count
@@ -190,33 +115,35 @@ const scYamlOneLargeExprAspectStrFormat = `
           method: api.method | target.name | api.method | target.name | "one"
           response_code: response.code | response.code | response.code | response.code | response.code | response.code | response.code | response.code | 111
 `
+)
 
-func benchmarkDispatchSingleHugeAspect(b *testing.B, aspectStringFmt string, loopSize int64) {
 
-	tmpfile, _ := ioutil.TempFile("", "TestReportWithJSServCnfg")
-	fileSCName := tmpfile.Name()
-	var scYaml string = scYamlInitialSection
+func benchmarkDispatchSingleHugeAspect(b *testing.B, aspectStringFmt string, loopSize int) {
+	srvcCnfgFile, _ := ioutil.TempFile("", "TestReportWithJSServCnfg")
+	srvcCnfgFilePath := srvcCnfgFile.Name()
 
-	var i int64
-	for i = 0; i < loopSize; i++ {
-		scYaml = scYaml + strings.Replace(aspectStringFmt, "$s", strconv.FormatInt(i, 10), 1)
+	globalCnfgFile, _ := ioutil.TempFile("", "TestReportWithJSGlobalcnfg")
+	globalCnfgFilePath := globalCnfgFile.Name()
+	_, _ = globalCnfgFile.Write([]byte(globalCnfgForMetricAspect))
+	_ = globalCnfgFile.Close()
+	//defer os.Remove(globalCnfgFilePath)
+
+	var srvcCnfgBuffer bytes.Buffer
+	srvcCnfgBuffer.WriteString(srvcCnfgConstInitialSection)
+	for i := 0; i < loopSize; i++ {
+		srvcCnfgBuffer.WriteString(strings.Replace(aspectStringFmt, "$s", strconv.FormatInt(int64(i), 10), 1))
 	}
-	//fmt.Println(scYaml)
-	_, _ = tmpfile.Write([]byte(scYaml))
-	_ = tmpfile.Close()
-
-
-	tmpfile, _ = ioutil.TempFile("", "TestReportWithJSGlobalcnfg")
-	fileGSCName := tmpfile.Name()
-	//defer func() { _ = os.Remove(gc) }()
-	_, _ = tmpfile.Write([]byte(globalCnfg))
-	_ = tmpfile.Close()
+	_, _ = srvcCnfgFile.Write([]byte(srvcCnfgBuffer.String()))
+	_ = srvcCnfgFile.Close()
+	//defer os.Remove(srvcCnfgFilePath)
 
 
 	apiPoolSize := 1
 	adapterPoolSize := 1
+	loopDelay := time.Second*time.Duration(1)
 
 	gp := pool.NewGoroutinePool(apiPoolSize, true)
+	gp.AddWorkers(apiPoolSize)
 	gp.AddWorkers(apiPoolSize)
 	defer gp.Close()
 
@@ -225,12 +152,15 @@ func benchmarkDispatchSingleHugeAspect(b *testing.B, aspectStringFmt string, loo
 	defer adapterGP.Close()
 
 	eval := expr.NewCEXLEvaluator()
-	adapterMgr := NewManager(adapter.Inventory(), aspect.Inventory(), eval, gp, adapterGP)
+	adapterMgr := NewManager([]pkgAdapter.RegisterFn{
+		noopMetricKindAdapter.Register,
+	}, aspect.Inventory(), eval, gp, adapterGP)
+
 	cnfgMgr := config.NewManager(eval, adapterMgr.AspectValidatorFinder, adapterMgr.BuilderValidatorFinder,
 		adapterMgr.SupportedKinds,
-		fileGSCName,
-		fileSCName,
-		time.Second*time.Duration(1),
+		globalCnfgFilePath,
+		srvcCnfgFilePath,
+		loopDelay,
 		"",
 		cnfgNormalizer.NormalizedJavascriptConfigNormalizer{})
 
@@ -238,49 +168,25 @@ func benchmarkDispatchSingleHugeAspect(b *testing.B, aspectStringFmt string, loo
 	cnfgMgr.Start()
 
 	requestBag := attribute.GetMutableBag(nil)
-	responseBag := attribute.GetMutableBag(nil)
+
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		_ = adapterMgr.Report(context.Background(), requestBag, responseBag)
-		//if !status.IsOK(out) {
-		//	t.Errorf("Report failed with %v", out)
-		//}
+		_ = adapterMgr.Report(context.Background(), requestBag, attribute.GetMutableBag(nil))
 	}
 }
 
-/*
-Numbers with JS code:
-BenchmarkDispatchSimpleOneAspect-12     	   10000	    157341 ns/op
-BenchmarkDispatchSimple50Aspect-12      	     300	   5482677 ns/op
-BenchmarkDispatchComplexOneAspect-12    	   10000	    176707 ns/op
-BenchmarkDispatchComplex50Aspect-12     	     200	   6755903 ns/op
-
-Numbers with JS and V8 engine
-BenchmarkDispatchSimpleOneAspect-8    	   10000	    173206 ns/op
-BenchmarkDispatchSimple50Aspect-8     	     300	   5452768 ns/op
-BenchmarkDispatchComplexOneAspect-8   	   10000	    190211 ns/op
-BenchmarkDispatchComplex50Aspect-8    	     200	   5927000 ns/op
-
---------------------------------------------------------------------------------------
-
-Numbers with existing code (no Javascript stuff):
-BenchmarkDispatchSimpleOneAspect-12     	   10000	    169966 ns/op
-BenchmarkDispatchSimple50Aspect-12      	     200	   6987477 ns/op
-BenchmarkDispatchComplexOneAspect-12    	    5000	    212257 ns/op
-BenchmarkDispatchComplex50Aspect-12     	     200	   8960063 ns/op
-*/
 func BenchmarkDispatchSimpleOneAspect(b *testing.B) {
-	benchmarkDispatchSingleHugeAspect(b, scYamlSimpleOneAspectStrFromat, 1)
+	benchmarkDispatchSingleHugeAspect(b, srvcCnfgYamlSimpleAspectStrFromat, 1)
 }
 
 func BenchmarkDispatchSimple50Aspect(b *testing.B) {
-	benchmarkDispatchSingleHugeAspect(b, scYamlSimpleOneAspectStrFromat, 50)
+	benchmarkDispatchSingleHugeAspect(b, srvcCnfgYamlSimpleAspectStrFromat, 50)
 }
 
 func BenchmarkDispatchComplexOneAspect(b *testing.B) {
-	benchmarkDispatchSingleHugeAspect(b, scYamlOneLargeExprAspectStrFormat, 1)
+	benchmarkDispatchSingleHugeAspect(b, srvcCnfgYamlComplexAspectStrFromat, 1)
 }
 
 func BenchmarkDispatchComplex50Aspect(b *testing.B) {
-	benchmarkDispatchSingleHugeAspect(b, scYamlOneLargeExprAspectStrFormat, 50)
+	benchmarkDispatchSingleHugeAspect(b, srvcCnfgYamlComplexAspectStrFromat, 50)
 }
