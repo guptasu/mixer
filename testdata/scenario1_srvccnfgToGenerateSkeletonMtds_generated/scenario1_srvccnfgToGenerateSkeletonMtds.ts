@@ -2,25 +2,33 @@
 
 /// <reference path="WellKnownAttribs.ts"/>
 
-function report(attributes: Attributes) {
+var internalStressTestClientName = "MyInternalStressTestClient"
+var internalMethodRegex = /__internalmtd__/;
+var internalSystemMethodFriendlyName = "InternalSystemMethod"
 
-    var reqcnt = new RequestCount();
-    if (attributes.ResponseHttpCode !== undefined) {
-        if (attributes.ResponseHttpCode >= 400) {
-            reqcnt.response_code = 400
+function report(attributes: Attributes) {
+    if (attributes.SourceName != internalStressTestClientName) { // skip report for stress tests calls
+        var reqCount = new RequestCount();
+        reqCount.value = 1;
+
+        reqCount.response_code = attributes.ResponseCode !== undefined ?
+            attributes.ResponseCode : 200;
+
+        reqCount.service = attributes.ApiName !== undefined ?
+            attributes.ApiName : "unknown";
+
+        if (attributes.ApiMethod !== undefined) {
+            // different internal methods can all be reported as single method.
+            reqCount.method = attributes.ApiMethod.search(internalMethodRegex) != -1 ?
+                internalSystemMethodFriendlyName : attributes.ApiMethod;
         } else {
-            reqcnt.response_code = attributes.ResponseHttpCode
+            reqCount.method = "unknown";
         }
-    } else{
-        reqcnt.response_code = 201
+
+        RecordRequestCountInMyLocalMetricReporter(reqCount);
     }
-    reqcnt.value = 20;
-    reqcnt.method = 'one';
-    reqcnt.service = 'one';
-    reqcnt.source = 'one';
-    reqcnt.target = 'one'
-    RecordRequestCountInAspectOne(reqcnt)
 }
+
 function check(attributes) {
   // TODO
 }

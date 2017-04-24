@@ -2,41 +2,31 @@
 //-----------------CallBack Method Declaration-----------------
 // This method gets injected at runtime. Need this declaration to make
 // TypeScript happy
-var CallBackFromUserScript_go = function(aspectName: string, val: any) {};
+var __interal__callback_fn = function(aspectName: string, val: any) {};
 
 //-----------------All Types Declaration-----------------
 class RequestCount {
   value: number;
-  source: string;
   target: string;
   service: string;
   method: string;
   response_code: number;
+  source: string;
 }
 class RequestLatency {
   value: number;
-  source: string;
-  target: string;
   service: string;
   method: string;
   response_code: number;
+  source: string;
+  target: string;
 }
 
-function RecordRequestCountInAspectOne(val: RequestCount){
-    CallBackFromUserScript_go("AspectOne",
-                              {descriptorName : "request_count", value : val})}
+function RecordRequestCountInMyLocalMetricReporter(val: RequestCount){
+    __interal__callback_fn("MyLocalMetricReporter",
+                           {descriptorName : "request_count", value : val})}
 
-function RecordRequestCountInAspectTwo(val: RequestCount) {
-  CallBackFromUserScript_go("AspectTwo",
-                            {descriptorName : "request_count", value : val})
-}
-
-function RecordRequestLatencyInAspectOne(val: RequestLatency) {
-  CallBackFromUserScript_go("AspectOne",
-                            {descriptorName : "request_latency", value : val})
-}
-
-function RecordRequestLatencyInAspectTwo(val: RequestLatency) {
-  CallBackFromUserScript_go("AspectTwo",
-                            {descriptorName : "request_latency", value : val})
+function RecordRequestLatencyInMyLocalMetricReporter(val: RequestLatency) {
+  __interal__callback_fn("MyLocalMetricReporter",
+                         {descriptorName : "request_latency", value : val})
 }
