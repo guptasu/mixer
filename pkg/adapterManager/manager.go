@@ -147,18 +147,24 @@ func (m *Manager) Check(ctx context.Context, requestBag, responseBag *attribute.
 }
 
 // Report dispatches to the set of aspects associated with the Report API method
-func (m *Manager) Report(ctx context.Context, requestBag, responseBag *attribute.MutableBag) rpc.Status {
-	configs, err := m.loadConfigs(requestBag, m.reportKindSet, false)
-	if err != nil {
-		glog.Error(err)
-		return status.WithError(err)
-	}
+func (m *Manager) executeDispatch(ctx context.Context, configs []*configpb.Combined, requestBag, responseBag *attribute.MutableBag) rpc.Status {
 	return m.dispatch(ctx, requestBag, responseBag, configs,
 		func(evaluatedValue interface{}, executor aspect.Executor, evaluator expr.Evaluator) rpc.Status {
 			rw := executor.(aspect.ReportExecutor)
 			return rw.Execute(evaluatedValue, requestBag, evaluator)
 		})
 }
+
+// Report dispatches to the set of aspects associated with the Report API method
+func (m *Manager) Report(ctx context.Context, requestBag, responseBag *attribute.MutableBag) rpc.Status {
+	configs, err := m.loadConfigs(requestBag, m.reportKindSet, false)
+	if err != nil {
+		glog.Error(err)
+		return status.WithError(err)
+	}
+	return m.executeDispatch(ctx, configs, requestBag, responseBag)
+}
+
 
 // Quota dispatches to the set of aspects associated with the Quota API method
 func (m *Manager) Quota(ctx context.Context, requestBag, responseBag *attribute.MutableBag,

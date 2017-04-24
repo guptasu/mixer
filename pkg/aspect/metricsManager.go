@@ -118,7 +118,6 @@ func (w *metricsExecutor) Execute(evaluatedValue interface{}, attrs attribute.Ba
 		// TEMP HACK for Prototyping. Remove the value and everything else is labels
 		delete(specificDescriptorEvaluatedMetricData, "value")
 		specificDescriptorEvaluatedLabelsData := specificDescriptorEvaluatedMetricData
-		glog.Infof("** MetricManager received Metric Value : %v and LABELS : %v\n\n", metricValue, specificDescriptorEvaluatedLabelsData)
 
 		// TODO: investigate either pooling these, or keeping a set around that has only its field's values updated.
 		// we could keep a map[metric name]value, iterate over the it updating only the fields in each value

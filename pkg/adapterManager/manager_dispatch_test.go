@@ -18,19 +18,19 @@ import (
 	"context"
 	"io/ioutil"
 	//"os"
+	"bytes"
 	pkgAdapter "istio.io/mixer/pkg/adapter"
 	"istio.io/mixer/pkg/adapterManager/noopMetricKindAdapter"
 	"istio.io/mixer/pkg/aspect"
 	"istio.io/mixer/pkg/attribute"
+	"istio.io/mixer/pkg/cnfgNormalizer"
 	"istio.io/mixer/pkg/config"
 	"istio.io/mixer/pkg/expr"
 	"istio.io/mixer/pkg/pool"
 	"strconv"
 	"strings"
 	"testing"
-	"bytes"
 	"time"
-	"istio.io/mixer/pkg/cnfgNormalizer"
 )
 
 const (
@@ -117,7 +117,6 @@ rules:
 `
 )
 
-
 func benchmarkDispatchSingleHugeAspect(b *testing.B, aspectStringFmt string, loopSize int) {
 	srvcCnfgFile, _ := ioutil.TempFile("", "TestReportWithJSServCnfg")
 	srvcCnfgFilePath := srvcCnfgFile.Name()
@@ -137,10 +136,9 @@ func benchmarkDispatchSingleHugeAspect(b *testing.B, aspectStringFmt string, loo
 	_ = srvcCnfgFile.Close()
 	//defer os.Remove(srvcCnfgFilePath)
 
-
 	apiPoolSize := 1
 	adapterPoolSize := 1
-	loopDelay := time.Second*time.Duration(1)
+	loopDelay := time.Second * time.Duration(1)
 
 	gp := pool.NewGoroutinePool(apiPoolSize, true)
 	gp.AddWorkers(apiPoolSize)
@@ -168,10 +166,10 @@ func benchmarkDispatchSingleHugeAspect(b *testing.B, aspectStringFmt string, loo
 	cnfgMgr.Start()
 
 	requestBag := attribute.GetMutableBag(nil)
-
+	configs, _ := adapterMgr.loadConfigs(requestBag, adapterMgr.reportKindSet, false)
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		_ = adapterMgr.Report(context.Background(), requestBag, attribute.GetMutableBag(nil))
+		_ = adapterMgr.executeDispatch(context.Background(), configs, requestBag, attribute.GetMutableBag(nil))
 	}
 }
 
