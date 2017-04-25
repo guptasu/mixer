@@ -19,17 +19,3 @@ go_library(
     ],
 )
 
-go_test(
-    name = "small_tests",
-    size = "small",
-    srcs = [
-        "driver_test.go",
-        "redisquota_test.go",
-    ],
-    library = ":go_default_library",
-    deps = [
-        "//pkg/adapter/test:go_default_library",
-        "@com_github_bsm_redeo//:go_default_library",
-        "@com_github_mini_redis//:go_default_library",
-    ],
-)
