@@ -179,6 +179,13 @@ BenchmarkDispatchSimple50Aspect-12      	     500	   2546216 ns/op
 BenchmarkDispatchComplexOneAspect-12    	   20000	     92504 ns/op
 BenchmarkDispatchComplex50Aspect-12     	     500	   3305152 ns/op
 */
+/*
+/* Without JS code
+BenchmarkDispatchSimpleOneAspect-12     	   20000	     85643 ns/op
+BenchmarkDispatchSimple50Aspect-12      	     300	   4180791 ns/op
+BenchmarkDispatchComplexOneAspect-12    	   10000	    121990 ns/op
+BenchmarkDispatchComplex50Aspect-12     	     200	   5866466 ns/op
+*/
 
 func BenchmarkDispatchSimpleOneAspect(b *testing.B) {
 	benchmarkDispatchSingleHugeAspect(b, srvcCnfgYamlSimpleAspectStrFromat, 1)
