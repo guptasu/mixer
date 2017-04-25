@@ -140,6 +140,14 @@ func (m *Manager) Check(ctx context.Context, requestBag, responseBag *attribute.
 		})
 }
 
+func (m *Manager) executeDispatch(ctx context.Context, configs []*cpb.Combined, requestBag, responseBag *attribute.MutableBag) rpc.Status {
+	return m.dispatch(ctx, requestBag, responseBag, configs,
+		func(executor aspect.Executor, evaluator expr.Evaluator) rpc.Status {
+			rw := executor.(aspect.ReportExecutor)
+			return rw.Execute(requestBag, evaluator)
+		})
+}
+
 // Report dispatches to the set of aspects associated with the Report API method
 func (m *Manager) Report(ctx context.Context, requestBag, responseBag *attribute.MutableBag) rpc.Status {
 	configs, err := m.loadConfigs(requestBag, m.reportKindSet, false, false /* carry on if unable to eval all selectors */)
@@ -147,11 +155,7 @@ func (m *Manager) Report(ctx context.Context, requestBag, responseBag *attribute
 		glog.Error(err)
 		return status.WithError(err)
 	}
-	return m.dispatch(ctx, requestBag, responseBag, configs,
-		func(executor aspect.Executor, evaluator expr.Evaluator) rpc.Status {
-			rw := executor.(aspect.ReportExecutor)
-			return rw.Execute(requestBag, evaluator)
-		})
+	return m.executeDispatch(ctx, configs, requestBag, responseBag)
 }
 
 // Quota dispatches to the set of aspects associated with the Quota API method

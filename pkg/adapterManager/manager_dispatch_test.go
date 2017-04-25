@@ -171,13 +171,20 @@ func benchmarkDispatchSingleHugeAspect(b *testing.B, aspectStringFmt string, loo
 
 	requestBag := attribute.GetMutableBag(nil)
 	requestBag.Set(identityAttribute, identityDomainAttribute)
+	configs, _ := adapterMgr.loadConfigs(requestBag, adapterMgr.reportKindSet, false, false)
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		_ = adapterMgr.Report(context.Background(), requestBag, attribute.GetMutableBag(nil))
+		_ = adapterMgr.executeDispatch(context.Background(), configs, requestBag, attribute.GetMutableBag(nil))
 	}
 }
 
+/*
+BenchmarkDispatchSimpleOneAspect-12     	   20000	     85643 ns/op
+BenchmarkDispatchSimple50Aspect-12      	     300	   4180791 ns/op
+BenchmarkDispatchComplexOneAspect-12    	   10000	    121990 ns/op
+BenchmarkDispatchComplex50Aspect-12     	     200	   5866466 ns/op
+*/
 func BenchmarkDispatchSimpleOneAspect(b *testing.B) {
 	benchmarkDispatchSingleHugeAspect(b, srvcCnfgYamlSimpleAspectStrFromat, 1)
 }
