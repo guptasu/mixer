@@ -24,14 +24,13 @@ import (
 type NormalizedJavascriptConfig struct {
 	// JavaScript string
 	VM *otto.Otto
+	reportMtd otto.Value
 }
 
 // invoked at runtime
 func (n NormalizedJavascriptConfig) Evalaute(requestBag *attribute.MutableBag,
 	callBack func(kind string, val interface{})) [][]interface {} {
-
-	checkFn, _ := n.VM.Get("report")
-	resultValue, errFromJS := checkFn.Call(otto.NullValue(), constructAttributesForJS(requestBag))
+	resultValue, errFromJS := n.reportMtd.Call(otto.NullValue(), constructAttributesForJS(requestBag))
 	if errFromJS != nil {
 		fmt.Println("ERROR FROM JS", errFromJS)
 	}
@@ -46,6 +45,6 @@ func createNormalizedJavascriptConfig(js string) config.NormalizedConfig {
 	var vm *otto.Otto
 	vm = otto.New()
 	vm.Run(js)
-
-	return NormalizedJavascriptConfig{VM: vm}
+	reportMtd, _ := vm.Get("report")
+	return NormalizedJavascriptConfig{VM: vm, reportMtd:reportMtd}
 }
