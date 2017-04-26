@@ -173,6 +173,12 @@ new_go_repository(
     importpath = "github.com/robertkrimen/otto",
 )
 
+#new_go_repository(
+#    name = "com_github_augustoroman_v8",
+#    commit = "165cb9f458bb6cef01a2a610c40254f0c70b97d6", # April 21, 2017 (no releases)
+#    importpath = "github.com/augustoroman/v8",
+#)
+
 new_go_repository(
     name = "com_github_opentracing_opentracing_go",
     commit = "0c3154a3c2ce79d3271985848659870599dfb77c",  # Sep 26, 2016 (v1.0.0)
