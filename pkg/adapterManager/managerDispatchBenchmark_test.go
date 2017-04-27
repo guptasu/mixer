@@ -34,6 +34,26 @@ import (
 	"github.com/googleapis/googleapis/google/rpc"
 )
 
+/*
+Benchmark tests in this file measure time between start of adapterManager/manager.go:dispatchReport and
+end of metricManager.Execute method (adapter is stubbed out). NOTE: The test does not measure the load config code
+that happens for every call inside check/report/quota methods of adapterManager/manager.go.
+
+How to run the test:
+# make sure the code builds and works with go tools and not just with bazel.
+
+Command:
+go test -run XXXX -bench .
+
+Output: (2017-04-27)
+BenchmarkOneSimpleAspect-12     	   10000	    113880 ns/op
+Benchmark50SimpleAspect-12      	    1000	   1410848 ns/op
+BenchmarkOneComplexAspect-12    	   10000	    157771 ns/op
+Benchmark50ComplexAspect-12     	     500	   2757074 ns/op
+PASS
+ok  	istio.io/mixer/pkg/adapterManager	6.202s
+*/
+
 const (
 	minimalGlobalCnfg = `
 subject: namespace:ns
