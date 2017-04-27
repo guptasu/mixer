@@ -35,7 +35,7 @@ import (
 )
 
 const (
-	minimalGlobalCnfgForMetricAspect = `
+	minimalGlobalCnfg = `
 subject: namespace:ns
 revision: "2022"
 adapters:
@@ -86,7 +86,7 @@ rules:
 - selector: true
   aspects:
 `
-	srvcCnfgSimpleAspectFromat = `
+	srvcCnfgSimpleAspect = `
   - kind: metrics
     adapter: noopMetricKindAdapter
     params:
@@ -101,7 +101,7 @@ rules:
           response_code: response.code | 111
 `
 
-	srvcCnfgComplexAspectFromat = `
+	srvcCnfgComplexAspect = `
   - kind: metrics
     adapter: noopMetricKindAdapter
     params:
@@ -126,18 +126,16 @@ type fakeNoopAdapter struct {
 func (f *fakeNoopAdapter) NewMetricsAspect(env adapter.Env, cfg adapter.Config, metrics map[string]*adapter.MetricDefinition) (adapter.MetricsAspect, error) {
 	return &fakeNoopAdapter{}, nil
 }
-func (p *fakeNoopAdapter) Record(vals []adapter.Value) error {
+func (f *fakeNoopAdapter) Record(vals []adapter.Value) error {
 	return nil
 }
 func (*fakeNoopAdapter) Close() error { return nil }
 
-func generateYamlConfigs(srvcCnfgAspectFromat string, configRepeatCount int) (declarativeSrvcCnfgFilePath string, declaredGlobalCnfgFilePath string) {
-	srvcCnfgFile, _ := ioutil.TempFile("", "TestReportWithJSServCnfg")
-	declarativeSrvcCnfgFilePath = srvcCnfgFile.Name()
+func createYamlConfigs(srvcCnfgAspectFromat string, configRepeatCount int) (declarativeSrvcCnfg *os.File, declaredGlobalCnfg *os.File) {
+	srvcCnfgFile, _ := ioutil.TempFile("", "managerDispatchBenchmarkTest")
+	globalCnfgFile, _ := ioutil.TempFile("", "managerDispatchBenchmarkTest")
 
-	globalCnfgFile, _ := ioutil.TempFile("", "TestReportWithJSGlobalcnfg")
-	declaredGlobalCnfgFilePath = globalCnfgFile.Name()
-	_, _ = globalCnfgFile.Write([]byte(minimalGlobalCnfgForMetricAspect))
+	_, _ = globalCnfgFile.Write([]byte(minimalGlobalCnfg))
 	_ = globalCnfgFile.Close()
 
 	var srvcCnfgBuffer bytes.Buffer
@@ -148,23 +146,24 @@ func generateYamlConfigs(srvcCnfgAspectFromat string, configRepeatCount int) (de
 	_, _ = srvcCnfgFile.Write([]byte(srvcCnfgBuffer.String()))
 	_ = srvcCnfgFile.Close()
 
-	return declarativeSrvcCnfgFilePath, declaredGlobalCnfgFilePath
+	return srvcCnfgFile, globalCnfgFile
 }
 
 var rpcStatus google_rpc.Status
 func benchmarkAdapterManagerDispatch(b *testing.B, declarativeSrvcCnfgFilePath string, declaredGlobalCnfgFilePath string) {
-	apiPoolSize := 1
-	adapterPoolSize := 1
+	apiPoolSize := 1024
+	adapterPoolSize := 1024
 	identityAttribute := "target.service"
 	identityDomainAttribute := "svc.cluster.local"
-	loopDelay := time.Second * time.Duration(1)
+	loopDelay := time.Second * time.Duration(5)
+	singleThreadedGoRoutinePool := false
 
-	gp := pool.NewGoroutinePool(apiPoolSize, true)
+	gp := pool.NewGoroutinePool(apiPoolSize, singleThreadedGoRoutinePool)
 	gp.AddWorkers(apiPoolSize)
 	gp.AddWorkers(apiPoolSize)
 	defer gp.Close()
 
-	adapterGP := pool.NewGoroutinePool(adapterPoolSize, true)
+	adapterGP := pool.NewGoroutinePool(adapterPoolSize, singleThreadedGoRoutinePool)
 	adapterGP.AddWorkers(adapterPoolSize)
 	defer adapterGP.Close()
 
@@ -173,11 +172,11 @@ func benchmarkAdapterManagerDispatch(b *testing.B, declarativeSrvcCnfgFilePath s
 		registerNoopAdapter,
 	}, aspect.Inventory(), eval, gp, adapterGP)
 	store, _ := config.NewCompatFSStore(declaredGlobalCnfgFilePath, declarativeSrvcCnfgFilePath)
+
 	cnfgMgr := config.NewManager(eval, adapterMgr.AspectValidatorFinder, adapterMgr.BuilderValidatorFinder,
 		adapterMgr.SupportedKinds, store,
 		loopDelay,
 		identityAttribute, identityDomainAttribute)
-
 	cnfgMgr.Register(adapterMgr)
 	cnfgMgr.Start()
 
@@ -194,29 +193,29 @@ func benchmarkAdapterManagerDispatch(b *testing.B, declarativeSrvcCnfgFilePath s
 }
 
 func BenchmarkOneSimpleAspect(b *testing.B) {
-	sc, gsc := generateYamlConfigs(srvcCnfgSimpleAspectFromat, 1)
-	defer os.Remove(sc)
-	defer os.Remove(gsc)
-	benchmarkAdapterManagerDispatch(b, sc, gsc)
+	sc, gsc := createYamlConfigs(srvcCnfgSimpleAspect, 1)
+	defer os.Remove(sc.Name())
+	defer os.Remove(gsc.Name())
+	benchmarkAdapterManagerDispatch(b, sc.Name(), gsc.Name())
 }
 
 func Benchmark50SimpleAspect(b *testing.B) {
-	sc, gsc := generateYamlConfigs(srvcCnfgSimpleAspectFromat, 50)
-	defer os.Remove(sc)
-	defer os.Remove(gsc)
-	benchmarkAdapterManagerDispatch(b, sc, gsc)
+	sc, gsc := createYamlConfigs(srvcCnfgSimpleAspect, 50)
+	defer os.Remove(sc.Name())
+	defer os.Remove(gsc.Name())
+	benchmarkAdapterManagerDispatch(b, sc.Name(), gsc.Name())
 }
 
 func BenchmarkOneComplexAspect(b *testing.B) {
-	sc, gsc := generateYamlConfigs(srvcCnfgComplexAspectFromat, 1)
-	defer os.Remove(sc)
-	defer os.Remove(gsc)
-	benchmarkAdapterManagerDispatch(b, sc, gsc)
+	sc, gsc := createYamlConfigs(srvcCnfgComplexAspect, 1)
+	defer os.Remove(sc.Name())
+	defer os.Remove(gsc.Name())
+	benchmarkAdapterManagerDispatch(b, sc.Name(), gsc.Name())
 }
 
 func Benchmark50ComplexAspect(b *testing.B) {
-	sc, gsc := generateYamlConfigs(srvcCnfgComplexAspectFromat, 50)
-	defer os.Remove(sc)
-	defer os.Remove(gsc)
-	benchmarkAdapterManagerDispatch(b, sc, gsc)
+	sc, gsc := createYamlConfigs(srvcCnfgComplexAspect, 50)
+	defer os.Remove(sc.Name())
+	defer os.Remove(gsc.Name())
+	benchmarkAdapterManagerDispatch(b, sc.Name(), gsc.Name())
 }

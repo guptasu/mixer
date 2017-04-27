@@ -43,10 +43,10 @@ go_test(
 )
 
 go_test(
-    name = "e2e_tests",
+    name = "dispatch_benchmark_test",
     size = "small",
     srcs = [
-        "manager_dispatch_test.go"
+        "managerDispatchBenchmark_test.go"
     ],
     library = ":go_default_library",
     deps = [
