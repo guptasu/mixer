@@ -11,6 +11,8 @@ go_library(
         "attribsToTypeScript.go",
         "NormalizedJavascriptConfigWithOtto.go",
         "NormalizedJavascriptConfigWithV8.go",
+        "NormalizedGoPlugins.go",
+        "cnftToGopackageNormalizer.go",
     ],
     deps = [
         "//pkg/adapter:go_default_library",

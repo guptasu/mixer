@@ -144,7 +144,7 @@ func benchmarkDispatchSingleHugeAspect(b *testing.B, aspectStringFmt string, loo
 	gp.AddWorkers(apiPoolSize)
 	gp.AddWorkers(apiPoolSize)
 	defer gp.Close()
-
+///usr/local/google/home/guptasu/go/src/github.com/guptasu/plugin/myplugin.so
 	adapterGP := pool.NewGoroutinePool(adapterPoolSize, true)
 	adapterGP.AddWorkers(adapterPoolSize)
 	defer adapterGP.Close()
@@ -195,10 +195,70 @@ func BenchmarkDispatchSimple50Aspect(b *testing.B) {
 	benchmarkDispatchSingleHugeAspect(b, srvcCnfgYamlSimpleAspectStrFromat, 50)
 }
 
+func BenchmarkDispatchComplex50Aspect(b *testing.B) {
+	benchmarkDispatchSingleHugeAspect(b, srvcCnfgYamlComplexAspectStrFromat, 50)
+}
+
 func BenchmarkDispatchComplexOneAspect(b *testing.B) {
 	benchmarkDispatchSingleHugeAspect(b, srvcCnfgYamlComplexAspectStrFromat, 1)
 }
 
-func BenchmarkDispatchComplex50Aspect(b *testing.B) {
-	benchmarkDispatchSingleHugeAspect(b, srvcCnfgYamlComplexAspectStrFromat, 50)
+func benchmarkDispatchGoPlugin(b *testing.B, aspectStringFmt string, loopSize int) {
+	srvcCnfgFile, _ := ioutil.TempFile("", "TestReportWithJSServCnfg")
+	srvcCnfgFilePath := srvcCnfgFile.Name()
+
+	globalCnfgFile, _ := ioutil.TempFile("", "TestReportWithJSGlobalcnfg")
+	globalCnfgFilePath := globalCnfgFile.Name()
+	_, _ = globalCnfgFile.Write([]byte(globalCnfgForMetricAspect))
+	_ = globalCnfgFile.Close()
+	//defer os.Remove(globalCnfgFilePath)
+
+	var srvcCnfgBuffer bytes.Buffer
+	srvcCnfgBuffer.WriteString(srvcCnfgConstInitialSection)
+	for i := 0; i < loopSize; i++ {
+		srvcCnfgBuffer.WriteString(strings.Replace(aspectStringFmt, "$s", strconv.FormatInt(int64(i), 10), 1))
+	}
+	_, _ = srvcCnfgFile.Write([]byte(srvcCnfgBuffer.String()))
+	_ = srvcCnfgFile.Close()
+	//defer os.Remove(srvcCnfgFilePath)
+
+	apiPoolSize := 1
+	adapterPoolSize := 1
+	loopDelay := time.Second * time.Duration(1)
+
+	gp := pool.NewGoroutinePool(apiPoolSize, true)
+	gp.AddWorkers(apiPoolSize)
+	gp.AddWorkers(apiPoolSize)
+	defer gp.Close()
+	///usr/local/google/home/guptasu/go/src/github.com/guptasu/plugin/myplugin.so
+	adapterGP := pool.NewGoroutinePool(adapterPoolSize, true)
+	adapterGP.AddWorkers(adapterPoolSize)
+	defer adapterGP.Close()
+
+	eval := expr.NewCEXLEvaluator()
+	adapterMgr := NewManager([]pkgAdapter.RegisterFn{
+		noopMetricKindAdapter.Register,
+	}, aspect.Inventory(), eval, gp, adapterGP)
+
+	cnfgMgr := config.NewManager(eval, adapterMgr.AspectValidatorFinder, adapterMgr.BuilderValidatorFinder,
+		adapterMgr.SupportedKinds,
+		globalCnfgFilePath,
+		srvcCnfgFilePath,
+		loopDelay,
+		"/usr/local/google/home/guptasu/go/src/github.com/guptasu/plugin/myplugin.so",
+		cnfgNormalizer.CnftToGopackageNormalizer{})
+
+	cnfgMgr.Register(adapterMgr)
+	cnfgMgr.Start()
+
+	requestBag := attribute.GetMutableBag(nil)
+	configs, _ := adapterMgr.loadConfigs(requestBag, adapterMgr.reportKindSet, false)
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		_ = adapterMgr.executeDispatch(context.Background(), configs, requestBag, attribute.GetMutableBag(nil))
+	}
+}
+
+func BenchmarkDispatchSimple50AspectWithGoPackage(b *testing.B) {
+	benchmarkDispatchGoPlugin(b, srvcCnfgYamlSimpleAspectStrFromat, 1)
 }
