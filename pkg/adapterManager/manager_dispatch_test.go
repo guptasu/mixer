@@ -15,25 +15,27 @@
 package adapterManager
 
 import (
+	"bytes"
 	"context"
+	"github.com/gogo/protobuf/types"
 	"io/ioutil"
-	//"os"
+	"istio.io/mixer/pkg/adapter"
 	pkgAdapter "istio.io/mixer/pkg/adapter"
-	"istio.io/mixer/pkg/adapterManager/noopMetricKindAdapter"
 	"istio.io/mixer/pkg/aspect"
 	"istio.io/mixer/pkg/attribute"
 	"istio.io/mixer/pkg/config"
 	"istio.io/mixer/pkg/expr"
 	"istio.io/mixer/pkg/pool"
+	"os"
 	"strconv"
 	"strings"
 	"testing"
-	"bytes"
 	"time"
+	"github.com/googleapis/googleapis/google/rpc"
 )
 
 const (
-	globalCnfgForMetricAspect = `
+	minimalGlobalCnfgForMetricAspect = `
 subject: namespace:ns
 revision: "2022"
 adapters:
@@ -84,9 +86,8 @@ rules:
 - selector: true
   aspects:
 `
-	srvcCnfgYamlSimpleAspectStrFromat = `
-  - name: prometheus_reporting_all_metrics$s
-    kind: metrics
+	srvcCnfgSimpleAspectFromat = `
+  - kind: metrics
     adapter: noopMetricKindAdapter
     params:
       metrics:
@@ -100,9 +101,8 @@ rules:
           response_code: response.code | 111
 `
 
-	srvcCnfgYamlComplexAspectStrFromat = `
-  - name: prometheus_reporting_all_metrics$s
-    kind: metrics
+	srvcCnfgComplexAspectFromat = `
+  - kind: metrics
     adapter: noopMetricKindAdapter
     params:
       metrics:
@@ -117,35 +117,47 @@ rules:
 `
 )
 
-func configStore(serviceConfigFile, globalConfigFile string) (config.KeyValueStore,error) {
-	return config.NewCompatFSStore(globalConfigFile, serviceConfigFile)
+func registerNoopAdapter(r adapter.Registrar) {
+	r.RegisterMetricsBuilder(&fakeNoopAdapter{adapter.NewDefaultBuilder("noopMetricKindAdapter", "Publishes metrics", &types.Empty{})})
 }
+type fakeNoopAdapter struct {
+	adapter.DefaultBuilder
+}
+func (f *fakeNoopAdapter) NewMetricsAspect(env adapter.Env, cfg adapter.Config, metrics map[string]*adapter.MetricDefinition) (adapter.MetricsAspect, error) {
+	return &fakeNoopAdapter{}, nil
+}
+func (p *fakeNoopAdapter) Record(vals []adapter.Value) error {
+	return nil
+}
+func (*fakeNoopAdapter) Close() error { return nil }
 
-func benchmarkDispatchSingleHugeAspect(b *testing.B, aspectStringFmt string, loopSize int) {
+func generateYamlConfigs(srvcCnfgAspectFromat string, configRepeatCount int) (declarativeSrvcCnfgFilePath string, declaredGlobalCnfgFilePath string) {
 	srvcCnfgFile, _ := ioutil.TempFile("", "TestReportWithJSServCnfg")
-	srvcCnfgFilePath := srvcCnfgFile.Name()
+	declarativeSrvcCnfgFilePath = srvcCnfgFile.Name()
 
 	globalCnfgFile, _ := ioutil.TempFile("", "TestReportWithJSGlobalcnfg")
-	globalCnfgFilePath := globalCnfgFile.Name()
-	_, _ = globalCnfgFile.Write([]byte(globalCnfgForMetricAspect))
+	declaredGlobalCnfgFilePath = globalCnfgFile.Name()
+	_, _ = globalCnfgFile.Write([]byte(minimalGlobalCnfgForMetricAspect))
 	_ = globalCnfgFile.Close()
-	//defer os.Remove(globalCnfgFilePath)
 
 	var srvcCnfgBuffer bytes.Buffer
 	srvcCnfgBuffer.WriteString(srvcCnfgConstInitialSection)
-	for i := 0; i < loopSize; i++ {
-		srvcCnfgBuffer.WriteString(strings.Replace(aspectStringFmt, "$s", strconv.FormatInt(int64(i), 10), 1))
+	for i := 0; i < configRepeatCount; i++ {
+		srvcCnfgBuffer.WriteString(strings.Replace(srvcCnfgAspectFromat, "$s", strconv.FormatInt(int64(i), 10), 1))
 	}
 	_, _ = srvcCnfgFile.Write([]byte(srvcCnfgBuffer.String()))
 	_ = srvcCnfgFile.Close()
-	//defer os.Remove(srvcCnfgFilePath)
 
+	return declarativeSrvcCnfgFilePath, declaredGlobalCnfgFilePath
+}
 
+var rpcStatus google_rpc.Status
+func benchmarkAdapterManagerDispatch(b *testing.B, declarativeSrvcCnfgFilePath string, declaredGlobalCnfgFilePath string) {
 	apiPoolSize := 1
 	adapterPoolSize := 1
 	identityAttribute := "target.service"
 	identityDomainAttribute := "svc.cluster.local"
-	loopDelay := time.Second*time.Duration(1)
+	loopDelay := time.Second * time.Duration(1)
 
 	gp := pool.NewGoroutinePool(apiPoolSize, true)
 	gp.AddWorkers(apiPoolSize)
@@ -158,9 +170,9 @@ func benchmarkDispatchSingleHugeAspect(b *testing.B, aspectStringFmt string, loo
 
 	eval := expr.NewCEXLEvaluator()
 	adapterMgr := NewManager([]pkgAdapter.RegisterFn{
-		noopMetricKindAdapter.Register,
+		registerNoopAdapter,
 	}, aspect.Inventory(), eval, gp, adapterGP)
-	store,_ := configStore(srvcCnfgFilePath, globalCnfgFilePath)
+	store, _ := config.NewCompatFSStore(declaredGlobalCnfgFilePath, declarativeSrvcCnfgFilePath)
 	cnfgMgr := config.NewManager(eval, adapterMgr.AspectValidatorFinder, adapterMgr.BuilderValidatorFinder,
 		adapterMgr.SupportedKinds, store,
 		loopDelay,
@@ -174,29 +186,37 @@ func benchmarkDispatchSingleHugeAspect(b *testing.B, aspectStringFmt string, loo
 	configs, _ := adapterMgr.loadConfigs(requestBag, adapterMgr.reportKindSet, false, false)
 
 	b.ResetTimer()
+	var r google_rpc.Status
 	for n := 0; n < b.N; n++ {
-		_ = adapterMgr.executeDispatch(context.Background(), configs, requestBag, attribute.GetMutableBag(nil))
+		r = adapterMgr.dispatchReport(context.Background(), configs, requestBag, attribute.GetMutableBag(nil))
 	}
+	rpcStatus = r
 }
 
-/*
-BenchmarkDispatchSimpleOneAspect-12     	   20000	     85643 ns/op
-BenchmarkDispatchSimple50Aspect-12      	     300	   4180791 ns/op
-BenchmarkDispatchComplexOneAspect-12    	   10000	    121990 ns/op
-BenchmarkDispatchComplex50Aspect-12     	     200	   5866466 ns/op
-*/
-func BenchmarkDispatchSimpleOneAspect(b *testing.B) {
-	benchmarkDispatchSingleHugeAspect(b, srvcCnfgYamlSimpleAspectStrFromat, 1)
+func BenchmarkOneSimpleAspect(b *testing.B) {
+	sc, gsc := generateYamlConfigs(srvcCnfgSimpleAspectFromat, 1)
+	defer os.Remove(sc)
+	defer os.Remove(gsc)
+	benchmarkAdapterManagerDispatch(b, sc, gsc)
 }
 
-func BenchmarkDispatchSimple50Aspect(b *testing.B) {
-	benchmarkDispatchSingleHugeAspect(b, srvcCnfgYamlSimpleAspectStrFromat, 50)
+func Benchmark50SimpleAspect(b *testing.B) {
+	sc, gsc := generateYamlConfigs(srvcCnfgSimpleAspectFromat, 50)
+	defer os.Remove(sc)
+	defer os.Remove(gsc)
+	benchmarkAdapterManagerDispatch(b, sc, gsc)
 }
 
-func BenchmarkDispatchComplexOneAspect(b *testing.B) {
-	benchmarkDispatchSingleHugeAspect(b, srvcCnfgYamlComplexAspectStrFromat, 1)
+func BenchmarkOneComplexAspect(b *testing.B) {
+	sc, gsc := generateYamlConfigs(srvcCnfgComplexAspectFromat, 1)
+	defer os.Remove(sc)
+	defer os.Remove(gsc)
+	benchmarkAdapterManagerDispatch(b, sc, gsc)
 }
 
-func BenchmarkDispatchComplex50Aspect(b *testing.B) {
-	benchmarkDispatchSingleHugeAspect(b, srvcCnfgYamlComplexAspectStrFromat, 50)
+func Benchmark50ComplexAspect(b *testing.B) {
+	sc, gsc := generateYamlConfigs(srvcCnfgComplexAspectFromat, 50)
+	defer os.Remove(sc)
+	defer os.Remove(gsc)
+	benchmarkAdapterManagerDispatch(b, sc, gsc)
 }

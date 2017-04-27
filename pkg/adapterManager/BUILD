@@ -51,10 +51,10 @@ go_test(
     library = ":go_default_library",
     deps = [
         "//pkg/config/descriptor:go_default_library",
+        "@com_github_gogo_protobuf//types:go_default_library",
         "//adapter:go_default_library",
         "@com_github_googleapis_googleapis//:google/rpc",
         "@com_github_istio_api//:mixer/v1/config",
-        "//pkg/adapterManager/noopMetricKindAdapter:go_default_library",
         "@com_github_istio_api//:mixer/v1/config/descriptor",
     ],
 )
