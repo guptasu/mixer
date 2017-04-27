@@ -17,7 +17,7 @@
 //
 // - Obviously, the data set must be able to fit in memory.
 //
-// - When the mixer crashes/restarts, all quota values are erased.
+// - When Mixer crashes/restarts, all quota values are erased.
 // This means this isn't good for allocation quotas although
 // it works well enough for rate limits quotas.
 //
@@ -68,7 +68,7 @@ func (builder) ValidateConfig(cfg adapter.Config) (ce *adapter.ConfigErrors) {
 	c := cfg.(*config.Params)
 
 	if c.MinDeduplicationDuration <= 0 {
-		ce = ce.Appendf("MinDeduplicationDuration", "deduplication window of %v is invalid, must be > 0", c.MinDeduplicationDuration)
+		ce = ce.Appendf("minDeduplicationDuration", "deduplication window of %v is invalid, must be > 0", c.MinDeduplicationDuration)
 	}
 	return
 }

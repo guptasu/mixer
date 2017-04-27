@@ -15,13 +15,14 @@ pkg_tar(
 )
 
 mixer_docker_build(
+    cmd = [
+        "--configStoreURL=fs:///etc/opt/mixer/configroot",
+        "--logtostderr",
+        "--v=2",
+    ],
     entrypoint = [
         "/usr/local/bin/mixs",
         "server",
-        "--globalConfigFile=/etc/opt/mixer/globalconfig.yml",
-        "--serviceConfigFile=/etc/opt/mixer/serviceconfig.yml",
-        "--logtostderr",
-        "--v=2",
     ],
     images = [
         {
@@ -35,6 +36,7 @@ mixer_docker_build(
     ],
     ports = [
         "9091",
+        "9094",
         "42422",
     ],
     repository = "istio",
