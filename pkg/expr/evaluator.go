@@ -29,6 +29,8 @@ type (
 		// Eval evaluates given expression using the attribute bag to a string
 		EvalString(expr string, attrs attribute.Bag) (string, error)
 
+		EvalExpression(expr *Expression, attrs attribute.Bag) (interface{}, error)
+
 		PredicateEvaluator
 
 		Validator

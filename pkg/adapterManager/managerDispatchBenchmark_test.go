@@ -52,6 +52,12 @@ BenchmarkOneComplexAspect-12    	   10000	    157771 ns/op
 Benchmark50ComplexAspect-12     	     500	   2757074 ns/op
 PASS
 ok  	istio.io/mixer/pkg/adapterManager	6.202s
+
+After caching the expression (not constructing the AST every time)
+BenchmarkOneSimpleAspect-12     	   30000	     47208 ns/op
+Benchmark50SimpleAspect-12      	    3000	    478931 ns/op
+BenchmarkOneComplexAspect-12    	   30000	     52495 ns/op
+Benchmark50ComplexAspect-12     	    3000	    575883 ns/op
 */
 
 const (
@@ -241,4 +247,49 @@ func Benchmark50ComplexAspect(b *testing.B) {
 	defer os.Remove(sc.Name())
 	defer os.Remove(gsc.Name())
 	benchmarkAdapterManagerDispatch(b, sc.Name(), gsc.Name())
+}
+// NOTE: Below code is for debugging purpose only and will be remove before submitting PR.
+func TestOneSimpleAspect(t *testing.T) {
+	sc, gsc := createYamlConfigs(srvcCnfgSimpleAspect, 1)
+	defer os.Remove(sc.Name())
+	defer os.Remove(gsc.Name())
+	testAdapterManagerDispatch(t, sc.Name(), gsc.Name())
+}
+func testAdapterManagerDispatch(t *testing.T, declarativeSrvcCnfgFilePath string, declaredGlobalCnfgFilePath string) {
+	apiPoolSize := 1024
+	adapterPoolSize := 1024
+	identityAttribute := "target.service"
+	identityDomainAttribute := "svc.cluster.local"
+	loopDelay := time.Second * time.Duration(5)
+	singleThreadedGoRoutinePool := false
+
+	gp := pool.NewGoroutinePool(apiPoolSize, singleThreadedGoRoutinePool)
+	gp.AddWorkers(apiPoolSize)
+	gp.AddWorkers(apiPoolSize)
+	defer gp.Close()
+
+	adapterGP := pool.NewGoroutinePool(adapterPoolSize, singleThreadedGoRoutinePool)
+	adapterGP.AddWorkers(adapterPoolSize)
+	defer adapterGP.Close()
+
+	eval := expr.NewCEXLEvaluator()
+	adapterMgr := NewManager([]pkgAdapter.RegisterFn{
+		registerNoopAdapter,
+	}, aspect.Inventory(), eval, gp, adapterGP)
+	store, _ := config.NewCompatFSStore(declaredGlobalCnfgFilePath, declarativeSrvcCnfgFilePath)
+
+	cnfgMgr := config.NewManager(eval, adapterMgr.AspectValidatorFinder, adapterMgr.BuilderValidatorFinder,
+		adapterMgr.SupportedKinds, store,
+		loopDelay,
+		identityAttribute, identityDomainAttribute)
+	cnfgMgr.Register(adapterMgr)
+	cnfgMgr.Start()
+
+	requestBag := attribute.GetMutableBag(nil)
+	requestBag.Set(identityAttribute, identityDomainAttribute)
+	configs, _ := adapterMgr.loadConfigs(requestBag, adapterMgr.reportKindSet, false, false)
+	rpcStatus = adapterMgr.dispatchReport(context.Background(), configs, requestBag, attribute.GetMutableBag(nil))
+	if rpcStatus.Code != 0 {
+		t.Fail()
+	}
 }
