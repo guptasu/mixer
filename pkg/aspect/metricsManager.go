@@ -41,6 +41,8 @@ type (
 		definition *adapter.MetricDefinition
 		value      string
 		labels     map[string]string
+		valueExpr      *expr.Expression
+		labelsExpr     map[string]*expr.Expression
 	}
 
 	metricsExecutor struct {
@@ -65,10 +67,26 @@ func (m *metricsManager) NewReportExecutor(c *cpb.Combined, a adapter.Builder, e
 		// be converted safely into its definition
 		def, _ := metricDefinitionFromProto(df.GetMetric(metric.DescriptorName))
 		defs[def.Name] = def
+		valueExpr,err := expr.Parse(metric.Value)
+		if err != nil {
+			return nil, fmt.Errorf("failed to construct metrics aspect with config '%v': %v", c, err)
+		}
+		labelsExpr := make(map[string]*expr.Expression)
+		for k,v := range metric.Labels {
+			labelExpr,err := expr.Parse(v)
+			if err != nil {
+				return nil, fmt.Errorf("failed to construct metrics aspect with config '%v': %v", c, err)
+			}
+			labelsExpr[k] = labelExpr
+		}
+
+
 		metadata[def.Name] = &metricInfo{
 			definition: def,
 			value:      metric.Value,
 			labels:     metric.Labels,
+			valueExpr: valueExpr,
+			labelsExpr: labelsExpr,
 		}
 	}
 	b := a.(adapter.MetricsBuilder)
@@ -109,12 +127,12 @@ func (w *metricsExecutor) Execute(attrs attribute.Bag, mapper expr.Evaluator) rp
 	var values []adapter.Value
 
 	for name, md := range w.metadata {
-		metricValue, err := mapper.Eval(md.value, attrs)
+		metricValue, err := mapper.EvalExpression(md.valueExpr, attrs)
 		if err != nil {
 			result = multierror.Append(result, fmt.Errorf("failed to eval metric value for metric '%s': %v", name, err))
 			continue
 		}
-		labels, err := evalAll(md.labels, attrs, mapper)
+		labels, err := evalAllExpr(md.labelsExpr, attrs, mapper)
 		if err != nil {
 			result = multierror.Append(result, fmt.Errorf("failed to eval labels for metric '%s': %v", name, err))
 			continue
@@ -131,7 +149,6 @@ func (w *metricsExecutor) Execute(attrs attribute.Bag, mapper expr.Evaluator) rp
 			MetricValue: metricValue,
 		})
 	}
-
 	if err := w.aspect.Record(values); err != nil {
 		result = multierror.Append(result, fmt.Errorf("failed to record all values: %v", err))
 	}

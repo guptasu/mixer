@@ -25,6 +25,20 @@ import (
 	"istio.io/mixer/pkg/expr"
 )
 
+func evalAllExpr(expressions map[string]*expr.Expression, attrs attribute.Bag, eval expr.Evaluator) (map[string]interface{}, error) {
+	result := &multierror.Error{}
+	labels := make(map[string]interface{}, len(expressions))
+	for label, expr := range expressions {
+		val, err := eval.EvalExpression(expr, attrs)
+		if err != nil {
+			result = multierror.Append(result, fmt.Errorf("failed to construct value for label '%s': %v", label, err))
+			continue
+		}
+		labels[label] = val
+	}
+	return labels, result.ErrorOrNil()
+}
+
 func evalAll(expressions map[string]string, attrs attribute.Bag, eval expr.Evaluator) (map[string]interface{}, error) {
 	result := &multierror.Error{}
 	labels := make(map[string]interface{}, len(expressions))
@@ -38,6 +52,7 @@ func evalAll(expressions map[string]string, attrs attribute.Bag, eval expr.Evalu
 	}
 	return labels, result.ErrorOrNil()
 }
+
 
 func validateLabels(ceField string, labels map[string]string, labelDescs map[string]dpb.ValueType, v expr.Validator, df expr.AttributeDescriptorFinder) (
 	ce *adapter.ConfigErrors) {

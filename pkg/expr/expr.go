@@ -404,6 +404,10 @@ func (e *cexl) Eval(s string, attrs attribute.Bag) (ret interface{}, err error) 
 	return ex.Eval(attrs, e.fMap)
 }
 
+func (e *cexl) EvalExpression(ex *Expression, attrs attribute.Bag) (ret interface{}, err error) {
+	return ex.Eval(attrs, e.fMap)
+}
+
 // Eval evaluates given expression using the attribute bag to a string
 func (e *cexl) EvalString(s string, attrs attribute.Bag) (ret string, err error) {
 	var uret interface{}
