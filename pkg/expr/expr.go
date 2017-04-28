@@ -22,6 +22,7 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/golang/glog"
@@ -390,15 +391,51 @@ func Parse(src string) (ex *Expression, err error) {
 
 // Evaluator for a c-like expression language.
 type cexl struct {
-	//TODO add ast cache
+	// protects cache
+	lock      sync.RWMutex
+	exprCache map[string]*Expression
+
 	// function Map
 	fMap map[string]FuncBase
+}
+
+func (e *cexl) cacheGetExpression(exprStr string) (ex *Expression, err error) {
+	// try fast path with read lock
+	e.lock.RLock()
+	ex, found := e.exprCache[exprStr]
+	e.lock.RUnlock()
+
+	if found {
+		return ex, nil
+	}
+
+	if glog.V(4) {
+		glog.Infof("expression cache miss for '%s'", exprStr)
+	}
+
+	ex, err = Parse(exprStr)
+	if err != nil {
+		return nil, err
+	}
+	if glog.V(4) {
+		glog.Infof("caching expression for '%s''", exprStr)
+	}
+
+	e.lock.Lock()
+	// Check if someone else already cached before we reached here.
+	if cachedExpr, found := e.exprCache[exprStr]; found {
+		ex = cachedExpr
+	} else {
+		e.exprCache[exprStr] = ex
+	}
+	e.lock.Unlock()
+	return ex, nil
 }
 
 func (e *cexl) Eval(s string, attrs attribute.Bag) (ret interface{}, err error) {
 	var ex *Expression
 	// TODO check ast cache
-	if ex, err = Parse(s); err != nil {
+	if ex, err = e.cacheGetExpression(s); err != nil {
 		return
 	}
 	return ex.Eval(attrs, e.fMap)
@@ -430,7 +467,7 @@ func (e *cexl) EvalPredicate(s string, attrs attribute.Bag) (ret bool, err error
 }
 
 func (e *cexl) TypeCheck(expr string, attrFinder AttributeDescriptorFinder) (config.ValueType, error) {
-	v, err := Parse(expr)
+	v, err := e.cacheGetExpression(expr)
 	if err != nil {
 		return config.VALUE_TYPE_UNSPECIFIED, fmt.Errorf("failed to parse expression '%s': %v", expr, err)
 	}
@@ -452,7 +489,7 @@ func (e *cexl) AssertType(expr string, finder AttributeDescriptorFinder, expecte
 // arity and arg types. It is upto the policy author to write correct policies.
 func (e *cexl) Validate(s string) (err error) {
 	var ex *Expression
-	if ex, err = Parse(s); err != nil {
+	if ex, err = e.cacheGetExpression(s); err != nil {
 		return err
 	}
 	// TODO call ex.TypeCheck() when vocabulary is available
@@ -465,6 +502,6 @@ func (e *cexl) Validate(s string) (err error) {
 // NewCEXLEvaluator returns a new Evaluator of this type.
 func NewCEXLEvaluator() Evaluator {
 	return &cexl{
-		fMap: FuncMap(),
+		fMap: FuncMap(), exprCache: make(map[string]*Expression),
 	}
 }
