@@ -16,9 +16,10 @@ package expr
 
 import (
 	"fmt"
+	"math/rand"
 	"strings"
 	"testing"
-	"math/rand"
+
 	dpb "istio.io/api/mixer/v1/config/descriptor"
 )
 
@@ -288,7 +289,11 @@ func TestConcurrencyWithCache(t *testing.T) {
 	loopCount := 100
 	for i := 0; i < loopCount; i++ {
 		go func() {
-			cexl.cacheGetExpression(exprs[rand.Intn(len(exprs))])
+			exprStr := exprs[rand.Intn(len(exprs))]
+			_, err := cexl.cacheGetExpression(exprStr)
+			if err != nil {
+				t.Errorf("Parsing of expression '%s failed with error '%v'", exprStr, err)
+			}
 			done <- true
 		}()
 	}
@@ -298,7 +303,8 @@ func TestConcurrencyWithCache(t *testing.T) {
 	}
 
 	if len(cexl.exprCache) != len(exprs) {
-		t.Errorf("For %d calls to expressions %v: expected cache size %d, instead got %d with content %v.", loopCount, exprs, len(exprs), len(cexl.exprCache), cexl.exprCache)
+		t.Errorf("For %d calls to expressions %v: expected cache size %d, instead got %d with content %v.",
+			loopCount, exprs, len(exprs), len(cexl.exprCache), cexl.exprCache)
 	}
 }
 
