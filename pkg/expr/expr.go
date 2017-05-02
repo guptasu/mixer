@@ -399,17 +399,12 @@ type cexl struct {
 	fMap map[string]FuncBase
 }
 
-func canonicalizeExpression(str string) string {
-	// TODO: may be do a better canonicalization
-	return strings.Replace(str, " ", "", -1)
-}
-
 func (e *cexl) cacheGetExpression(exprStr string) (ex *Expression, err error) {
 
-	canonicalExpr := canonicalizeExpression(exprStr)
-	// try fast path with read lock
+	// TODO: add normalization for exprStr string, so that 'a | b' is same as 'a|b', and  'a == b' is same as 'b == a'
+
 	e.lock.RLock()
-	ex, found := e.exprCache[canonicalExpr]
+	ex, found := e.exprCache[exprStr]
 	e.lock.RUnlock()
 
 	if found {
@@ -430,10 +425,10 @@ func (e *cexl) cacheGetExpression(exprStr string) (ex *Expression, err error) {
 
 	e.lock.Lock()
 	// Check if someone else already cached before we reached here.
-	if cachedExpr, found := e.exprCache[canonicalExpr]; found {
+	if cachedExpr, found := e.exprCache[exprStr]; found {
 		ex = cachedExpr
 	} else {
-		e.exprCache[canonicalExpr] = ex
+		e.exprCache[exprStr] = ex
 	}
 	e.lock.Unlock()
 	return ex, nil
@@ -441,7 +436,6 @@ func (e *cexl) cacheGetExpression(exprStr string) (ex *Expression, err error) {
 
 func (e *cexl) Eval(s string, attrs attribute.Bag) (ret interface{}, err error) {
 	var ex *Expression
-	// TODO check ast cache
 	if ex, err = e.cacheGetExpression(s); err != nil {
 		return
 	}
