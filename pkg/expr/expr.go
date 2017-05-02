@@ -391,7 +391,7 @@ func Parse(src string) (ex *Expression, err error) {
 
 // Evaluator for a c-like expression language.
 type cexl struct {
-	// protects cache
+
 	lock      sync.RWMutex
 	exprCache map[string]*Expression
 
