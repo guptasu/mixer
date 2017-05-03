@@ -69,17 +69,17 @@ func newBuilder() *builder {
 func (b *builder) ValidateConfig(c adapter.Config) (ce *adapter.ConfigErrors) {
 	params := c.(*config.Params)
 	if params.FlushDuration < time.Duration(0) {
-		ce = ce.Appendf("FlushDuration", "flush duration must be >= 0")
+		ce = ce.Appendf("flushDuration", "flush duration must be >= 0")
 	}
 	if params.FlushBytes < 0 {
-		ce = ce.Appendf("FlushBytes", "flush bytes must be >= 0")
+		ce = ce.Appendf("flushBytes", "flush bytes must be >= 0")
 	}
 	if params.SamplingRate < 0 {
-		ce = ce.Appendf("SamplingRate", "sampling rate must be >= 0")
+		ce = ce.Appendf("samplingRate", "sampling rate must be >= 0")
 	}
 	for metricName, s := range params.MetricNameTemplateStrings {
 		if _, err := template.New(metricName).Parse(s); err != nil {
-			ce = ce.Appendf("MetricNameTemplateStrings", "failed to parse template '%s' for metric '%s' with err: %s", s, metricName, err)
+			ce = ce.Appendf("metricNameTemplateStrings", "failed to parse template '%s' for metric '%s': %v", s, metricName, err)
 		}
 	}
 	return
@@ -108,7 +108,7 @@ func (*builder) NewMetricsAspect(env adapter.Env, cfg adapter.Config, metrics ma
 		t, _ := template.New(metricName).Parse(s)
 		if err := t.Execute(ioutil.Discard, def.Labels); err != nil {
 			env.Logger().Warningf(
-				"skipping custom statsd metric name for metric '%s', could not satisfy template '%s' with labels '%v' with err: %s",
+				"skipping custom statsd metric name for metric '%s', could not satisfy template '%s' with labels '%v': %v",
 				metricName, s, def.Labels, err)
 			continue
 		}
@@ -147,16 +147,29 @@ func (a *aspect) record(value adapter.Value) error {
 	case adapter.Gauge:
 		v, err := value.Int64()
 		if err != nil {
-			return fmt.Errorf("could not record gauge '%s' with err: %s", mname, err)
+			return fmt.Errorf("could not record gauge '%s': %v", mname, err)
 		}
 		result = a.client.Gauge(mname, v, a.rate)
 
 	case adapter.Counter:
 		v, err := value.Int64()
 		if err != nil {
-			return fmt.Errorf("could not record counter '%s' with err: %s", mname, err)
+			return fmt.Errorf("could not record counter '%s': %v", mname, err)
 		}
 		result = a.client.Inc(mname, v, a.rate)
+	case adapter.Distribution:
+		// TODO: figure out how to program histograms via config.*
+		// updates
+		v, err := value.Duration()
+		if err == nil {
+			return a.client.TimingDuration(mname, v, a.rate)
+		}
+		// TODO: figure out support for non-duration distributions.
+		vint, err := value.Int64()
+		if err == nil {
+			return a.client.Inc(mname, vint, a.rate)
+		}
+		return fmt.Errorf("could not record distribution '%s': %v", mname, err)
 	}
 
 	return result

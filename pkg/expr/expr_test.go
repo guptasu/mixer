@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	dpb "istio.io/api/mixer/v1/config/descriptor"
+	cfgpb "istio.io/mixer/pkg/config/proto"
 )
 
 func TestGoodParse(t *testing.T) {
@@ -91,8 +92,8 @@ func TestBadParse(t *testing.T) {
 		err string
 	}{
 		{`*a != b`, "unexpected expression"},
-		{"a = bc", `parse error`},
-		{`3 = 10`, "parse error"},
+		{"a = bc", `unable to parse`},
+		{`3 = 10`, "unable to parse"},
 		{`a.b.c() == 20`, "unexpected expression"},
 		{`a.b().c() == 20`, "unexpected expression"},
 		{`(a.c).d == 300`, `unexpected expression`},
@@ -100,7 +101,7 @@ func TestBadParse(t *testing.T) {
 		{`(*a == 20) && 12`, `unexpected expression`},
 		{`!*a`, `unexpected expression`},
 		{`request.headers[*a] == 200`, `unexpected expression`},
-		{`atr == 'aaa'`, "parse error"},
+		{`atr == 'aaa'`, "unable to parse"},
 	}
 	for idx, tt := range tests {
 		t.Run(fmt.Sprintf("[%d] %s", idx, tt.src), func(t *testing.T) {
@@ -127,15 +128,15 @@ type ad struct {
 	v    dpb.ValueType
 }
 type af struct {
-	v map[string]*dpb.AttributeDescriptor
+	v map[string]*cfgpb.AttributeManifest_AttributeInfo
 }
 
-func (a *af) GetAttribute(name string) *dpb.AttributeDescriptor { return a.v[name] }
+func (a *af) GetAttribute(name string) *cfgpb.AttributeManifest_AttributeInfo { return a.v[name] }
 
 func newAF(ds []*ad) *af {
-	m := make(map[string]*dpb.AttributeDescriptor)
+	m := make(map[string]*cfgpb.AttributeManifest_AttributeInfo)
 	for _, aa := range ds {
-		m[aa.name] = &dpb.AttributeDescriptor{Name: aa.name, ValueType: aa.v}
+		m[aa.name] = &cfgpb.AttributeManifest_AttributeInfo{ValueType: aa.v}
 	}
 	return &af{m}
 }

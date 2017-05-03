@@ -16,24 +16,28 @@ package config
 
 import (
 	"crypto/sha1"
+	"errors"
+	"reflect"
+	"sync"
+	"time"
+	"github.com/ghodss/yaml"
 	"github.com/golang/glog"
+
 	"io/ioutil"
 	"istio.io/mixer/pkg/adapter"
 	"istio.io/mixer/pkg/attribute"
 	"istio.io/mixer/pkg/config/descriptor"
 	pb "istio.io/mixer/pkg/config/proto"
 	"istio.io/mixer/pkg/expr"
-	"sync"
-	"time"
 )
 
 // Resolver resolves configuration to a list of combined configs.
 type Resolver interface {
 	// Resolve resolves configuration to a list of combined configs.
-	Resolve(bag attribute.Bag, kindSet KindSet) ([]*pb.Combined, error)
+	Resolve(bag attribute.Bag, kindSet KindSet, strict bool) ([]*pb.Combined, error)
 	// ResolveUnconditional resolves configuration for unconditioned rules.
 	// Unconditioned rules are those rules with the empty selector ("").
-	ResolveUnconditional(bag attribute.Bag, kindSet KindSet) ([]*pb.Combined, error)
+        ResolveUnconditional(bag attribute.Bag, kindSet KindSet, strict bool) ([]*pb.Combined, error)
 	GetNormalizedConfig() NormalizedConfig
 }
 
@@ -47,22 +51,28 @@ type ChangeListener interface {
 // It applies validated changes to the registered config change listeners.
 // api.Handler listens for config changes.
 type Manager struct {
-	eval             expr.Evaluator
-	aspectFinder     AspectValidatorFinder
-	builderFinder    BuilderValidatorFinder
-	descriptorFinder descriptor.Finder
-	findAspects      AdapterToAspectMapper
-	loopDelay        time.Duration
+	eval          expr.Evaluator
+	aspectFinder  AspectValidatorFinder
+	builderFinder BuilderValidatorFinder
+	findAspects   AdapterToAspectMapper
+	loopDelay     time.Duration
+	store         KeyValueStore
+	validate      validateFunc
 	globalConfig     string
 	serviceConfig    string
-	ticker           *time.Ticker
-	userTypScrpt     string
-	configNormalizer     ConfigNormalizer
+        userTypScrpt  string
+        configNormalizer     ConfigNormalizer
 
-	cl    []ChangeListener
-	scSHA [sha1.Size]byte
-	gcSHA [sha1.Size]byte
+	// attribute around which scopes and subjects are organized.
+	identityAttribute       string
+	identityAttributeDomain string
 
+	ticker         *time.Ticker
+	lastFetchIndex int
+
+	cl []ChangeListener
+
+	lastValidated *Validated
 	sync.RWMutex
 	lastError error
 }
@@ -79,20 +89,37 @@ type Manager struct {
 // GlobalConfig specifies the location of Global Config.
 // ServiceConfig specifies the location of Service config.
 func NewManager(eval expr.Evaluator, aspectFinder AspectValidatorFinder, builderFinder BuilderValidatorFinder,
-	findAspects AdapterToAspectMapper, globalConfig string, serviceConfig string, loopDelay time.Duration, userTypeScript string, configNormalizer ConfigNormalizer) *Manager {
+
+	findAspects AdapterToAspectMapper, store KeyValueStore, globalConfig string, serviceConfig string, loopDelay time.Duration, userTypeScript string, configNormalizer ConfigNormalizer, identityAttribute string,
+	identityAttributeDomain string) *Manager {
 	m := &Manager{
-		eval:          eval,
-		aspectFinder:  aspectFinder,
-		builderFinder: builderFinder,
-		findAspects:   findAspects,
-		loopDelay:     loopDelay,
-		globalConfig:  globalConfig,
+		eval:                    eval,
+		aspectFinder:            aspectFinder,
+		builderFinder:           builderFinder,
+		findAspects:             findAspects,
+		loopDelay:               loopDelay,
+		store:                   store,
+		identityAttribute:       identityAttribute,
+		identityAttributeDomain: identityAttributeDomain,
+		globalConfig: globalConfig,
 		serviceConfig: serviceConfig,
 		userTypScrpt:  userTypeScript,
 		configNormalizer: configNormalizer,
+		validate: func(cfg map[string]string) (*Validated, descriptor.Finder, *adapter.ConfigErrors) {
+			v := newValidator(aspectFinder, builderFinder, findAspects, true, eval)
+			rt, ce := v.validate(cfg)
+			return rt, v.descriptorFinder, ce
+		},
 	}
+
 	return m
 }
+
+// StoreChange is called by "store" when new changes are available
+//func (c *Manager) StoreChange(index int) {
+//	// fetchAndNotify already logs errors
+//	c.fetchAndNotify()
+//}
 
 // Register makes the ConfigManager aware of a ConfigChangeListener.
 func (c *Manager) Register(cc ChangeListener) {
@@ -108,67 +135,106 @@ func read(fname string) ([sha1.Size]byte, string, error) {
 	return sha1.Sum(data), string(data[:]), nil
 }
 
+func readdb(store KeyValueStore, prefix string) (map[string]string, map[string][sha1.Size]byte, int, error) {
+	keys, index, err := store.List(prefix, true)
+	if err != nil {
+		return nil, nil, index, err
+	}
+
+	// read
+	shas := map[string][sha1.Size]byte{}
+	data := map[string]string{}
+
+	var found bool
+	var val string
+
+	for _, k := range keys {
+		val, index, found = store.Get(k)
+		if !found {
+			continue
+		}
+		data[k] = val
+		shas[k] = sha1.Sum([]byte(val))
+	}
+
+	return data, shas, index, nil
+}
+
+//  /scopes/global/subjects/global/rules
+//  /scopes/global/adapters
+//  /scopes/global/descriptors
+
 // fetch config and return runtime if a new one is available.
 func (c *Manager) fetch() (*runtime, descriptor.Finder, error) {
-	var vd *Validated
-	var cerr *adapter.ConfigErrors
 
-	gcSHA, gc, err2 := read(c.globalConfig)
-	if err2 != nil {
-		return nil, nil, err2
+	data, shas, index, err := readdb(c.store, "/")
+	if glog.V(9) {
+		glog.Info(data)
 	}
-
-	scSHA, sc, err1 := read(c.serviceConfig)
-	if err1 != nil {
-		return nil, nil, err1
+	if err != nil {
+		return nil, nil, errors.New("Unable to read database: " + err.Error())
 	}
-
-	if gcSHA == c.gcSHA && scSHA == c.scSHA {
+	// check if sha has changed.
+	if c.lastValidated != nil && reflect.DeepEqual(shas, c.lastValidated.shas) {
+		// nothing actually changed.
 		return nil, nil, nil
 	}
 
-	v := newValidator(c.aspectFinder, c.builderFinder, c.findAspects, true, c.eval)
-	if vd, cerr = v.validate(sc, gc); cerr != nil {
+	var vd *Validated
+	var finder descriptor.Finder
+	var cerr *adapter.ConfigErrors
+
+	vd, finder, cerr = c.validate(data)
+	if cerr != nil {
+		glog.Warningf("Validation failed: %v", cerr)
 		return nil, nil, cerr
 	}
 
-	c.descriptorFinder = descriptor.NewFinder(v.validated.globalConfig)
+	c.lastFetchIndex = index
+	vd.shas = shas
+	c.lastValidated = vd
 
-	c.gcSHA = gcSHA
-	c.scSHA = scSHA
-	rt := newRuntime(vd, c.eval)
+	rt := newRuntime(vd, c.eval, c.identityAttribute, c.identityAttributeDomain)
 
 	if c.userTypScrpt != "" {
 		glog.Infof("**config/manager.go : Received user provided TypeScript\n")
 		rt.NormalizedConfig = c.configNormalizer.ReloadNormalizedConfigFile(c.userTypScrpt)
 	} else {
+		_, sc, err1 := read(c.serviceConfig)
+		if err1 != nil {
+			return nil, nil, err1
+		}
+		var err error
+		m := &pb.ServiceConfig{}
+		if err = yaml.Unmarshal([]byte(sc), m); err != nil {
+			return nil, nil, err1
+		}
 		glog.Infof("**config/manager.go : Creating TypeScript from SC\n")
-		rt.NormalizedConfig = c.configNormalizer.Normalize(vd.serviceConfig, c.serviceConfig)
+		rt.NormalizedConfig = c.configNormalizer.Normalize(m, c.serviceConfig)
 	}
 
 	glog.Infof("**config/manager.go : Saving generated javascript in runtime object \n")
 
-	return rt, c.descriptorFinder, nil
+	return rt, finder , nil
 }
 
 // fetchAndNotify fetches a new config and notifies listeners if something has changed
-func (c *Manager) fetchAndNotify() error {
+func (c *Manager) fetchAndNotify() {
 	rt, df, err := c.fetch()
 	if err != nil {
 		c.Lock()
 		c.lastError = err
 		c.Unlock()
-		return err
+		glog.Warningf("Error loading new config %v", err)
 	}
 	if rt == nil {
-		return nil
+		return
 	}
 
-	glog.Infof("Installing new config from %s sha=%x ", c.serviceConfig, c.scSHA)
+	glog.Infof("Loaded new config %s", c.store)
 	for _, cl := range c.cl {
 		cl.ConfigChange(rt, df)
 	}
-	return nil
 }
 
 // LastError returns last error encountered by the manager while processing config.
@@ -188,21 +254,18 @@ func (c *Manager) Close() {
 
 func (c *Manager) loop() {
 	for range c.ticker.C {
-		err := c.fetchAndNotify()
-		if err != nil {
-			glog.Warning(err)
-		}
+		c.fetchAndNotify()
 	}
 }
 
 // Start watching for configuration changes and handle updates.
 func (c *Manager) Start() {
-	err := c.fetchAndNotify()
-	// We make an attempt to synchronously fetch and notify configuration
+	c.fetchAndNotify()
+	// FIXME add change notifier registration once we have
+	// an adapter that supports it cn.RegisterStoreChangeListener(c)
+
+	// if store does not support notification use the loop
 	// If it is not successful, we will continue to watch for changes.
 	c.ticker = time.NewTicker(c.loopDelay)
 	go c.loop()
-	if err != nil {
-		glog.Warning("Unable to process config: ", err)
-	}
 }

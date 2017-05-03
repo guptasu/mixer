@@ -33,7 +33,7 @@ import (
 	"istio.io/mixer/pkg/attribute"
 	"istio.io/mixer/pkg/config"
 	"istio.io/mixer/pkg/config/descriptor"
-	configpb "istio.io/mixer/pkg/config/proto"
+	cfgpb "istio.io/mixer/pkg/config/proto"
 	"istio.io/mixer/pkg/expr"
 	"istio.io/mixer/pkg/status"
 )
@@ -59,10 +59,10 @@ var (
 	applogsDF = test.NewDescriptorFinder(map[string]interface{}{
 		validDesc.Name: &validDesc,
 		// our attributes
-		"duration":  &dpb.AttributeDescriptor{Name: "duration", ValueType: dpb.DURATION},
-		"string":    &dpb.AttributeDescriptor{Name: "string", ValueType: dpb.STRING},
-		"int64":     &dpb.AttributeDescriptor{Name: "int64", ValueType: dpb.INT64},
-		"timestamp": &dpb.AttributeDescriptor{Name: "timestamp", ValueType: dpb.TIMESTAMP},
+		"duration":  &cfgpb.AttributeManifest_AttributeInfo{ValueType: dpb.DURATION},
+		"string":    &cfgpb.AttributeManifest_AttributeInfo{ValueType: dpb.STRING},
+		"int64":     &cfgpb.AttributeManifest_AttributeInfo{ValueType: dpb.INT64},
+		"timestamp": &cfgpb.AttributeManifest_AttributeInfo{ValueType: dpb.TIMESTAMP},
 	})
 )
 
@@ -127,9 +127,9 @@ func TestLoggerManager_NewLogger(t *testing.T) {
 
 	for idx, v := range newAspectShouldSucceed {
 		t.Run(fmt.Sprintf("[%d] %s", idx, v.name), func(t *testing.T) {
-			c := configpb.Combined{
-				Builder: &configpb.Adapter{Params: &ptypes.Empty{}},
-				Aspect:  &configpb.Aspect{Params: v.params, Inputs: map[string]string{}},
+			c := cfgpb.Combined{
+				Builder: &cfgpb.Adapter{Params: &ptypes.Empty{}},
+				Aspect:  &cfgpb.Aspect{Params: v.params},
 			}
 			asp, err := m.NewReportExecutor(&c, tl, atest.NewEnv(t), applogsDF)
 			if err != nil {
@@ -171,11 +171,11 @@ func TestLoggerManager_NewLoggerFailures(t *testing.T) {
 	m := newApplicationLogsManager()
 	for idx, v := range failureCases {
 		t.Run(fmt.Sprintf("[%d] %s", idx, v.name), func(t *testing.T) {
-			cfg := &configpb.Combined{
-				Builder: &configpb.Adapter{
+			cfg := &cfgpb.Combined{
+				Builder: &cfgpb.Adapter{
 					Params: &ptypes.Empty{},
 				},
-				Aspect: &configpb.Aspect{
+				Aspect: &cfgpb.Aspect{
 					Params: v.cfg,
 				},
 			}
@@ -220,10 +220,10 @@ func TestLoggerManager_ValidateConfig(t *testing.T) {
 		validDesc.Name:   &validDesc,
 		invalidDesc.Name: &invalidDesc,
 		// our attributes
-		"duration":  &dpb.AttributeDescriptor{Name: "duration", ValueType: dpb.DURATION},
-		"string":    &dpb.AttributeDescriptor{Name: "string", ValueType: dpb.STRING},
-		"int64":     &dpb.AttributeDescriptor{Name: "int64", ValueType: dpb.INT64},
-		"timestamp": &dpb.AttributeDescriptor{Name: "timestamp", ValueType: dpb.TIMESTAMP},
+		"duration":  &cfgpb.AttributeManifest_AttributeInfo{ValueType: dpb.DURATION},
+		"string":    &cfgpb.AttributeManifest_AttributeInfo{ValueType: dpb.STRING},
+		"int64":     &cfgpb.AttributeManifest_AttributeInfo{ValueType: dpb.INT64},
+		"timestamp": &cfgpb.AttributeManifest_AttributeInfo{ValueType: dpb.TIMESTAMP},
 	})
 
 	validLog := aconfig.ApplicationLogsParams_ApplicationLog{
@@ -263,14 +263,14 @@ func TestLoggerManager_ValidateConfig(t *testing.T) {
 		err  string
 	}{
 		{"valid", wrap("valid", &validLog), df, ""},
-		{"empty config", &aconfig.ApplicationLogsParams{}, df, "LogName"},
-		{"no log name", noLogName, df, "LogName"},
+		{"empty config", &aconfig.ApplicationLogsParams{}, df, "logName"},
+		{"no log name", noLogName, df, "logName"},
 		{"missing desc", wrap("missing desc", &missingDesc), df, "could not find a descriptor"},
-		{"invalid severity", wrap("sev", &invalidSeverity), df, "Severity"},
-		{"invalid timestamp", wrap("ts", &invalidTimestamp), df, "Timestamp"},
-		{"invalid labels", wrap("labels", &invalidLabels), df, "Labels"},
-		{"invalid logtemplate", wrap("tmpl", &invalidDescLog), df, "LogDescriptor"},
-		{"template expr attr missing", wrap("missing attr", &missingTmplExprs), df, "TemplateExpressions"},
+		{"invalid severity", wrap("sev", &invalidSeverity), df, "severity"},
+		{"invalid timestamp", wrap("ts", &invalidTimestamp), df, "timestamp"},
+		{"invalid labels", wrap("labels", &invalidLabels), df, "labels"},
+		{"invalid logtemplate", wrap("tmpl", &invalidDescLog), df, "logDescriptor"},
+		{"template expr attr missing", wrap("missing attr", &missingTmplExprs), df, "templateExpressions"},
 	}
 
 	for idx, tt := range tests {

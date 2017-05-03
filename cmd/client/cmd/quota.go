@@ -18,6 +18,7 @@ import (
 	"context"
 	"io"
 	"strconv"
+	"time"
 
 	"github.com/opentracing/opentracing-go/ext"
 	"github.com/spf13/cobra"
@@ -33,7 +34,12 @@ func quotaCmd(rootArgs *rootArgs, printf, fatalf shared.FormatFn) *cobra.Command
 
 	cmd := &cobra.Command{
 		Use:   "quota",
-		Short: "Invokes the mixer's Quota API.",
+		Short: "Invokes Mixer's Quota API in order to perform quota management.",
+		Long: "The Quota method is used to perform quota management. Mixer\n" +
+			"expects a set of attributes as input, which it uses, along with\n" +
+			"its configuration, to determine which adapters to invoke and with\n" +
+			"which parameters in order to perform the quota operations.",
+
 		Run: func(cmd *cobra.Command, args []string) {
 			quota(rootArgs, printf, fatalf, name, amount, bestEffort)
 		},
@@ -68,8 +74,9 @@ func quota(rootArgs *rootArgs, printf, fatalf shared.FormatFn, name string, amou
 		fatalf("Quota RPC failed: %v", err)
 	}
 
+	salt := time.Now().Nanosecond()
 	for i := 0; i < rootArgs.repeat; i++ {
-		dedup := strconv.Itoa(i)
+		dedup := strconv.Itoa(salt + i)
 
 		// send the request
 		request := mixerpb.QuotaRequest{

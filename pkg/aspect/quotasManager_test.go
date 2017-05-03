@@ -23,8 +23,6 @@ import (
 	"testing"
 	"time"
 
-	ptypes "github.com/gogo/protobuf/types"
-
 	dpb "istio.io/api/mixer/v1/config/descriptor"
 	"istio.io/mixer/pkg/adapter"
 	atest "istio.io/mixer/pkg/adapter/test"
@@ -33,7 +31,7 @@ import (
 	"istio.io/mixer/pkg/attribute"
 	"istio.io/mixer/pkg/config"
 	"istio.io/mixer/pkg/config/descriptor"
-	cpb "istio.io/mixer/pkg/config/proto"
+	cfgpb "istio.io/mixer/pkg/config/proto"
 	"istio.io/mixer/pkg/expr"
 	"istio.io/mixer/pkg/status"
 )
@@ -79,15 +77,12 @@ func (b *fakeQuotaBuilder) NewQuotasAspect(env adapter.Env, config adapter.Confi
 
 var (
 	quotaRequestCount = &dpb.QuotaDescriptor{
-		Name:       "RequestCount",
-		MaxAmount:  5,
-		Expiration: &ptypes.Duration{Seconds: 1},
-		Labels:     map[string]dpb.ValueType{},
+		Name:   "RequestCount",
+		Labels: map[string]dpb.ValueType{},
 	}
 
 	quotaWithLabels = &dpb.QuotaDescriptor{
-		Name:       "desc with labels",
-		Expiration: &ptypes.Duration{Seconds: 1},
+		Name: "desc with labels",
 		Labels: map[string]dpb.ValueType{
 			"source":        dpb.STRING,
 			"target":        dpb.STRING,
@@ -108,21 +103,23 @@ func TestNewQuotasManager(t *testing.T) {
 	}
 }
 
-func newQuotaConfig(desc string, labels map[string]string) *cpb.Combined {
-	return &cpb.Combined{
-		Aspect: &cpb.Aspect{
+func newQuotaConfig(desc string, labels map[string]string) *cfgpb.Combined {
+	return &cfgpb.Combined{
+		Aspect: &cfgpb.Aspect{
 			Params: &aconfig.QuotasParams{
 				Quotas: []*aconfig.QuotasParams_Quota{
 					{
 						DescriptorName: desc,
 						Labels:         labels,
+						MaxAmount:      5,
+						Expiration:     time.Duration(1) * time.Second,
 					},
 				},
 			},
 		},
 
 		// the params we use here don't matter because we're faking the aspect
-		Builder: &cpb.Adapter{Params: &aconfig.QuotasParams{}},
+		Builder: &cfgpb.Adapter{Params: &aconfig.QuotasParams{}},
 	}
 }
 
@@ -139,10 +136,10 @@ func TestQuotasManager_NewAspect(t *testing.T) {
 }
 
 func TestQuotasManager_NewAspect_PropagatesError(t *testing.T) {
-	conf := &cpb.Combined{
-		Aspect: &cpb.Aspect{Params: &aconfig.QuotasParams{}},
+	conf := &cfgpb.Combined{
+		Aspect: &cfgpb.Aspect{Params: &aconfig.QuotasParams{}},
 		// the params we use here don't matter because we're faking the aspect
-		Builder: &cpb.Adapter{Params: &aconfig.QuotasParams{}},
+		Builder: &cfgpb.Adapter{Params: &aconfig.QuotasParams{}},
 	}
 	errString := "expected"
 	builder := &fakeQuotaBuilder{
@@ -163,14 +160,13 @@ func TestQuotasManager_ValidateConfig(t *testing.T) {
 		quotaRequestCount.Name: quotaRequestCount,
 		quotaWithLabels.Name:   quotaWithLabels,
 		"invalid desc": &dpb.QuotaDescriptor{
-			Name:       "invalid desc",
-			Expiration: nil,
-			Labels:     map[string]dpb.ValueType{},
+			Name:   "invalid desc",
+			Labels: map[string]dpb.ValueType{},
 		},
 		// our attributes
-		"duration": &dpb.AttributeDescriptor{Name: "duration", ValueType: dpb.DURATION},
-		"string":   &dpb.AttributeDescriptor{Name: "string", ValueType: dpb.STRING},
-		"int64":    &dpb.AttributeDescriptor{Name: "int64", ValueType: dpb.INT64},
+		"duration": &cfgpb.AttributeManifest_AttributeInfo{ValueType: dpb.DURATION},
+		"string":   &cfgpb.AttributeManifest_AttributeInfo{ValueType: dpb.STRING},
+		"int64":    &cfgpb.AttributeManifest_AttributeInfo{ValueType: dpb.INT64},
 	})
 	v := expr.NewCEXLEvaluator()
 
@@ -239,7 +235,6 @@ func TestQuotasManager_ValidateConfig(t *testing.T) {
 		{"failed type checking (bad expr)", &aconfig.QuotasParams{Quotas: []*aconfig.QuotasParams_Quota{&invalidExpr}}, v, df, "failed to parse expression"},
 		{"label eval'd type doesn't match desc", &aconfig.QuotasParams{Quotas: []*aconfig.QuotasParams_Quota{&wrongLabelType}}, v, df, "expected type STRING"},
 		{"wrong dimensions for metric", &aconfig.QuotasParams{Quotas: []*aconfig.QuotasParams_Quota{&extraLabel}}, v, df, "wrong dimensions"},
-		{"can't convert proto to adapter rep", &aconfig.QuotasParams{Quotas: []*aconfig.QuotasParams_Quota{&badDesc}}, v, df, "failed to marshal descriptor"},
 	}
 
 	for idx, tt := range tests {
@@ -397,16 +392,12 @@ func TestQuotas_DescToDef(t *testing.T) {
 				Name:        "NAME",
 				DisplayName: "DISPLAYNAME",
 				Description: "DESCRIPTION",
-				MaxAmount:   123,
 				Labels:      map[string]dpb.ValueType{"string": dpb.STRING},
-				Expiration:  ptypes.DurationProto(time.Duration(42) * time.Second),
 			},
 			&adapter.QuotaDefinition{
 				Name:        "NAME",
 				DisplayName: "DISPLAYNAME",
 				Description: "DESCRIPTION",
-				MaxAmount:   123,
-				Expiration:  time.Duration(42) * time.Second,
 				Labels:      map[string]adapter.LabelType{"string": adapter.String},
 			},
 			"",

@@ -62,7 +62,7 @@ func (m accessLogsManager) NewReportExecutor(c *cpb.Combined, a adapter.Builder,
 
 	asp, err := a.(adapter.AccessLogsBuilder).NewAccessLogsAspect(env, c.Builder.Params.(adapter.Config))
 	if err != nil {
-		return nil, fmt.Errorf("failed to create aspect for log %s with err: %s", cfg.LogName, err)
+		return nil, fmt.Errorf("failed to create aspect for log %s: %v", cfg.LogName, err)
 	}
 
 	return &accessLogsExecutor{
@@ -87,22 +87,22 @@ func (accessLogsManager) DefaultConfig() config.AspectParams {
 func (accessLogsManager) ValidateConfig(c config.AspectParams, v expr.Validator, df descriptor.Finder) (ce *adapter.ConfigErrors) {
 	cfg := c.(*aconfig.AccessLogsParams)
 	if cfg.LogName == "" {
-		ce = ce.Appendf("LogName", "no log name provided")
+		ce = ce.Appendf("logName", "no log name provided")
 	}
 
 	desc := df.GetLog(cfg.Log.DescriptorName)
 	if desc == nil {
 		// nor can we do more validation without a descriptor
-		return ce.Appendf("AccessLogs", "could not find a descriptor for the access log '%s'", cfg.Log.DescriptorName)
+		return ce.Appendf("accessLogs", "could not find a descriptor for the access log '%s'", cfg.Log.DescriptorName)
 	}
-	ce = ce.Extend(validateLabels(fmt.Sprintf("AccessLogs[%s].Labels", cfg.Log.DescriptorName), cfg.Log.Labels, desc.Labels, v, df))
-	ce = ce.Extend(validateTemplateExpressions(fmt.Sprintf("LogDescriptor[%s].TemplateExpressions", desc.Name), cfg.Log.TemplateExpressions, v, df))
+	ce = ce.Extend(validateLabels(fmt.Sprintf("accessLogs[%s].labels", cfg.Log.DescriptorName), cfg.Log.Labels, desc.Labels, v, df))
+	ce = ce.Extend(validateTemplateExpressions(fmt.Sprintf("logDescriptor[%s].templateExpressions", desc.Name), cfg.Log.TemplateExpressions, v, df))
 
 	// TODO: how do we validate the log.TemplateExpressions against desc.LogTemplate? We can't just `Execute` the template
 	// against the expressions: while the keys to the template may be correct, the values will be wrong which could result
 	// in non-nil error returns even when things would be valid at runtime.
 	if _, err := template.New(desc.Name).Parse(desc.LogTemplate); err != nil {
-		ce = ce.Appendf(fmt.Sprintf("LogDescriptor[%s].LogTemplate", desc.Name), "failed to parse template with err: %v", err)
+		ce = ce.Appendf(fmt.Sprintf("logDescriptor[%s].logTemplate", desc.Name), "failed to parse template: %v", err)
 	}
 	return
 }
@@ -118,7 +118,7 @@ func (e *accessLogsExecutor) Execute(evaluatedValue interface{}, attrs attribute
 	buf := pool.GetBuffer()
 	if err := e.template.Execute(buf, templateVals); err != nil {
 		pool.PutBuffer(buf)
-		return status.WithError(fmt.Errorf("failed to execute payload template for log %s with err: %s", e.name, err))
+		return status.WithError(fmt.Errorf("failed to execute payload template for log %s: %v", e.name, err))
 	}
 	payload := buf.String()
 	pool.PutBuffer(buf)
@@ -129,7 +129,7 @@ func (e *accessLogsExecutor) Execute(evaluatedValue interface{}, attrs attribute
 		TextPayload: payload,
 	}
 	if err := e.aspect.LogAccess([]adapter.LogEntry{entry}); err != nil {
-		return status.WithError(fmt.Errorf("failed to log to %s with err: %s", e.name, err))
+		return status.WithError(fmt.Errorf("failed to log to %s: %v", e.name, err))
 	}
 	return status.OK
 }

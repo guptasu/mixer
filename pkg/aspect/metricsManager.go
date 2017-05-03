@@ -15,6 +15,7 @@
 package aspect
 
 import (
+	"errors"
 	"fmt"
 	"time"
 	"github.com/golang/glog"
@@ -71,7 +72,7 @@ func (m *metricsManager) NewReportExecutor(c *cpb.Combined, a adapter.Builder, e
 	b := a.(adapter.MetricsBuilder)
 	asp, err := b.NewMetricsAspect(env, c.Builder.Params.(adapter.Config), defs)
 	if err != nil {
-		return nil, fmt.Errorf("failed to construct metrics aspect with config '%v' and err: %s", c, err)
+		return nil, fmt.Errorf("failed to construct metrics aspect with config '%v': %v", c, err)
 	}
 	return &metricsExecutor{b.Name(), asp, metadata}, nil
 }
@@ -84,18 +85,18 @@ func (*metricsManager) ValidateConfig(c config.AspectParams, v expr.Validator, d
 	for _, metric := range cfg.Metrics {
 		desc := df.GetMetric(metric.DescriptorName)
 		if desc == nil {
-			ce = ce.Appendf("Metrics", "could not find a descriptor for the metric '%s'", metric.DescriptorName)
+			ce = ce.Appendf("metrics", "could not find a descriptor for the metric '%s'", metric.DescriptorName)
 			continue // we can't do any other validation without the descriptor
 		}
 
 		if err := v.AssertType(metric.Value, df, desc.Value); err != nil {
-			ce = ce.Appendf(fmt.Sprintf("Metric[%s].Value", metric.DescriptorName), "error type checking label %s: %v", err)
+			ce = ce.Appendf(fmt.Sprintf("metrics[%s].value", metric.DescriptorName), "error type checking label %s: %v", err)
 		}
-		ce = ce.Extend(validateLabels(fmt.Sprintf("Metrics[%s].Labels", desc.Name), metric.Labels, desc.Labels, v, df))
+		ce = ce.Extend(validateLabels(fmt.Sprintf("metrics[%s].labels", desc.Name), metric.Labels, desc.Labels, v, df))
 
 		// TODO: this doesn't feel like quite the right spot to do this check, but it's the best we have ¯\_(ツ)_/¯
 		if _, err := metricDefinitionFromProto(desc); err != nil {
-			ce = ce.Appendf(fmt.Sprintf("Descriptor[%s]", desc.Name), "failed to marshal descriptor into its adapter representation with err: %v", err)
+			ce = ce.Appendf(fmt.Sprintf("descriptor[%s]", desc.Name), "failed to marshal descriptor into its adapter representation: %v", err)
 		}
 	}
 	return
@@ -106,10 +107,7 @@ func (w *metricsExecutor) Execute(evaluatedValue interface{}, attrs attribute.Ba
 	var values []adapter.Value
 	evaluatedMetricData := evaluatedValue.(map[string]interface{})
 	for name, md := range w.metadata {
-
-
 		if (evaluatedMetricData["descriptorName"].(string) != name) {
-			continue;
 		}
 		// printOldCodeOutput(name, md, attrs, mapper) // for prototype debugging only
 		specificDescriptorEvaluatedMetricData := evaluatedMetricData["value"].(map[string]interface{})
@@ -132,7 +130,7 @@ func (w *metricsExecutor) Execute(evaluatedValue interface{}, attrs attribute.Ba
 	}
 
 	if err := w.aspect.Record(values); err != nil {
-		result = multierror.Append(result, fmt.Errorf("failed to record all values with err: %s", err))
+		result = multierror.Append(result, fmt.Errorf("failed to record all values: %v", err))
 	}
 
 	if glog.V(4) {
@@ -156,21 +154,67 @@ func metricDefinitionFromProto(desc *dpb.MetricDescriptor) (*adapter.MetricDefin
 	for name, labelType := range desc.Labels {
 		l, err := valueTypeToLabelType(labelType)
 		if err != nil {
-			return nil, fmt.Errorf("descriptor '%s' label '%s' failed to convert label type value '%v' from proto with err: %s",
+			return nil, fmt.Errorf("descriptor '%s' label '%v' failed to convert label type value '%v' from proto: %v",
 				desc.Name, name, labelType, err)
 		}
 		labels[name] = l
 	}
 	kind, err := metricKindFromProto(desc.Kind)
 	if err != nil {
-		return nil, fmt.Errorf("descriptor '%s' failed to convert metric kind value '%v' from proto with err: %s",
+		return nil, fmt.Errorf("descriptor '%s' failed to convert metric kind value '%v' from proto: %v",
 			desc.Name, desc.Kind, err)
 	}
-	return &adapter.MetricDefinition{
+
+	if kind == adapter.Distribution && desc.Buckets == nil {
+		return nil, fmt.Errorf(
+			"invalid descriptor '%s': metrics with metric kind of distribution must define buckets",
+			desc.Name,
+		)
+	}
+
+	def := &adapter.MetricDefinition{
 		Name:        desc.Name,
 		DisplayName: desc.DisplayName,
 		Description: desc.Description,
 		Kind:        kind,
 		Labels:      labels,
-	}, nil
+	}
+
+	if desc.Buckets != nil {
+		b, err := bucketDefinitionFromProto(desc.Buckets)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"invalid descriptor '%s': could not extract bucket definitions: %v",
+				desc.Name,
+				err,
+			)
+		}
+		def.Buckets = b
+	}
+	return def, nil
+}
+
+func bucketDefinitionFromProto(buckets *dpb.MetricDescriptor_BucketsDefinition) (adapter.BucketDefinition, error) {
+	switch buckets.Definition.(type) {
+	case *dpb.MetricDescriptor_BucketsDefinition_LinearBuckets:
+		lb := buckets.Definition.(*dpb.MetricDescriptor_BucketsDefinition_LinearBuckets)
+		return &adapter.LinearBuckets{
+			Count:  lb.LinearBuckets.NumFiniteBuckets,
+			Width:  lb.LinearBuckets.Width,
+			Offset: lb.LinearBuckets.Offset,
+		}, nil
+	case *dpb.MetricDescriptor_BucketsDefinition_ExponentialBuckets:
+		eb := buckets.Definition.(*dpb.MetricDescriptor_BucketsDefinition_ExponentialBuckets)
+		return &adapter.ExponentialBuckets{
+			Count:        eb.ExponentialBuckets.NumFiniteBuckets,
+			GrowthFactor: eb.ExponentialBuckets.GrowthFactor,
+			Scale:        eb.ExponentialBuckets.Scale,
+		}, nil
+	case *dpb.MetricDescriptor_BucketsDefinition_ExplicitBuckets:
+		ex := buckets.Definition.(*dpb.MetricDescriptor_BucketsDefinition_ExplicitBuckets)
+		return &adapter.ExplicitBuckets{
+			Bounds: ex.ExplicitBuckets.Bounds,
+		}, nil
+	}
+	return nil, errors.New("could not build bucket definitions from proto")
 }

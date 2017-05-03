@@ -31,7 +31,7 @@ import (
 	"istio.io/mixer/pkg/attribute"
 	"istio.io/mixer/pkg/config"
 	"istio.io/mixer/pkg/config/descriptor"
-	configpb "istio.io/mixer/pkg/config/proto"
+	cfgpb "istio.io/mixer/pkg/config/proto"
 	"istio.io/mixer/pkg/expr"
 	"istio.io/mixer/pkg/status"
 )
@@ -48,8 +48,8 @@ var (
 	accesslogsDF = test.NewDescriptorFinder(map[string]interface{}{
 		validAccessLogDesc.Name: &validAccessLogDesc,
 		// our attributes
-		"string": &dpb.AttributeDescriptor{Name: "string", ValueType: dpb.STRING},
-		"int64":  &dpb.AttributeDescriptor{Name: "int64", ValueType: dpb.INT64},
+		"string": &cfgpb.AttributeManifest_AttributeInfo{ValueType: dpb.STRING},
+		"int64":  &cfgpb.AttributeManifest_AttributeInfo{ValueType: dpb.INT64},
 	})
 )
 
@@ -94,9 +94,9 @@ func TestAccessLoggerManager_NewAspect(t *testing.T) {
 
 	for idx, v := range newAspectShouldSucceed {
 		t.Run(fmt.Sprintf("[%d] %s", idx, v.name), func(t *testing.T) {
-			c := &configpb.Combined{
-				Builder: &configpb.Adapter{Params: &ptypes.Empty{}},
-				Aspect:  &configpb.Aspect{Params: v.params, Inputs: map[string]string{"template": "{{.test}}"}},
+			c := &cfgpb.Combined{
+				Builder: &cfgpb.Adapter{Params: &ptypes.Empty{}},
+				Aspect:  &cfgpb.Aspect{Params: v.params},
 			}
 			asp, err := m.NewReportExecutor(c, tl, test.Env{}, accesslogsDF)
 			if err != nil {
@@ -112,9 +112,9 @@ func TestAccessLoggerManager_NewAspect(t *testing.T) {
 }
 
 func TestAccessLoggerManager_NewAspectFailures(t *testing.T) {
-	defaultCfg := &configpb.Combined{
-		Builder: &configpb.Adapter{Params: &ptypes.Empty{}},
-		Aspect: &configpb.Aspect{Params: &aconfig.AccessLogsParams{
+	defaultCfg := &cfgpb.Combined{
+		Builder: &cfgpb.Adapter{Params: &ptypes.Empty{}},
+		Aspect: &cfgpb.Aspect{Params: &aconfig.AccessLogsParams{
 			Log: aconfig.AccessLogsParams_AccessLog{
 				DescriptorName: "common",
 			},
@@ -125,7 +125,7 @@ func TestAccessLoggerManager_NewAspectFailures(t *testing.T) {
 
 	failureCases := []struct {
 		name  string
-		cfg   *configpb.Combined
+		cfg   *cfgpb.Combined
 		adptr adapter.Builder
 	}{
 		{"errorLogger", defaultCfg, errLogger},
@@ -164,8 +164,8 @@ func TestAccessLoggerManager_ValidateConfig(t *testing.T) {
 		validDesc.Name:   &validDesc,
 		invalidDesc.Name: &invalidDesc,
 		// our attributes
-		"string": &dpb.AttributeDescriptor{Name: "string", ValueType: dpb.STRING},
-		"int64":  &dpb.AttributeDescriptor{Name: "int64", ValueType: dpb.INT64},
+		"string": &cfgpb.AttributeManifest_AttributeInfo{ValueType: dpb.STRING},
+		"int64":  &cfgpb.AttributeManifest_AttributeInfo{ValueType: dpb.INT64},
 	})
 
 	validLog := aconfig.AccessLogsParams_AccessLog{
@@ -195,12 +195,12 @@ func TestAccessLoggerManager_ValidateConfig(t *testing.T) {
 		err  string
 	}{
 		{"valid", wrap("valid", validLog), df, ""},
-		{"empty config", &aconfig.AccessLogsParams{}, df, "LogName"},
-		{"no log name", wrap("", validLog), df, "LogName"}, // name is ""
+		{"empty config", &aconfig.AccessLogsParams{}, df, "logName"},
+		{"no log name", wrap("", validLog), df, "logName"}, // name is ""
 		{"missing desc", wrap("missing desc", missingDesc), df, "could not find a descriptor"},
-		{"invalid labels", wrap("labels", invalidLabels), df, "Labels"},
-		{"invalid logtemplate", wrap("tmpl", invalidDescLog), df, "LogDescriptor"},
-		{"template expr attr missing", wrap("missing attr", missingTmplExprs), df, "TemplateExpressions"},
+		{"invalid labels", wrap("labels", invalidLabels), df, "labels"},
+		{"invalid logtemplate", wrap("tmpl", invalidDescLog), df, "logDescriptor"},
+		{"template expr attr missing", wrap("missing attr", missingTmplExprs), df, "templateExpressions"},
 	}
 
 	for idx, tt := range tests {
