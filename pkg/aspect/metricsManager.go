@@ -107,10 +107,11 @@ func (w *metricsExecutor) Execute(evaluatedValue interface{}, attrs attribute.Ba
 	result := &multierror.Error{}
 	var values []adapter.Value
 	evaluatedMetricData := evaluatedValue.(map[string]interface{})
+
 	for name, md := range w.metadata {
 		if evaluatedMetricData["descriptorName"].(string) != name {
 		}
-		// printOldCodeOutput(name, md, attrs, mapper) // for prototype debugging only
+
 		specificDescriptorEvaluatedMetricData := evaluatedMetricData["value"].(map[string]interface{})
 		metricValue := specificDescriptorEvaluatedMetricData["value"]
 
@@ -120,6 +121,7 @@ func (w *metricsExecutor) Execute(evaluatedValue interface{}, attrs attribute.Ba
 
 		// TODO: investigate either pooling these, or keeping a set around that has only its field's values updated.
 		// we could keep a map[metric name]value, iterate over the it updating only the fields in each value
+
 		values = append(values, adapter.Value{
 			Definition: md.definition,
 			Labels:     specificDescriptorEvaluatedLabelsData,

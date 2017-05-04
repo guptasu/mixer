@@ -17,7 +17,6 @@ package cnfgNormalizer
 import (
 	//"fmt"
 	"plugin"
-
 	"istio.io/mixer/pkg/attribute"
 	"istio.io/mixer/pkg/config"
 )
@@ -28,11 +27,22 @@ type NormalizedGoPlugins struct {
 	goPackagePath string
 }
 
+
+func constructAttributesForGoPlugin(requestBag *attribute.MutableBag) map[string]interface{} {
+	attribs := make(map[string]interface{})
+	for _, attribName := range requestBag.Names() {
+		attribs[dotCaseToCamelCase(attribName)], _ = requestBag.Get(attribName)
+	}
+	return attribs
+}
+
 // invoked at runtime
 func (n NormalizedGoPlugins) Evalaute(requestBag *attribute.MutableBag,
 	callBack func(kind string, val interface{})) [][]interface{} {
 	report, _ := n.plugin.Lookup("Report")
-	result := report.(func(map[string]interface{}) [][]interface{})(make(map[string]interface{}))
+	result := report.(func(map[string]interface{}) [][]interface{})(constructAttributesForGoPlugin(requestBag))
+
+
 	return result
 }
 

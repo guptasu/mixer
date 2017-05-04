@@ -161,7 +161,7 @@ func createYamlConfigs(srvcCnfgAspect string, configRepeatCount int) (declarativ
 
 var rpcStatus google_rpc.Status
 
-func benchmarkAdapterManagerDispatch(b *testing.B, declarativeSrvcCnfgFilePath string, declaredGlobalCnfgFilePath string) {
+func benchmarkAdapterManagerDispatch(b *testing.B, cnftNormalizer config.ConfigNormalizer, declarativeSrvcCnfgFilePath string, declaredGlobalCnfgFilePath string, goPackageFilePathOnlyForGoPkgTests string) {
 	apiPoolSize := 1024
 	adapterPoolSize := 1024
 	identityAttribute := "target.service"
@@ -188,11 +188,15 @@ func benchmarkAdapterManagerDispatch(b *testing.B, declarativeSrvcCnfgFilePath s
 		return
 	}
 
+	usrScript := ""
+	if goPackageFilePathOnlyForGoPkgTests != "" {
+		usrScript = goPackageFilePathOnlyForGoPkgTests
+	}
 	cnfgMgr := config.NewManager(eval, adapterMgr.AspectValidatorFinder, adapterMgr.BuilderValidatorFinder,
 		adapterMgr.SupportedKinds, store, declaredGlobalCnfgFilePath, declarativeSrvcCnfgFilePath,
 		loopDelay,
-		"",
-		cnfgNormalizer.NormalizedJavascriptConfigNormalizer{},
+		usrScript,
+		cnftNormalizer,
 		identityAttribute, identityDomainAttribute)
 	cnfgMgr.Register(adapterMgr)
 	cnfgMgr.Start()
@@ -218,28 +222,36 @@ func benchmarkAdapterManagerDispatch(b *testing.B, declarativeSrvcCnfgFilePath s
 
 func BenchmarkOneSimpleAspect(b *testing.B) {
 	sc, gsc := createYamlConfigs(srvcCnfgSimpleAspect, 1)
-	benchmarkAdapterManagerDispatch(b, sc.Name(), gsc.Name())
+	benchmarkAdapterManagerDispatch(b, cnfgNormalizer.NormalizedJavascriptConfigNormalizer{}, sc.Name(), gsc.Name(), "")
 	_ = os.Remove(sc.Name())
 	_ = os.Remove(gsc.Name())
 }
 
 func Benchmark50SimpleAspect(b *testing.B) {
 	sc, gsc := createYamlConfigs(srvcCnfgSimpleAspect, 50)
-	benchmarkAdapterManagerDispatch(b, sc.Name(), gsc.Name())
+	benchmarkAdapterManagerDispatch(b, cnfgNormalizer.NormalizedJavascriptConfigNormalizer{}, sc.Name(), gsc.Name(),"")
 	_ = os.Remove(sc.Name())
 	_ = os.Remove(gsc.Name())
 }
 
 func BenchmarkOneComplexAspect(b *testing.B) {
 	sc, gsc := createYamlConfigs(srvcCnfgComplexAspect, 1)
-	benchmarkAdapterManagerDispatch(b, sc.Name(), gsc.Name())
+	benchmarkAdapterManagerDispatch(b, cnfgNormalizer.NormalizedJavascriptConfigNormalizer{}, sc.Name(), gsc.Name(),"")
 	_ = os.Remove(sc.Name())
 	_ = os.Remove(gsc.Name())
 }
 
 func Benchmark50ComplexAspect(b *testing.B) {
 	sc, gsc := createYamlConfigs(srvcCnfgComplexAspect, 50)
-	benchmarkAdapterManagerDispatch(b, sc.Name(), gsc.Name())
+	benchmarkAdapterManagerDispatch(b, cnfgNormalizer.NormalizedJavascriptConfigNormalizer{}, sc.Name(), gsc.Name(),"")
+	_ = os.Remove(sc.Name())
+	_ = os.Remove(gsc.Name())
+}
+
+//////////////////// GO PACKAGE TESTS ////////////////////////////
+func BenchmarkOneSimpleAspecttWithGoPackage(b *testing.B) {
+	sc, gsc := createYamlConfigs(srvcCnfgComplexAspect, 1)
+	benchmarkAdapterManagerDispatch(b, cnfgNormalizer.CnftToGopackageNormalizer{}, sc.Name(), gsc.Name(),"/usr/local/google/home/guptasu/go/src/istio.io/mixer/testdata/srvcConfigsGoPlugins/BenchmarkOneSimpleAspect.so")
 	_ = os.Remove(sc.Name())
 	_ = os.Remove(gsc.Name())
 }

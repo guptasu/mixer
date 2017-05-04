@@ -298,6 +298,12 @@ func (m *Manager) dispatch(ctx context.Context, requestBag, responseBag *attribu
 	evaluatedDataForAspectList := executeScriptAndGetEvaluatedData(cfg, requestBag, cfgs)
 	// This number is more than number of aspects since, there can be multiple calls for each descriptor within the aspect
 	totalCallsToAspect := len(evaluatedDataForAspectList)
+
+	if totalCallsToAspect <= 0 {
+		const msg = "No Aspects match found"
+		glog.Error(msg)
+		return status.WithInternal(msg)
+	}
 	// TODO: look into pooling both result array and channel, they're created per-request and are constant size for cfg lifetime.
 	results := make([]result, totalCallsToAspect)
 	resultChan := make(chan result, totalCallsToAspect)
