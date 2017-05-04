@@ -31,6 +31,7 @@ import (
 	"istio.io/mixer/pkg/config"
 	"istio.io/mixer/pkg/expr"
 	"istio.io/mixer/pkg/pool"
+	"istio.io/mixer/pkg/cnfgNormalizer"
 )
 
 /*
@@ -180,8 +181,10 @@ func benchmarkAdapterManagerDispatch(b *testing.B, declarativeSrvcCnfgFilePath s
 	store, _ := config.NewCompatFSStore(declaredGlobalCnfgFilePath, declarativeSrvcCnfgFilePath)
 
 	cnfgMgr := config.NewManager(eval, adapterMgr.AspectValidatorFinder, adapterMgr.BuilderValidatorFinder,
-		adapterMgr.SupportedKinds, store,
+		adapterMgr.SupportedKinds, store, declaredGlobalCnfgFilePath, declarativeSrvcCnfgFilePath,
 		loopDelay,
+		"",
+		cnfgNormalizer.NormalizedJavascriptConfigNormalizer{},
 		identityAttribute, identityDomainAttribute)
 	cnfgMgr.Register(adapterMgr)
 	cnfgMgr.Start()

@@ -310,16 +310,6 @@ func (p *validator) validateSelector(selector string) (err error) {
 	return p.exprValidator.Validate(selector)
 }
 
-func (p *validator) GetValidatedGSC() (*pb.GlobalConfig) {
-	return p.validated.globalConfig
-}
-
-
-func (p *Validated) GetValidatedSC() (*pb.ServiceConfig) {
-	return p.serviceConfig
-}
-
-
 // validateAspectRules validates the recursive configuration data structure.
 // It is primarily used by validate ServiceConfig.
 func (p *validator) validateAspectRules(rules []*pb.AspectRule, path string, validatePresence bool) (numAspects int, ce *adapter.ConfigErrors) {
