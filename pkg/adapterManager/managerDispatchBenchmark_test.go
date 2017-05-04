@@ -19,6 +19,8 @@ import (
 	"context"
 	"io/ioutil"
 	"os"
+	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -107,7 +109,8 @@ rules:
   aspects:
 `
 	srvcCnfgSimpleAspect = `
-  - kind: metrics
+  - name: aspectName$1
+    kind: metrics
     adapter: no-op
     params:
       metrics:
@@ -122,7 +125,8 @@ rules:
 `
 
 	srvcCnfgComplexAspect = `
-  - kind: metrics
+  - name: aspectName$1
+    kind: metrics
     adapter: no-op
     params:
       metrics:
@@ -147,7 +151,7 @@ func createYamlConfigs(srvcCnfgAspect string, configRepeatCount int) (declarativ
 	var srvcCnfgBuffer bytes.Buffer
 	srvcCnfgBuffer.WriteString(srvcCnfgConstInitialSection)
 	for i := 0; i < configRepeatCount; i++ {
-		srvcCnfgBuffer.WriteString(srvcCnfgAspect)
+		srvcCnfgBuffer.WriteString(strings.Replace(srvcCnfgAspect, "$1", strconv.FormatInt(int64(i), 10), 1))
 	}
 	_, _ = srvcCnfgFile.Write([]byte(srvcCnfgBuffer.String()))
 	_ = srvcCnfgFile.Close()
