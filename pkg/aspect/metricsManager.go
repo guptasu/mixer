@@ -18,6 +18,7 @@ import (
 	"errors"
 	"fmt"
 	"time"
+
 	"github.com/golang/glog"
 	rpc "github.com/googleapis/googleapis/google/rpc"
 	multierror "github.com/hashicorp/go-multierror"
@@ -59,7 +60,7 @@ func (m *metricsManager) NewReportExecutor(c *cpb.Combined, a adapter.Builder, e
 
 	metadata := make(map[string]*metricInfo)
 	defs := make(map[string]*adapter.MetricDefinition, len(params.Metrics))
-	desNames := []string {"request_count","request_latency"}
+	desNames := []string{"request_count", "request_latency"}
 	for _, d := range desNames {
 		// we ignore the error as config validation confirms both that the metric exists and that it can
 		// be converted safely into its definition
@@ -107,7 +108,7 @@ func (w *metricsExecutor) Execute(evaluatedValue interface{}, attrs attribute.Ba
 	var values []adapter.Value
 	evaluatedMetricData := evaluatedValue.(map[string]interface{})
 	for name, md := range w.metadata {
-		if (evaluatedMetricData["descriptorName"].(string) != name) {
+		if evaluatedMetricData["descriptorName"].(string) != name {
 		}
 		// printOldCodeOutput(name, md, attrs, mapper) // for prototype debugging only
 		specificDescriptorEvaluatedMetricData := evaluatedMetricData["value"].(map[string]interface{})

@@ -28,10 +28,10 @@ import (
 	pkgAdapter "istio.io/mixer/pkg/adapter"
 	"istio.io/mixer/pkg/aspect"
 	"istio.io/mixer/pkg/attribute"
+	"istio.io/mixer/pkg/cnfgNormalizer"
 	"istio.io/mixer/pkg/config"
 	"istio.io/mixer/pkg/expr"
 	"istio.io/mixer/pkg/pool"
-	"istio.io/mixer/pkg/cnfgNormalizer"
 )
 
 /*
@@ -67,16 +67,16 @@ manifests:
   - name: istio-proxy
     revision: "1"
     attributes:
-    - name: source.name
-      value_type: STRING
-    - name: target.name
-      value_type: STRING
-    - name: response.code
-      value_type: INT64
-    - name: api.name
-      value_type: STRING
-    - name: api.method
-      value_type: STRING
+      source.name:
+        value_type: STRING
+      target.name:
+        value_type: STRING
+      response.code:
+        value_type: INT64
+      api.name:
+        value_type: STRING
+      api.method:
+        value_type: STRING
 
 metrics:
   - name: request_count
@@ -178,7 +178,11 @@ func benchmarkAdapterManagerDispatch(b *testing.B, declarativeSrvcCnfgFilePath s
 	adapterMgr := NewManager([]pkgAdapter.RegisterFn{
 		noop.Register,
 	}, aspect.Inventory(), eval, gp, adapterGP)
-	store, _ := config.NewCompatFSStore(declaredGlobalCnfgFilePath, declarativeSrvcCnfgFilePath)
+	store, err := config.NewCompatFSStore(declaredGlobalCnfgFilePath, declarativeSrvcCnfgFilePath)
+	if err != nil {
+		b.Errorf("NewCompatFSStore failed: %v", err)
+		return
+	}
 
 	cnfgMgr := config.NewManager(eval, adapterMgr.AspectValidatorFinder, adapterMgr.BuilderValidatorFinder,
 		adapterMgr.SupportedKinds, store, declaredGlobalCnfgFilePath, declarativeSrvcCnfgFilePath,
@@ -191,7 +195,11 @@ func benchmarkAdapterManagerDispatch(b *testing.B, declarativeSrvcCnfgFilePath s
 
 	requestBag := attribute.GetMutableBag(nil)
 	requestBag.Set(identityAttribute, identityDomainAttribute)
-	configs, _ := adapterMgr.loadConfigs(requestBag, adapterMgr.reportKindSet, false, false)
+	configs, err := adapterMgr.loadConfigs(requestBag, adapterMgr.reportKindSet, false, false)
+	if err != nil {
+		b.Errorf("adapterMgr.loadConfigs failed: %v", err)
+		return
+	}
 
 	b.ResetTimer()
 	var r google_rpc.Status
@@ -199,6 +207,9 @@ func benchmarkAdapterManagerDispatch(b *testing.B, declarativeSrvcCnfgFilePath s
 		r = adapterMgr.dispatchReport(context.Background(), configs, requestBag, attribute.GetMutableBag(nil))
 	}
 	rpcStatus = r
+	if rpcStatus.Code != 0 {
+		b.Errorf("dispatchReport benchmark test returned status code %d; expected 0", rpcStatus.Code)
+	}
 }
 
 func BenchmarkOneSimpleAspect(b *testing.B) {

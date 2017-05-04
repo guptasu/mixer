@@ -15,11 +15,12 @@
 package cnfgNormalizer
 
 import (
-	"istio.io/mixer/pkg/expr"
 	"fmt"
+
+	"istio.io/mixer/pkg/expr"
 )
 
-func getJSForExpression(expression string) string{
+func getJSForExpression(expression string) string {
 	ex, err := expr.Parse(expression)
 	var out string
 	if err != nil {
@@ -37,7 +38,7 @@ func EvalJSExpession(e *expr.Expression, fMap map[string]expr.FuncBase, getPropM
 		return e.Const.StrValue, nil
 	}
 	if e.Var != nil {
-		return fmt.Sprintf(getPropMtdName + "%s", getAttributeFieldName(e.Var.Name)), nil
+		return fmt.Sprintf(getPropMtdName+"%s", getAttributeFieldName(e.Var.Name)), nil
 	}
 
 	fn := fMap[e.Fn.Name]
@@ -54,7 +55,7 @@ func EvalJSExpession(e *expr.Expression, fMap map[string]expr.FuncBase, getPropM
 		allArgs := e.Fn.Args
 		if len(allArgs) > 0 {
 			var chkIfExists string
-			leftexp,_ := EvalJSExpession(e.Fn.Args[0], fMap, getPropMtdName)
+			leftexp, _ := EvalJSExpession(e.Fn.Args[0], fMap, getPropMtdName)
 			chkIfExists = fmt.Sprintf("%s !== undefined", leftexp)
 			rightexp, _ := EvalJSExpession(e.Fn.Args[1], fMap, getPropMtdName)
 			return fmt.Sprintf("%s ? %s : %s", chkIfExists, leftexp, rightexp), nil

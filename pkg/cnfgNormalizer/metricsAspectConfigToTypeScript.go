@@ -17,10 +17,11 @@ package cnfgNormalizer
 import (
 	"bytes"
 	"fmt"
+	"strings"
+
 	dpb "istio.io/api/mixer/v1/config/descriptor"
 	aconfig "istio.io/mixer/pkg/aspect/config"
 	pb "istio.io/mixer/pkg/config/proto"
-	"strings"
 )
 
 ///////////////////// THIS SHOULD BELONG TO METRIC ASPECT MANAGER /////////////////
@@ -33,10 +34,10 @@ var (
 			Value:       dpb.INT64,
 			Description: "request count by source, target, service, and code",
 			Labels: map[string]dpb.ValueType{
-				"source": dpb.STRING,
-				"target": dpb.STRING,
-				"service": dpb.STRING,
-				"method": dpb.STRING,
+				"source":        dpb.STRING,
+				"target":        dpb.STRING,
+				"service":       dpb.STRING,
+				"method":        dpb.STRING,
 				"response_code": dpb.INT64,
 			},
 		},
@@ -46,10 +47,10 @@ var (
 			Value:       dpb.INT64,
 			Description: "request latency by source, target, and service",
 			Labels: map[string]dpb.ValueType{
-				"source": dpb.STRING,
-				"target": dpb.STRING,
-				"service": dpb.STRING,
-				"method": dpb.STRING,
+				"source":        dpb.STRING,
+				"target":        dpb.STRING,
+				"service":       dpb.STRING,
+				"method":        dpb.STRING,
 				"response_code": dpb.INT64,
 			},
 		},
@@ -126,12 +127,11 @@ func createReportResultClass(declaredMetricAspectNames []string) string {
 		metricsStr.WriteString(createMethodForDescriptor(metricDescriptor, declaredMetricAspectNames))
 	}
 
-	return fmt.Sprintf(template,metricsStr.String())
+	return fmt.Sprintf(template, metricsStr.String())
 }
 func getMethodNameFromDescriptorAndAspectName(descriptorNameSnakeCase string, aspectNameSnakeCase string) string {
 	return fmt.Sprintf("Insert%sFor%s", snake2UpperCamelCase(descriptorNameSnakeCase), snake2UpperCamelCase(aspectNameSnakeCase))
 }
-
 
 func getMethodNameForConstructionOfDescriptor(descriptorNameSnakeCase string, aspectNameSnakeCase string) string {
 	return fmt.Sprintf("Construct%sFor%s", snake2UpperCamelCase(descriptorNameSnakeCase), snake2UpperCamelCase(aspectNameSnakeCase))

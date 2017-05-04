@@ -20,6 +20,7 @@ import (
 
 	"github.com/golang/glog"
 	multierror "github.com/hashicorp/go-multierror"
+
 	"istio.io/mixer/pkg/attribute"
 	pb "istio.io/mixer/pkg/config/proto"
 	"istio.io/mixer/pkg/expr"
@@ -181,7 +182,7 @@ func resolve(bag attribute.Bag, kindSet KindSet, rules map[rulesKey]*pb.ServiceC
 	return dlistout, nil
 }
 
-func (r *runtime) GetNormalizedConfig() (NormalizedConfig) {
+func (r *runtime) GetNormalizedConfig() NormalizedConfig {
 	return r.NormalizedConfig
 }
 

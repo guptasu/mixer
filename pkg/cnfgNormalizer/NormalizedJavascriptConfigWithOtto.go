@@ -16,28 +16,30 @@ package cnfgNormalizer
 
 import (
 	"fmt"
+
 	"github.com/robertkrimen/otto"
+
 	"istio.io/mixer/pkg/attribute"
 	"istio.io/mixer/pkg/config"
 )
 
 type NormalizedJavascriptConfig struct {
 	// JavaScript string
-	VM *otto.Otto
+	VM        *otto.Otto
 	reportMtd otto.Value
 }
 
 // invoked at runtime
 func (n NormalizedJavascriptConfig) Evalaute(requestBag *attribute.MutableBag,
-	callBack func(kind string, val interface{})) [][]interface {} {
+	callBack func(kind string, val interface{})) [][]interface{} {
 	resultValue, errFromJS := n.reportMtd.Call(otto.NullValue(), constructAttributesForJS(requestBag))
 	if errFromJS != nil {
 		fmt.Println("ERROR FROM JS", errFromJS)
 	}
 
-	evaluatedData,_ := resultValue.Export()
+	evaluatedData, _ := resultValue.Export()
 	v := evaluatedData.(map[string]interface{})["result"]
-	return v.([][]interface {})
+	return v.([][]interface{})
 }
 
 func createNormalizedJavascriptConfig(js string) config.NormalizedConfig {
@@ -46,5 +48,5 @@ func createNormalizedJavascriptConfig(js string) config.NormalizedConfig {
 	vm = otto.New()
 	vm.Run(js)
 	reportMtd, _ := vm.Get("report")
-	return NormalizedJavascriptConfig{VM: vm, reportMtd:reportMtd}
+	return NormalizedJavascriptConfig{VM: vm, reportMtd: reportMtd}
 }

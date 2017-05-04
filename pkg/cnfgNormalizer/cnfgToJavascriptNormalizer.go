@@ -18,12 +18,13 @@ import (
 	"bytes"
 	"fmt"
 	"io/ioutil"
-	aconfig "istio.io/mixer/pkg/aspect/config"
-	"istio.io/mixer/pkg/config"
-	pb "istio.io/mixer/pkg/config/proto"
 	"os"
 	"os/exec"
 	"path/filepath"
+
+	aconfig "istio.io/mixer/pkg/aspect/config"
+	"istio.io/mixer/pkg/config"
+	pb "istio.io/mixer/pkg/config/proto"
 )
 
 var (

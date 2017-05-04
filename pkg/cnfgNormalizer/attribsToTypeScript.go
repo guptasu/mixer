@@ -17,18 +17,20 @@ package cnfgNormalizer
 import (
 	"bytes"
 	"fmt"
-	dpb "istio.io/api/mixer/v1/config/descriptor"
 	"strings"
+
+	dpb "istio.io/api/mixer/v1/config/descriptor"
 	"istio.io/mixer/pkg/attribute"
 )
+
 var (
 	attributesDescriptor = map[string]dpb.ValueType{
-		"response.code" : dpb.INT64,
-		"response.latency" : dpb.INT64,
-		"api.method" : dpb.STRING,
-		"target.name" : dpb.STRING,
-		"api.name" : dpb.STRING,
-		"source.name" : dpb.STRING,
+		"response.code":    dpb.INT64,
+		"response.latency": dpb.INT64,
+		"api.method":       dpb.STRING,
+		"target.name":      dpb.STRING,
+		"api.name":         dpb.STRING,
+		"source.name":      dpb.STRING,
 	}
 	valueTypeToJSType = map[dpb.ValueType]string{
 		dpb.INT64:  "number",
@@ -36,7 +38,7 @@ var (
 	}
 )
 
-func getAttributeFieldName (dotSeparatedAttribName string) string {
+func getAttributeFieldName(dotSeparatedAttribName string) string {
 	return dotCaseToCamelCase(dotSeparatedAttribName)
 }
 func dotCaseToCamelCase(s string) string {
@@ -67,7 +69,7 @@ func GetTypeFromAttributes() string {
 func constructAttributesForJS(requestBag *attribute.MutableBag) map[string]interface{} {
 	attribs := make(map[string]interface{})
 	for _, attribName := range requestBag.Names() {
-          attribs[dotCaseToCamelCase(attribName)],_ = requestBag.Get(attribName)
+		attribs[dotCaseToCamelCase(attribName)], _ = requestBag.Get(attribName)
 	}
 	return attribs
 }

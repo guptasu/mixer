@@ -18,4 +18,3 @@ go_library(
         "@com_github_redis_client//redis:go_default_library",
     ],
 )
-

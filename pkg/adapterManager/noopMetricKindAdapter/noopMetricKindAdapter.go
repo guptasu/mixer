@@ -1,9 +1,9 @@
 package noopMetricKindAdapter
 
 import (
-	"istio.io/mixer/pkg/adapter"
 	"github.com/gogo/protobuf/types"
 
+	"istio.io/mixer/pkg/adapter"
 )
 
 type (

@@ -19,6 +19,7 @@ import (
 	"sync"
 	"testing"
 	"time"
+
 	"istio.io/mixer/pkg/adapter"
 	"istio.io/mixer/pkg/config/descriptor"
 )

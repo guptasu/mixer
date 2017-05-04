@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 package cnfgNormalizer
 
 import (
@@ -78,7 +77,6 @@ func (n NormalizedJavascriptConfigWithV8) Evalaute(requestBag *attribute.Mutable
 	return nil
 }
 */
-
 
 func createNormalizedJavascriptConfigWithV8(js string) config.NormalizedConfig {
 	//ctx := v8.NewIsolate().NewContext()

@@ -17,13 +17,14 @@ package config
 import (
 	"crypto/sha1"
 	"errors"
+	"fmt"
+	"io/ioutil"
 	"reflect"
 	"sync"
 	"time"
-	"github.com/ghodss/yaml"
+
 	"github.com/golang/glog"
 
-	"io/ioutil"
 	"istio.io/mixer/pkg/adapter"
 	"istio.io/mixer/pkg/attribute"
 	"istio.io/mixer/pkg/config/descriptor"
@@ -37,7 +38,7 @@ type Resolver interface {
 	Resolve(bag attribute.Bag, kindSet KindSet, strict bool) ([]*pb.Combined, error)
 	// ResolveUnconditional resolves configuration for unconditioned rules.
 	// Unconditioned rules are those rules with the empty selector ("").
-        ResolveUnconditional(bag attribute.Bag, kindSet KindSet, strict bool) ([]*pb.Combined, error)
+	ResolveUnconditional(bag attribute.Bag, kindSet KindSet, strict bool) ([]*pb.Combined, error)
 	GetNormalizedConfig() NormalizedConfig
 }
 
@@ -51,17 +52,17 @@ type ChangeListener interface {
 // It applies validated changes to the registered config change listeners.
 // api.Handler listens for config changes.
 type Manager struct {
-	eval          expr.Evaluator
-	aspectFinder  AspectValidatorFinder
-	builderFinder BuilderValidatorFinder
-	findAspects   AdapterToAspectMapper
-	loopDelay     time.Duration
-	store         KeyValueStore
-	validate      validateFunc
+	eval             expr.Evaluator
+	aspectFinder     AspectValidatorFinder
+	builderFinder    BuilderValidatorFinder
+	findAspects      AdapterToAspectMapper
+	loopDelay        time.Duration
+	store            KeyValueStore
+	validate         validateFunc
 	globalConfig     string
 	serviceConfig    string
-        userTypScrpt  string
-        configNormalizer     ConfigNormalizer
+	userTypScrpt     string
+	configNormalizer ConfigNormalizer
 
 	// attribute around which scopes and subjects are organized.
 	identityAttribute       string
@@ -101,10 +102,10 @@ func NewManager(eval expr.Evaluator, aspectFinder AspectValidatorFinder, builder
 		store:                   store,
 		identityAttribute:       identityAttribute,
 		identityAttributeDomain: identityAttributeDomain,
-		globalConfig: globalConfig,
-		serviceConfig: serviceConfig,
-		userTypScrpt:  userTypeScript,
-		configNormalizer: configNormalizer,
+		globalConfig:            globalConfig,
+		serviceConfig:           serviceConfig,
+		userTypScrpt:            userTypeScript,
+		configNormalizer:        configNormalizer,
 		validate: func(cfg map[string]string) (*Validated, descriptor.Finder, *adapter.ConfigErrors) {
 			v := newValidator(aspectFinder, builderFinder, findAspects, true, eval)
 			rt, ce := v.validate(cfg)
@@ -183,10 +184,10 @@ func (c *Manager) fetch() (*runtime, descriptor.Finder, error) {
 	var vd *Validated
 	var finder descriptor.Finder
 	var cerr *adapter.ConfigErrors
-
 	vd, finder, cerr = c.validate(data)
 	if cerr != nil {
 		glog.Warningf("Validation failed: %v", cerr)
+		fmt.Printf("Validation failed: %v", cerr)
 		return nil, nil, cerr
 	}
 
@@ -200,22 +201,13 @@ func (c *Manager) fetch() (*runtime, descriptor.Finder, error) {
 		glog.Infof("**config/manager.go : Received user provided TypeScript\n")
 		rt.NormalizedConfig = c.configNormalizer.ReloadNormalizedConfigFile(c.userTypScrpt)
 	} else {
-		_, sc, err1 := read(c.serviceConfig)
-		if err1 != nil {
-			return nil, nil, err1
-		}
-		var err error
-		m := &pb.ServiceConfig{}
-		if err = yaml.Unmarshal([]byte(sc), m); err != nil {
-			return nil, nil, err1
-		}
 		glog.Infof("**config/manager.go : Creating TypeScript from SC\n")
-		rt.NormalizedConfig = c.configNormalizer.Normalize(m, c.serviceConfig)
+		rt.NormalizedConfig = c.configNormalizer.Normalize(vd.rule[rulesKey{Scope: "global", Subject: "global"}], c.serviceConfig)
 	}
 
 	glog.Infof("**config/manager.go : Saving generated javascript in runtime object \n")
 
-	return rt, finder , nil
+	return rt, finder, nil
 }
 
 // fetchAndNotify fetches a new config and notifies listeners if something has changed

@@ -26,9 +26,9 @@ import (
 
 	"github.com/golang/glog"
 	rpc "github.com/googleapis/googleapis/google/rpc"
+
 	"istio.io/mixer/pkg/adapter"
 	"istio.io/mixer/pkg/aspect"
-
 	"istio.io/mixer/pkg/attribute"
 	"istio.io/mixer/pkg/config"
 	"istio.io/mixer/pkg/config/descriptor"
@@ -177,7 +177,6 @@ func (m *Manager) Report(ctx context.Context, requestBag, responseBag *attribute
 	return m.dispatchReport(ctx, configs, requestBag, responseBag)
 }
 
-
 // Quota dispatches to the set of aspects associated with the Quota API method
 func (m *Manager) Quota(ctx context.Context, requestBag, responseBag *attribute.MutableBag,
 	qma *aspect.QuotaMethodArgs) (*aspect.QuotaMethodResp, rpc.Status) {
@@ -201,7 +200,6 @@ func (m *Manager) Quota(ctx context.Context, requestBag, responseBag *attribute.
 	return qmr, o
 }
 
-
 func executeScriptAndGetEvaluatedData(cfg config.Resolver, requestBag *attribute.MutableBag, cfgs []*cpb.Combined) []*evaluatedDataForAspect {
 
 	evaluatedDataForAspectList := make([]*evaluatedDataForAspect, 0, 100)
@@ -219,7 +217,7 @@ func executeScriptAndGetEvaluatedData(cfg config.Resolver, requestBag *attribute
 		}
 	})
 
-	for _,v := range result {
+	for _, v := range result {
 		aspectName := v[0]
 		aspectEvaluatedValue := v[1]
 		for _, cfg := range cfgs {

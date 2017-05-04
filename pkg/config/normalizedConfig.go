@@ -18,14 +18,13 @@ import (
 	"istio.io/mixer/pkg/attribute"
 	pb "istio.io/mixer/pkg/config/proto"
 )
+
 type NormalizedConfig interface {
 	Evalaute(requestBag *attribute.MutableBag,
-		callBack func(kind string, val interface{})) [][]interface {}
+		callBack func(kind string, val interface{})) [][]interface{}
 }
 
 type ConfigNormalizer interface {
 	Normalize(sc *pb.ServiceConfig, fileLocation string) NormalizedConfig
 	ReloadNormalizedConfigFile(fileLocation string) NormalizedConfig
 }
-
-

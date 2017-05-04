@@ -16,26 +16,27 @@ package cnfgNormalizer
 
 import (
 	//"fmt"
+	"plugin"
+
 	"istio.io/mixer/pkg/attribute"
 	"istio.io/mixer/pkg/config"
-	"plugin"
 )
 
 type NormalizedGoPlugins struct {
-	report plugin.Symbol
-	plugin *plugin.Plugin
+	report        plugin.Symbol
+	plugin        *plugin.Plugin
 	goPackagePath string
 }
 
 // invoked at runtime
 func (n NormalizedGoPlugins) Evalaute(requestBag *attribute.MutableBag,
-	callBack func(kind string, val interface{})) [][]interface {} {
-	report,_ := n.plugin.Lookup("Report")
+	callBack func(kind string, val interface{})) [][]interface{} {
+	report, _ := n.plugin.Lookup("Report")
 	result := report.(func(map[string]interface{}) [][]interface{})(make(map[string]interface{}))
 	return result
 }
 
 func createNormalizedGoPluginConfig(goPackagePath string) config.NormalizedConfig {
 	p, _ := plugin.Open(goPackagePath)
-	return NormalizedGoPlugins{goPackagePath: goPackagePath, plugin:p};
+	return NormalizedGoPlugins{goPackagePath: goPackagePath, plugin: p}
 }
