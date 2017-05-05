@@ -202,22 +202,16 @@ func (m *Manager) Quota(ctx context.Context, requestBag, responseBag *attribute.
 
 func executeScriptAndGetEvaluatedData(cfg config.Resolver, requestBag *attribute.MutableBag, cfgs []*cpb.Combined) []*evaluatedDataForAspect {
 
-	evaluatedDataForAspectList := make([]*evaluatedDataForAspect, 0, 100)
+
 	glog.Infof("** adapterManager: Invoking Javascript\n")
 	result := cfg.GetNormalizedConfig().Evalaute(requestBag, func(aspectName string, evaluatedValue interface{}) {
-		if glog.V(2) {
-			glog.Infof("** Callback from Javascript received. aspectName : '%s', evaluatedValue interface : '%v'\n\n", aspectName, evaluatedValue)
-		}
-		for _, cfg := range cfgs {
-			if cfg.Aspect.Name == aspectName {
-				// Save all the evaluated data. We can then dispatch them to different aspects by fanning out to
-				// multiple go routines.
-				evaluatedDataForAspectList = append(evaluatedDataForAspectList, &evaluatedDataForAspect{cfg: cfg, value: evaluatedValue})
-			}
-		}
+
 	})
 
+	//fmt.Printf("Data evaluated lenght=%d; value=%v", len(result), result)
+	evaluatedDataForAspectList := make([]*evaluatedDataForAspect, 0, 0)
 	for _, v := range result {
+		//fmt.Printf("RESULT CONTAIN %v\n", v)
 		aspectName := v[0]
 		aspectEvaluatedValue := v[1]
 		for _, cfg := range cfgs {
@@ -226,6 +220,8 @@ func executeScriptAndGetEvaluatedData(cfg config.Resolver, requestBag *attribute
 				// multiple go routines.
 
 				evaluatedDataForAspectList = append(evaluatedDataForAspectList, &evaluatedDataForAspect{cfg: cfg, value: aspectEvaluatedValue})
+			} else {
+				fmt.Errorf("Cannot find aspect for %s", aspectName)
 			}
 		}
 	}

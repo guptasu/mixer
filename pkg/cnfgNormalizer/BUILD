@@ -6,11 +6,13 @@ go_library(
     name = "go_default_library",
     srcs = [
         "NormalizedGoPlugins.go",
+        "NormalizedGoPluginsAsyncModel.go",
         "NormalizedJavascriptConfigWithOtto.go",
         "NormalizedJavascriptConfigWithV8.go",
         "attribsToTypeScript.go",
         "cnfgToJavascriptNormalizer.go",
         "cnftToGopackageNormalizer.go",
+        "cnftToGopackageNormalizerAsyncModel.go",
         "expressionsToTypeScriptHelper.go",
         "metricsAspectConfigToTypeScript.go",
     ],
