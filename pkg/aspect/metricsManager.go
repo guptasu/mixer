@@ -22,7 +22,7 @@ import (
 	"github.com/golang/glog"
 	rpc "github.com/googleapis/googleapis/google/rpc"
 	multierror "github.com/hashicorp/go-multierror"
-
+	"reflect"
 	dpb "istio.io/api/mixer/v1/config/descriptor"
 	"istio.io/mixer/pkg/adapter"
 	aconfig "istio.io/mixer/pkg/aspect/config"
@@ -112,7 +112,12 @@ func (w *metricsExecutor) Execute(evaluatedValue interface{}, attrs attribute.Ba
 		if evaluatedMetricData["descriptorName"].(string) != name {
 		}
 
-		specificDescriptorEvaluatedMetricData := evaluatedMetricData["value"].(map[string]interface{})
+		//specificDescriptorEvaluatedMetricData := evaluatedMetricData["value"].(map[string]interface{})
+		k, err := ToMap(evaluatedMetricData["value"], "m")
+		if err != nil {
+			panic(err)
+		}
+		specificDescriptorEvaluatedMetricData := k
 		metricValue := specificDescriptorEvaluatedMetricData["value"]
 
 		// TEMP HACK for Prototyping. Remove the value and everything else is labels
@@ -150,6 +155,29 @@ func (w *metricsExecutor) Execute(evaluatedValue interface{}, attrs attribute.Ba
 
 func (w *metricsExecutor) Close() error {
 	return w.aspect.Close()
+}
+func ToMap(in interface{}, tag string) (map[string]interface{}, error) {
+	out := make(map[string]interface{})
+
+	v := reflect.ValueOf(in)
+	if v.Kind() == reflect.Ptr {
+		v = v.Elem()
+	}
+
+	// we only accept structs
+	if v.Kind() != reflect.Struct {
+		return nil, fmt.Errorf("ToMap only accepts structs; got %T", v)
+	}
+
+	typ := v.Type()
+	for i := 0; i < v.NumField(); i++ {
+		// gets us a StructField
+		fi := typ.Field(i)
+		if tagv := fi.Tag.Get(tag); tagv != "" {
+			out[tagv] = v.Field(i).Interface()
+		}
+	}
+	return out, nil
 }
 
 func metricDefinitionFromProto(desc *dpb.MetricDescriptor) (*adapter.MetricDefinition, error) {

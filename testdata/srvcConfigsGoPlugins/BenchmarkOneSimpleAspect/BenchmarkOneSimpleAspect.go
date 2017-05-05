@@ -102,9 +102,9 @@ func ToMap(in interface{}, tag string) (map[string]interface{}, error) {
 
 
 func (r *ReportResult) InsertRequestCountForPrometheusReportingAllMetrics0(val RequestCount) {
-	v,_ := ToMap(val, "m")
+	//v,_ := ToMap(val, "m")
 
-	innerValue := []interface{}{"aspectName0", map[string]interface{}{"descriptorName": "request_count", "value": v}}
+	innerValue := []interface{}{"aspectName0", map[string]interface{}{"descriptorName": "request_count", "value": val}}
 	r.result = append(r.result, innerValue)
 }
 

@@ -255,3 +255,9 @@ func BenchmarkOneSimpleAspecttWithGoPackage(b *testing.B) {
 	_ = os.Remove(sc.Name())
 	_ = os.Remove(gsc.Name())
 }
+func Benchmark50SimpleAspecttWithGoPackage(b *testing.B) {
+	sc, gsc := createYamlConfigs(srvcCnfgComplexAspect, 50)
+	benchmarkAdapterManagerDispatch(b, cnfgNormalizer.CnftToGopackageNormalizer{}, sc.Name(), gsc.Name(),"/usr/local/google/home/guptasu/go/src/istio.io/mixer/testdata/srvcConfigsGoPlugins/Benchmark50SimpleAspect.so")
+	_ = os.Remove(sc.Name())
+	_ = os.Remove(gsc.Name())
+}
