@@ -159,15 +159,6 @@ func (m *Manager) dispatchReport(ctx context.Context, configs []*cpb.Combined, r
 }
 
 // Report dispatches to the set of aspects associated with the Report API method
-func (m *Manager) executeDispatch(ctx context.Context, configs []*cpb.Combined, requestBag, responseBag *attribute.MutableBag) rpc.Status {
-	return m.dispatch(ctx, requestBag, responseBag, configs,
-		func(evaluatedValue interface{}, executor aspect.Executor, evaluator expr.Evaluator) rpc.Status {
-			rw := executor.(aspect.ReportExecutor)
-			return rw.Execute(evaluatedValue, requestBag, evaluator)
-		})
-}
-
-// Report dispatches to the set of aspects associated with the Report API method
 func (m *Manager) Report(ctx context.Context, requestBag, responseBag *attribute.MutableBag) rpc.Status {
 	configs, err := m.loadConfigs(requestBag, m.reportKindSet, false, false /* carry on if unable to eval all selectors */)
 	if err != nil {
@@ -203,7 +194,7 @@ func (m *Manager) Quota(ctx context.Context, requestBag, responseBag *attribute.
 func executeScriptAndGetEvaluatedData(cfg config.Resolver, requestBag *attribute.MutableBag, cfgs []*cpb.Combined) []*evaluatedDataForAspect {
 
 
-	glog.Infof("** adapterManager: Invoking Javascript\n")
+	//glog.Infof("** adapterManager: Invoking Javascript\n")
 	result := cfg.GetNormalizedConfig().Evalaute(requestBag, func(aspectName string, evaluatedValue interface{}) {
 
 	})
@@ -220,8 +211,6 @@ func executeScriptAndGetEvaluatedData(cfg config.Resolver, requestBag *attribute
 				// multiple go routines.
 
 				evaluatedDataForAspectList = append(evaluatedDataForAspectList, &evaluatedDataForAspect{cfg: cfg, value: aspectEvaluatedValue})
-			} else {
-				fmt.Errorf("Cannot find aspect for %s", aspectName)
 			}
 		}
 	}
