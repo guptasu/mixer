@@ -112,12 +112,16 @@ func (w *metricsExecutor) Execute(evaluatedValue interface{}, attrs attribute.Ba
 		if evaluatedMetricData["descriptorName"].(string) != name {
 		}
 
-		//specificDescriptorEvaluatedMetricData := evaluatedMetricData["value"].(map[string]interface{})
-		k, err := ToMap(evaluatedMetricData["value"], "m")
-		if err != nil {
-			panic(err)
+		specificDescriptorEvaluatedMetricData, ok := evaluatedMetricData["value"].(map[string]interface{})
+		if (!ok) {
+
+			k, err := ToMap(evaluatedMetricData["value"], "m")
+			if err != nil {
+				panic(err)
+			}
+			specificDescriptorEvaluatedMetricData = k
 		}
-		specificDescriptorEvaluatedMetricData := k
+
 		metricValue := specificDescriptorEvaluatedMetricData["value"]
 
 		// TEMP HACK for Prototyping. Remove the value and everything else is labels
