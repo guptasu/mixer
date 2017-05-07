@@ -24,6 +24,7 @@ import (
 
 	aconfig "istio.io/mixer/pkg/aspect/config"
 	"istio.io/mixer/pkg/config"
+	"istio.io/mixer/pkg/cnfgNormalizer/typeScriptGenerator"
 	pb "istio.io/mixer/pkg/config/proto"
 )
 
@@ -89,7 +90,7 @@ func getUserTSCodeFile(sc *pb.ServiceConfig, imports ...string) string {
 		var tmpReportMethodStr string
 		for _, aspect := range aspectRule.GetAspects() {
 			if aspect.Kind == "metrics" {
-				userCodeForMetricAspect := GenerateUserCodeForMetrics(aspect.Params.(*aconfig.MetricsParams), aspect.Name)
+				userCodeForMetricAspect := typeScriptGenerator.GenerateUserCodeForMetrics(aspect.Params.(*aconfig.MetricsParams), aspect.Name)
 				tmpReportMethodStr = tmpReportMethodStr + userCodeForMetricAspect
 			}
 		}
@@ -98,7 +99,7 @@ func getUserTSCodeFile(sc *pb.ServiceConfig, imports ...string) string {
 			var ifStatementStr string
 			if len(aspectRule.Selector) > 0 {
 				expressionStr := aspectRule.Selector
-				ifStatementStr = getJSForExpression(expressionStr)
+				ifStatementStr = typeScriptGenerator.GetJSForExpression(expressionStr)
 
 			} else {
 				ifStatementStr = "true"
@@ -218,9 +219,9 @@ func getAllDeclarations(sc *pb.ServiceConfig) string {
 			// TODO... need to go nested inside the rules within the aspects
 		}
 	}
-	return GetMetricAspectAllDeclarations(callbackMtdName, allUserDeclaredMetricsAspectNames, allUserDeclaredMetricsAspects)
+	return typeScriptGenerator.GetMetricAspectAllDeclarations(callbackMtdName, allUserDeclaredMetricsAspectNames, allUserDeclaredMetricsAspects)
 }
 
 func getAttributesDeclaration() string {
-	return GetTypeFromAttributes()
+	return typeScriptGenerator.GetTypeFromAttributes()
 }

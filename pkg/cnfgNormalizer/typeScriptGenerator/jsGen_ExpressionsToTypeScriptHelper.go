@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cnfgNormalizer
+package typeScriptGenerator
 
 import (
 	"fmt"
@@ -20,7 +20,7 @@ import (
 	"istio.io/mixer/pkg/expr"
 )
 
-func getJSForExpression(expression string) string {
+func GetJSForExpression(expression string) string {
 	ex, err := expr.Parse(expression)
 	var out string
 	if err != nil {

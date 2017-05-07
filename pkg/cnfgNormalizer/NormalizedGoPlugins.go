@@ -19,6 +19,7 @@ import (
 	"plugin"
 	"istio.io/mixer/pkg/attribute"
 	"istio.io/mixer/pkg/config"
+	"istio.io/mixer/pkg/cnfgNormalizer/typeScriptGenerator"
 )
 
 type NormalizedGoPlugins struct {
@@ -31,7 +32,7 @@ type NormalizedGoPlugins struct {
 func constructAttributesForGoPlugin(requestBag *attribute.MutableBag) map[string]interface{} {
 	attribs := make(map[string]interface{})
 	for _, attribName := range requestBag.Names() {
-		attribs[dotCaseToCamelCase(attribName)], _ = requestBag.Get(attribName)
+		attribs[typeScriptGenerator.DotCaseToCamelCase(attribName)], _ = requestBag.Get(attribName)
 	}
 	return attribs
 }

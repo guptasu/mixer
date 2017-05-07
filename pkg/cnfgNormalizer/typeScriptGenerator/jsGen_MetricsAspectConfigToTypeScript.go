@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cnfgNormalizer
+package typeScriptGenerator
 
 import (
 	"bytes"
@@ -76,13 +76,13 @@ func GenerateUserCodeForMetrics(metricsParams *aconfig.MetricsParams, aspectName
 
 func createObject(metric *aconfig.MetricsParams_Metric) bytes.Buffer {
 	var labelStr bytes.Buffer
-	labelStr.WriteString(fmt.Sprintf("%s: %s", "value", getJSForExpression(metric.Value)))
+	labelStr.WriteString(fmt.Sprintf("%s: %s", "value", GetJSForExpression(metric.Value)))
 	labelLen := len(metric.Labels)
 	if labelLen != 0 {
 		labelStr.WriteString(",\n")
 	}
 	for key, value := range metric.Labels {
-		labelStr.WriteString(fmt.Sprintf(`%s: %s`, key, getJSForExpression(value)))
+		labelStr.WriteString(fmt.Sprintf(`%s: %s`, key, GetJSForExpression(value)))
 		labelLen--
 		if labelLen != 0 {
 			labelStr.WriteString(",\n")

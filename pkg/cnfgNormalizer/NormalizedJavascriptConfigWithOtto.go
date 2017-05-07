@@ -21,6 +21,8 @@ import (
 
 	"istio.io/mixer/pkg/attribute"
 	"istio.io/mixer/pkg/config"
+	"istio.io/mixer/pkg/cnfgNormalizer/typeScriptGenerator"
+
 )
 
 type NormalizedJavascriptConfig struct {
@@ -32,7 +34,7 @@ type NormalizedJavascriptConfig struct {
 // invoked at runtime
 func (n NormalizedJavascriptConfig) Evalaute(requestBag *attribute.MutableBag,
 	callBack func(kind string, val interface{})) [][]interface{} {
-	resultValue, errFromJS := n.reportMtd.Call(otto.NullValue(), constructAttributesForJS(requestBag))
+	resultValue, errFromJS := n.reportMtd.Call(otto.NullValue(), typeScriptGenerator.ConstructAttributesForJS(requestBag))
 	if errFromJS != nil {
 		fmt.Println("ERROR FROM JS", errFromJS)
 	}

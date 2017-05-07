@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cnfgNormalizer
+package typeScriptGenerator
 
 import (
 	"bytes"
@@ -39,9 +39,9 @@ var (
 )
 
 func getAttributeFieldName(dotSeparatedAttribName string) string {
-	return dotCaseToCamelCase(dotSeparatedAttribName)
+	return DotCaseToCamelCase(dotSeparatedAttribName)
 }
-func dotCaseToCamelCase(s string) string {
+func DotCaseToCamelCase(s string) string {
 	subStrs := strings.Split(s, ".")
 	for i, subStr := range subStrs {
 		subStrs[i] = strings.Title(subStr)
@@ -53,7 +53,7 @@ func GetTypeFromAttributes() string {
 	var attributesTypeFields bytes.Buffer
 
 	for attrName, attrType := range attributesDescriptor {
-		attrUpperCamelCaseName := dotCaseToCamelCase(attrName)
+		attrUpperCamelCaseName := DotCaseToCamelCase(attrName)
 		attributesTypeFields.WriteString(fmt.Sprintf("%s: %s;\n", attrUpperCamelCaseName, valueTypeToJSType[attrType]))
 	}
 
@@ -66,10 +66,10 @@ func GetTypeFromAttributes() string {
 	return AttributesClass
 }
 
-func constructAttributesForJS(requestBag *attribute.MutableBag) map[string]interface{} {
+func ConstructAttributesForJS(requestBag *attribute.MutableBag) map[string]interface{} {
 	attribs := make(map[string]interface{})
 	for _, attribName := range requestBag.Names() {
-		attribs[dotCaseToCamelCase(attribName)], _ = requestBag.Get(attribName)
+		attribs[DotCaseToCamelCase(attribName)], _ = requestBag.Get(attribName)
 	}
 	return attribs
 }
