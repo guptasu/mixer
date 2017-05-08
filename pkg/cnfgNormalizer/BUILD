@@ -9,7 +9,6 @@ go_library(
         "NormalizedGoPlugins.go",
         "NormalizedGoPluginsAsyncModel.go",
         "NormalizedJavascriptConfigWithOtto.go",
-        "NormalizedJavascriptConfigWithV8.go",
     ],
     deps = [
         "//pkg/adapter:go_default_library",
@@ -22,7 +21,6 @@ go_library(
         "//pkg/config:go_default_library",
         "//pkg/cnfgNormalizer/typeScriptGenerator:go_default_library",
         "@com_github_robertkrimen_otto//:go_default_library",
-        #"@com_github_augustoroman_v8//:go_default_library",
         "@com_github_istio_api//:mixer/v1/config/descriptor",
     ],
 )

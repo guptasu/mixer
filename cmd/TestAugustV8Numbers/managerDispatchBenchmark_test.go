@@ -222,8 +222,8 @@ func benchmarkAdapterManagerDispatch(b *testing.B, cnftNormalizer config.ConfigN
 	}
 }
 
-func Benchmark50ComplexAspect(b *testing.B) {
-	sc, gsc := createYamlConfigs(srvcCnfgComplexAspect, 50)
+func Benchmark50SimpleAspect(b *testing.B) {
+	sc, gsc := createYamlConfigs(srvcCnfgSimpleAspect, 50)
 	benchmarkAdapterManagerDispatch(b, NormalizedJavascriptConfigNormalizerWithAugustV8{}, sc.Name(), gsc.Name(), "")
 	_ = os.Remove(sc.Name())
 	_ = os.Remove(gsc.Name())
