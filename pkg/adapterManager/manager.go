@@ -63,7 +63,7 @@ type Manager struct {
 	mapper            expr.Evaluator
 	builders          builderFinder
 	checkKindSet      config.KindSet
-	reportKindSet     config.KindSet
+	ReportKindSet     config.KindSet
 	quotaKindSet      config.KindSet
 	preprocessKindSet config.KindSet
 	gp                *pool.GoroutinePool
@@ -122,7 +122,7 @@ func newManager(r builderFinder, m [config.NumKinds]aspect.Manager, exp expr.Eva
 	}
 
 	for _, m := range inventory.Report {
-		mg.reportKindSet = mg.reportKindSet.Set(m.Kind())
+		mg.ReportKindSet = mg.ReportKindSet.Set(m.Kind())
 	}
 
 	for _, m := range inventory.Quota {
@@ -142,7 +142,7 @@ func (m *Manager) dispatchCheck(ctx context.Context, configs []*cpb.Combined, re
 
 // Check dispatches to the set of aspects associated with the Check API method
 func (m *Manager) Check(ctx context.Context, requestBag, responseBag *attribute.MutableBag) rpc.Status {
-	configs, err := m.loadConfigs(requestBag, m.checkKindSet, false, true /* fail if unable to eval all selectors */)
+	configs, err := m.LoadConfigs(requestBag, m.checkKindSet, false, true /* fail if unable to eval all selectors */)
 	if err != nil {
 		glog.Error(err)
 		return status.WithError(err)
@@ -150,7 +150,7 @@ func (m *Manager) Check(ctx context.Context, requestBag, responseBag *attribute.
 	return m.dispatchCheck(ctx, configs, requestBag, responseBag)
 }
 
-func (m *Manager) dispatchReport(ctx context.Context, configs []*cpb.Combined, requestBag, responseBag *attribute.MutableBag) rpc.Status {
+func (m *Manager) DispatchReport(ctx context.Context, configs []*cpb.Combined, requestBag, responseBag *attribute.MutableBag) rpc.Status {
 	return m.dispatch(ctx, requestBag, responseBag, configs,
 		func(evaluatedValue interface{}, executor aspect.Executor, evaluator expr.Evaluator) rpc.Status {
 			rw := executor.(aspect.ReportExecutor)
@@ -160,12 +160,12 @@ func (m *Manager) dispatchReport(ctx context.Context, configs []*cpb.Combined, r
 
 // Report dispatches to the set of aspects associated with the Report API method
 func (m *Manager) Report(ctx context.Context, requestBag, responseBag *attribute.MutableBag) rpc.Status {
-	configs, err := m.loadConfigs(requestBag, m.reportKindSet, false, false /* carry on if unable to eval all selectors */)
+	configs, err := m.LoadConfigs(requestBag, m.ReportKindSet, false, false /* carry on if unable to eval all selectors */)
 	if err != nil {
 		glog.Error(err)
 		return status.WithError(err)
 	}
-	return m.dispatchReport(ctx, configs, requestBag, responseBag)
+	return m.DispatchReport(ctx, configs, requestBag, responseBag)
 }
 
 // Quota dispatches to the set of aspects associated with the Quota API method
@@ -174,7 +174,7 @@ func (m *Manager) Quota(ctx context.Context, requestBag, responseBag *attribute.
 
 	var qmr *aspect.QuotaMethodResp
 
-	configs, err := m.loadConfigs(requestBag, m.quotaKindSet, false, true /* fail if unable to eval all selectors */)
+	configs, err := m.LoadConfigs(requestBag, m.quotaKindSet, false, true /* fail if unable to eval all selectors */)
 	if err != nil {
 		glog.Error(err)
 		return qmr, status.WithError(err)
@@ -202,9 +202,10 @@ func executeScriptAndGetEvaluatedData(cfg config.Resolver, requestBag *attribute
 	//fmt.Printf("Data evaluated lenght=%d; value=%v", len(result), result)
 	evaluatedDataForAspectList := make([]*evaluatedDataForAspect, 0, 0)
 	for _, v := range result {
-		//fmt.Printf("RESULT CONTAIN %v\n", v)
+
 		aspectName := v[0]
 		aspectEvaluatedValue := v[1]
+		//fmt.Printf("aspectName=%s, value=%v\n", aspectName, aspectEvaluatedValue)
 		for _, cfg := range cfgs {
 			if cfg.Aspect.Name == aspectName {
 				// Save all the evaluated data. We can then dispatch them to different aspects by fanning out to
@@ -217,7 +218,7 @@ func executeScriptAndGetEvaluatedData(cfg config.Resolver, requestBag *attribute
 	return evaluatedDataForAspectList
 }
 
-func (m *Manager) loadConfigs(attrs attribute.Bag, ks config.KindSet, isPreprocess bool, strict bool) ([]*cpb.Combined, error) {
+func (m *Manager) LoadConfigs(attrs attribute.Bag, ks config.KindSet, isPreprocess bool, strict bool) ([]*cpb.Combined, error) {
 	cfg, _ := m.cfg.Load().(config.Resolver)
 	if cfg == nil {
 		return nil, errors.New("configuration is not yet available")
@@ -241,7 +242,7 @@ func (m *Manager) loadConfigs(attrs attribute.Bag, ks config.KindSet, isPreproce
 // configured aspects.
 func (m *Manager) Preprocess(ctx context.Context, requestBag, responseBag *attribute.MutableBag) rpc.Status {
 	// We may be missing attributes used in selectors, so we must be non-strict during evaluation.
-	configs, err := m.loadConfigs(requestBag, m.preprocessKindSet, true, false)
+	configs, err := m.LoadConfigs(requestBag, m.preprocessKindSet, true, false)
 	if err != nil {
 		glog.Error(err)
 		return status.WithError(err)
@@ -282,6 +283,10 @@ func (m *Manager) dispatch(ctx context.Context, requestBag, responseBag *attribu
 
 	evaluatedDataForAspectList := executeScriptAndGetEvaluatedData(cfg, requestBag, cfgs)
 	// This number is more than number of aspects since, there can be multiple calls for each descriptor within the aspect
+	//fmt.Println("###3")
+	//for i := 0; i < len(evaluatedDataForAspectList); i++ {
+	//	fmt.Println(*evaluatedDataForAspectList[i])
+	//}
 	totalCallsToAspect := len(evaluatedDataForAspectList)
 
 	if totalCallsToAspect <= 0 {

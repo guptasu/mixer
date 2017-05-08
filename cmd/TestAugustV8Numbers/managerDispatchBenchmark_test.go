@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package adapterManager
+package main
 
 import (
 	"bytes"
@@ -27,12 +27,15 @@ import (
 
 	"istio.io/mixer/adapter/noop"
 	pkgAdapter "istio.io/mixer/pkg/adapter"
+	adptMgr "istio.io/mixer/pkg/adapterManager"
 	"istio.io/mixer/pkg/aspect"
 	"istio.io/mixer/pkg/attribute"
-	"istio.io/mixer/pkg/cnfgNormalizer"
+
 	"istio.io/mixer/pkg/config"
 	"istio.io/mixer/pkg/expr"
 	"istio.io/mixer/pkg/pool"
+	//"github.com/augustoroman/v8"
+	///"fmt"
 )
 
 /*
@@ -178,7 +181,7 @@ func benchmarkAdapterManagerDispatch(b *testing.B, cnftNormalizer config.ConfigN
 	defer adapterGP.Close()
 
 	eval := expr.NewCEXLEvaluator()
-	adapterMgr := NewManager([]pkgAdapter.RegisterFn{
+	adapterMgr := adptMgr.NewManager([]pkgAdapter.RegisterFn{
 		noop.Register,
 	}, aspect.Inventory(), eval, gp, adapterGP)
 	store, err := config.NewCompatFSStore(declaredGlobalCnfgFilePath, declarativeSrvcCnfgFilePath)
@@ -219,53 +222,9 @@ func benchmarkAdapterManagerDispatch(b *testing.B, cnftNormalizer config.ConfigN
 	}
 }
 
-func BenchmarkOneSimpleAspect(b *testing.B) {
-	sc, gsc := createYamlConfigs(srvcCnfgSimpleAspect, 1)
-	benchmarkAdapterManagerDispatch(b, cnfgNormalizer.NormalizedJavascriptConfigNormalizer{}, sc.Name(), gsc.Name(), "")
-	_ = os.Remove(sc.Name())
-	_ = os.Remove(gsc.Name())
-}
-
-func Benchmark50SimpleAspect(b *testing.B) {
-	sc, gsc := createYamlConfigs(srvcCnfgSimpleAspect, 50)
-	benchmarkAdapterManagerDispatch(b, cnfgNormalizer.NormalizedJavascriptConfigNormalizer{}, sc.Name(), gsc.Name(), "")
-	_ = os.Remove(sc.Name())
-	_ = os.Remove(gsc.Name())
-}
-
-func BenchmarkOneComplexAspect(b *testing.B) {
-	sc, gsc := createYamlConfigs(srvcCnfgComplexAspect, 1)
-	benchmarkAdapterManagerDispatch(b, cnfgNormalizer.NormalizedJavascriptConfigNormalizer{}, sc.Name(), gsc.Name(), "")
-	_ = os.Remove(sc.Name())
-	_ = os.Remove(gsc.Name())
-}
-
 func Benchmark50ComplexAspect(b *testing.B) {
 	sc, gsc := createYamlConfigs(srvcCnfgComplexAspect, 50)
-	benchmarkAdapterManagerDispatch(b, cnfgNormalizer.NormalizedJavascriptConfigNormalizer{}, sc.Name(), gsc.Name(), "")
+	benchmarkAdapterManagerDispatch(b, NormalizedJavascriptConfigNormalizerWithAugustV8{}, sc.Name(), gsc.Name(), "")
 	_ = os.Remove(sc.Name())
 	_ = os.Remove(gsc.Name())
 }
-
-//////////////////// GO PACKAGE TESTS ////////////////////////////
-func BenchmarkOneSimpleAspecttWithGoPackage(b *testing.B) {
-	sc, gsc := createYamlConfigs(srvcCnfgComplexAspect, 1)
-	benchmarkAdapterManagerDispatch(b, cnfgNormalizer.CnftToGopackageNormalizer{}, sc.Name(), gsc.Name(), "/usr/local/google/home/guptasu/go/src/istio.io/mixer/testdata/srvcConfigsGoPlugins/BenchmarkOneSimpleAspect.so")
-	_ = os.Remove(sc.Name())
-	_ = os.Remove(gsc.Name())
-}
-func Benchmark50SimpleAspecttWithGoPackage(b *testing.B) {
-	sc, gsc := createYamlConfigs(srvcCnfgComplexAspect, 50)
-	benchmarkAdapterManagerDispatch(b, cnfgNormalizer.CnftToGopackageNormalizer{}, sc.Name(), gsc.Name(), "/usr/local/google/home/guptasu/go/src/istio.io/mixer/testdata/srvcConfigsGoPlugins/Benchmark50SimpleAspect.so")
-	_ = os.Remove(sc.Name())
-	_ = os.Remove(gsc.Name())
-}
-
-//////////////////// ASYNC MODEL /////////////////////////
-func Benchmark50SimpleAspecttWithGoPackageAsyncModel(b *testing.B) {
-	sc, gsc := createYamlConfigs(srvcCnfgComplexAspect, 50)
-	benchmarkAdapterManagerDispatch(b, cnfgNormalizer.CnftToGopackageNormalizerAsyncModel{}, sc.Name(), gsc.Name(), "/usr/local/google/home/guptasu/go/src/istio.io/mixer/testdata/srvcConfigsGoPlugins/Benchmark50SimpleAspectsAsyncModel.so")
-	_ = os.Remove(sc.Name())
-	_ = os.Remove(gsc.Name())
-}
-

@@ -106,19 +106,32 @@ func (*metricsManager) ValidateConfig(c config.AspectParams, v expr.Validator, d
 func (w *metricsExecutor) Execute(evaluatedValue interface{}, attrs attribute.Bag, mapper expr.Evaluator) rpc.Status {
 	result := &multierror.Error{}
 	var values []adapter.Value
-	evaluatedMetricData := evaluatedValue.(map[string]interface{})
+
+
+	evaluatedMetricData, ok := evaluatedValue.(map[string]interface{})
+
+	if !ok {
+			panic(ok)
+	}
 
 	for name, md := range w.metadata {
+
+
 		if evaluatedMetricData["descriptorName"].(string) != name {
 		}
 
+
 		specificDescriptorEvaluatedMetricData, ok := evaluatedMetricData["value"].(map[string]interface{})
+
 		if (!ok) {
 
 			k, err := ToMap(evaluatedMetricData["value"], "m")
+
 			if err != nil {
+
 				panic(err)
 			}
+
 			specificDescriptorEvaluatedMetricData = k
 		}
 
@@ -126,6 +139,7 @@ func (w *metricsExecutor) Execute(evaluatedValue interface{}, attrs attribute.Ba
 
 		// TEMP HACK for Prototyping. Remove the value and everything else is labels
 		delete(specificDescriptorEvaluatedMetricData, "value")
+
 		specificDescriptorEvaluatedLabelsData := specificDescriptorEvaluatedMetricData
 
 		// TODO: investigate either pooling these, or keeping a set around that has only its field's values updated.
@@ -139,7 +153,9 @@ func (w *metricsExecutor) Execute(evaluatedValue interface{}, attrs attribute.Ba
 			EndTime:     time.Now(),
 			MetricValue: metricValue,
 		})
+
 	}
+
 
 	if err := w.aspect.Record(values); err != nil {
 		result = multierror.Append(result, fmt.Errorf("failed to record all values: %v", err))
