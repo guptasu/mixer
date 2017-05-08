@@ -15,58 +15,23 @@
 package cnfgNormalizer
 
 import (
-	"bytes"
 	"fmt"
+	"istio.io/mixer/pkg/cnfgNormalizer/typeScriptGenerator"
+	"bytes"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
 
 	aconfig "istio.io/mixer/pkg/aspect/config"
-	"istio.io/mixer/pkg/config"
-	"istio.io/mixer/pkg/cnfgNormalizer/typeScriptGenerator"
 	pb "istio.io/mixer/pkg/config/proto"
+
 )
 
 var (
 	callbackMtdName        = "__interal__callback_fn"
 	callbackMtdDeclaration = "var " + callbackMtdName + " = function(aspectName: string, val: any){};"
 )
-
-type NormalizedJavascriptConfigNormalizer struct {
-	normalizedConfig config.NormalizedConfig
-}
-
-func (n NormalizedJavascriptConfigNormalizer) Normalize(sc *pb.ServiceConfig, fileLocation string) config.NormalizedConfig {
-
-	typeDefTSCode := getPredefinedTypesForDescriptors(sc)
-
-	attributeTypeDeclaration := getAttributesDeclaration()
-
-	fileForTypesFromAspectDescriptors := "TypesFromAspectDescriptors.ts"
-	fileForWellKnownAttribs := "WellKnownAttribs.ts"
-	userTSAllCode := getUserTSCodeFile(sc, fileForTypesFromAspectDescriptors, fileForWellKnownAttribs)
-
-	generatedJS := getJS(userTSAllCode, typeDefTSCode, attributeTypeDeclaration, fileForTypesFromAspectDescriptors, fileForWellKnownAttribs, fileLocation)
-
-	n.normalizedConfig = createNormalizedConfig(generatedJS)
-	return n.normalizedConfig
-}
-
-func (n NormalizedJavascriptConfigNormalizer) ReloadNormalizedConfigFile(fileLocation string) config.NormalizedConfig {
-	generatedJS := GenerateJsFromTypeScript(fileLocation)
-	n.normalizedConfig = createNormalizedConfig(generatedJS)
-	return n.normalizedConfig
-}
-
-func createNormalizedConfig(generatedJS string) config.NormalizedConfig {
-	useV8 := false
-	if useV8 {
-		return createNormalizedJavascriptConfigWithV8(generatedJS)
-	} else {
-		return createNormalizedJavascriptConfig(generatedJS)
-	}
-}
 
 func getUserTSCodeFile(sc *pb.ServiceConfig, imports ...string) string {
 	//vd.serviceConfig

@@ -22,6 +22,7 @@ import (
 	"istio.io/mixer/pkg/attribute"
 	"istio.io/mixer/pkg/config"
 	"istio.io/mixer/pkg/cnfgNormalizer/typeScriptGenerator"
+	pb "istio.io/mixer/pkg/config/proto"
 
 )
 
@@ -29,6 +30,10 @@ type NormalizedJavascriptConfig struct {
 	// JavaScript string
 	VM        *otto.Otto
 	reportMtd otto.Value
+}
+
+type NormalizedJavascriptConfigNormalizer struct {
+	normalizedConfig config.NormalizedConfig
 }
 
 // invoked at runtime
@@ -44,11 +49,33 @@ func (n NormalizedJavascriptConfig) Evalaute(requestBag *attribute.MutableBag,
 	return v.([][]interface{})
 }
 
-func createNormalizedJavascriptConfig(js string) config.NormalizedConfig {
 
+func (n NormalizedJavascriptConfigNormalizer) Normalize(sc *pb.ServiceConfig, fileLocation string) config.NormalizedConfig {
+
+	typeDefTSCode := getPredefinedTypesForDescriptors(sc)
+
+	attributeTypeDeclaration := getAttributesDeclaration()
+
+	fileForTypesFromAspectDescriptors := "TypesFromAspectDescriptors.ts"
+	fileForWellKnownAttribs := "WellKnownAttribs.ts"
+	userTSAllCode := getUserTSCodeFile(sc, fileForTypesFromAspectDescriptors, fileForWellKnownAttribs)
+
+	generatedJS := getJS(userTSAllCode, typeDefTSCode, attributeTypeDeclaration, fileForTypesFromAspectDescriptors, fileForWellKnownAttribs, fileLocation)
+
+	n.normalizedConfig = createNormalizedConfig(generatedJS)
+	return n.normalizedConfig
+}
+
+func (n NormalizedJavascriptConfigNormalizer) ReloadNormalizedConfigFile(fileLocation string) config.NormalizedConfig {
+	generatedJS := GenerateJsFromTypeScript(fileLocation)
+	n.normalizedConfig = createNormalizedConfig(generatedJS)
+	return n.normalizedConfig
+}
+
+func createNormalizedConfig(generatedJS string) config.NormalizedConfig {
 	var vm *otto.Otto
 	vm = otto.New()
-	vm.Run(js)
+	vm.Run(generatedJS)
 	reportMtd, _ := vm.Get("report")
 	return NormalizedJavascriptConfig{VM: vm, reportMtd: reportMtd}
 }

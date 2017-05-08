@@ -5,11 +5,9 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 go_library(
     name = "go_default_library",
     srcs = [
-        "JSGenerationDriver.go",
-        "NormalizedGoPlugins.go",
-        "NormalizedGoPluginsAsyncModel.go",
-        "NormalizedJavascriptConfigWithOtto.go",
-        "NormalizedJavascriptConfigWithV8.go",
+        "jsGen_MetricsAspectConfigToTypeScript.go",
+        "jsGen_AttribsToTypeScript.go",
+        "jsGen_ExpressionsToTypeScriptHelper.go",
     ],
     deps = [
         "//pkg/adapter:go_default_library",
@@ -20,7 +18,6 @@ go_library(
         "//pkg/expr:go_default_library",
         "//pkg/aspect:go_default_library",
         "//pkg/config:go_default_library",
-        "//pkg/cnfgNormalizer/typeScriptGenerator:go_default_library",
         "@com_github_robertkrimen_otto//:go_default_library",
         #"@com_github_augustoroman_v8//:go_default_library",
         "@com_github_istio_api//:mixer/v1/config/descriptor",

@@ -19,6 +19,7 @@ import (
 	"plugin"
 	"istio.io/mixer/pkg/attribute"
 	"istio.io/mixer/pkg/config"
+	pb "istio.io/mixer/pkg/config/proto"
 )
 
 type NormalizedGoPluginsAsyncModel struct {
@@ -27,6 +28,10 @@ type NormalizedGoPluginsAsyncModel struct {
 	goPackagePath string
 }
 
+
+type CnftToGopackageNormalizerAsyncModel struct {
+	normalizedConfig config.NormalizedConfig
+}
 
 // invoked at runtime
 func (n NormalizedGoPluginsAsyncModel) Evalaute(requestBag *attribute.MutableBag,
@@ -61,7 +66,18 @@ func (n NormalizedGoPluginsAsyncModel) Evalaute(requestBag *attribute.MutableBag
 	return result
 }
 
-func createNormalizedGoPluginConfigAsyncModel(goPackagePath string) config.NormalizedConfig {
+func (n CnftToGopackageNormalizerAsyncModel) Normalize(sc *pb.ServiceConfig, fileLocation string) config.NormalizedConfig {
+	// NOT IMPLEMENTED..
+	return nil
+}
+
+func (n CnftToGopackageNormalizerAsyncModel) ReloadNormalizedConfigFile(fileLocation string) config.NormalizedConfig {
+	goPackagePath := fileLocation
+	n.normalizedConfig = createGoPackageNormalizedConfigAsyncModel(goPackagePath)
+	return n.normalizedConfig
+}
+
+func createGoPackageNormalizedConfigAsyncModel (goPackagePath string) config.NormalizedConfig {
 	p, _ := plugin.Open(goPackagePath)
 	return NormalizedGoPluginsAsyncModel{goPackagePath: goPackagePath, plugin: p}
 }

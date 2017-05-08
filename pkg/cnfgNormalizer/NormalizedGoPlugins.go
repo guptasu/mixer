@@ -20,12 +20,17 @@ import (
 	"istio.io/mixer/pkg/attribute"
 	"istio.io/mixer/pkg/config"
 	"istio.io/mixer/pkg/cnfgNormalizer/typeScriptGenerator"
+	pb "istio.io/mixer/pkg/config/proto"
 )
 
 type NormalizedGoPlugins struct {
 	report        plugin.Symbol
 	plugin        *plugin.Plugin
 	goPackagePath string
+}
+
+type CnftToGopackageNormalizer struct {
+	normalizedConfig config.NormalizedConfig
 }
 
 
@@ -47,7 +52,18 @@ func (n NormalizedGoPlugins) Evalaute(requestBag *attribute.MutableBag,
 	return result
 }
 
-func createNormalizedGoPluginConfig(goPackagePath string) config.NormalizedConfig {
+func (n CnftToGopackageNormalizer) Normalize(sc *pb.ServiceConfig, fileLocation string) config.NormalizedConfig {
+	// NOT IMPLEMENTED..
+	return nil
+}
+
+func (n CnftToGopackageNormalizer) ReloadNormalizedConfigFile(fileLocation string) config.NormalizedConfig {
+	goPackagePath := fileLocation
+	n.normalizedConfig = createGoPackageNormalizedConfig(goPackagePath)
+	return n.normalizedConfig
+}
+
+func createGoPackageNormalizedConfig(goPackagePath string) config.NormalizedConfig {
 	p, _ := plugin.Open(goPackagePath)
 	return NormalizedGoPlugins{goPackagePath: goPackagePath, plugin: p}
 }
