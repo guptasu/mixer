@@ -32,10 +32,6 @@ type NormalizedJavascriptConfig struct {
 	reportMtd otto.Value
 }
 
-type NormalizedJavascriptConfigNormalizer struct {
-	normalizedConfig config.NormalizedConfig
-}
-
 // invoked at runtime
 func (n NormalizedJavascriptConfig) Evalaute(requestBag *attribute.MutableBag,
 	callBack func(kind string, val interface{})) [][]interface{} {
@@ -49,6 +45,10 @@ func (n NormalizedJavascriptConfig) Evalaute(requestBag *attribute.MutableBag,
 	return v.([][]interface{})
 }
 
+
+type NormalizedJavascriptConfigNormalizer struct {
+	normalizedConfig config.NormalizedConfig
+}
 
 func (n NormalizedJavascriptConfigNormalizer) Normalize(sc *pb.ServiceConfig, fileLocation string) config.NormalizedConfig {
 
