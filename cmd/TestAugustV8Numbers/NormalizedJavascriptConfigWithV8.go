@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"istio.io/mixer/pkg/config"
 	pb "istio.io/mixer/pkg/config/proto"
+	"encoding/json"
 )
 
 type NormalizedJavascriptConfigWithV8 struct {
@@ -43,67 +44,26 @@ func (n NormalizedJavascriptConfigWithV8) Evalaute(requestBag *attribute.Mutable
 	}
 
 	vresult2,_ := val.Get("result")
-	//fmt.Printf("*** value=%v, type=%T\n", vresult2, vresult2)
 	var returnVal [][]interface {}
-	//vresult2.GetIndex()
 
 	for i := 0 ; i < 50; i++ {
-		//fmt.Println("111-", i)
 		k, err := vresult2.GetIndex(i)
-		//fmt.Println("111-", k)
 		if err == nil {
 			var objToInsert []interface{}
 			p,_ := k.GetIndex(0)
 			objToInsert = append(objToInsert, p.String())
 			m,_ := k.GetIndex(1)
-			//t, _ := m.Get("descriptorName");
-			//fmt.Println("fffGGG", t)
-			objToInsert = append(objToInsert, transformToMap(m))
+			k,_ := m.MarshalJSON()
+			v2 := make(map[string]interface{})
+			json.Unmarshal(k, &v2)
+			objToInsert = append(objToInsert, v2)
 
 			returnVal = append(returnVal, objToInsert)
 		} else {
 			panic(err)
 		}
 	}
-
-	//fmt.Println("**** RETURN FROM EVAL")
-	//fmt.Println(returnVal)
 	return returnVal
-}
-
-func transformToMap(value *v8.Value) map[string]interface{} {
-	final := make(map[string]interface{})
-	tmp, _ := value.Get("descriptorName")
-	final["descriptorName"] = tmp.String()
-	vValue,_ := value.Get("value")
-
-	valFinal := make(map[string]interface{})
-	tmp, e := vValue.Get("value")
-	if e == nil {
-		valFinal["value"] = tmp
-	}
-	tmp, e = vValue.Get("source")
-	if e == nil {
-		valFinal["source"] = tmp
-	}
-	tmp, e = vValue.Get("target")
-	if e == nil {
-		valFinal["target"] = tmp
-	}
-	tmp, e = vValue.Get("service")
-	if e == nil {
-		valFinal["service"] = tmp
-	}
-	tmp, e = vValue.Get("method")
-	if e == nil {
-		valFinal["method"] = tmp
-	}
-	tmp, e = vValue.Get("response_code")
-	if e == nil {
-		valFinal["response_code"] = tmp
-	}
-	final["value"] = valFinal
-	return final
 }
 
 type NormalizedJavascriptConfigNormalizerWithAugustV8 struct {
