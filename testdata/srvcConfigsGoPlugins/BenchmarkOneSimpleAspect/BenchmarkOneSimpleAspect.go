@@ -2,6 +2,7 @@ package main
 
 import (
 	"istio.io/mixer/pkg/attribute"
+	"istio.io/mixer/pkg/adapter"
 )
 /////////// USER WRITTEN CODE ///////////
 func ConstructRequestCountForPrometheusReportingAllMetrics(attributesBag *attribute.MutableBag) RequestCount {
@@ -27,7 +28,7 @@ func ConstructRequestCountForPrometheusReportingAllMetrics(attributesBag *attrib
 	if attributesBag.WellKnownAttributes.Response.ResponseCode != 0 {
 		reqCount.ResponseCode = attributesBag.WellKnownAttributes.Response.ResponseCode
 	} else {
-		reqCount.ResponseCode = 1231
+		reqCount.ResponseCode = 1231111
 	}
 
 	if x,y := attributesBag.Get("foo.bar"); y {
@@ -39,7 +40,7 @@ func ConstructRequestCountForPrometheusReportingAllMetrics(attributesBag *attrib
 	if attributesBag.WellKnownAttributes.Request.RequestMethod != "" {
 		reqCount.Service = attributesBag.WellKnownAttributes.Request.RequestMethod
 	} else {
-		reqCount.Service = "one1"
+		reqCount.Service = "one1myservice"
 	}
 
 
@@ -76,11 +77,23 @@ func CreateReportResult() *ReportResult {
 	return &ReportResult{result: result}
 }
 
+func WrapRequestCountToAdapterReqObject(val RequestCount) *adapter.Value{
+	a := adapter.Value{}
+	a.MetricValue = val.Value
+	a.Labels = make(map[string]interface{})
+	a.Labels["method"] = val.Method
+	a.Labels["response_code"] = val.ResponseCode
+	a.Labels["service"] = val.Service
+	a.Labels["source"] = val.Source
+	a.Labels["target"] = val.Target
+	return &a
+}
 
 func (r *ReportResult) InsertRequestCountForPrometheusReportingAllMetrics0(val RequestCount) {
-	//v,_ := ToMap(val, "m")
+	// convert flattened RequestCount into structure to be passed to adapters
+	a := WrapRequestCountToAdapterReqObject(val)
 
-	innerValue := []interface{}{"aspectName0", map[string]interface{}{"descriptorName": "request_count", "value": val}}
+	innerValue := []interface{}{"aspectName0", map[string]interface{}{"descriptorName": "request_count", "value": a}}
 	r.result = append(r.result, innerValue)
 }
 

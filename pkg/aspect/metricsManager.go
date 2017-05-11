@@ -107,8 +107,9 @@ func (w *metricsExecutor) Execute(evaluatedValue interface{}, attrs attribute.Ba
 	result := &multierror.Error{}
 	var values []adapter.Value
 
-
+	//fmt.Println("***",evaluatedValue)
 	evaluatedMetricData, ok := evaluatedValue.(map[string]interface{})
+
 
 	if !ok {
 			panic(ok)
@@ -118,45 +119,57 @@ func (w *metricsExecutor) Execute(evaluatedValue interface{}, attrs attribute.Ba
 
 
 		if evaluatedMetricData["descriptorName"].(string) != name {
+			continue
 		}
 
 
-		specificDescriptorEvaluatedMetricData, ok := evaluatedMetricData["value"].(map[string]interface{})
+		//fmt.Printf("Type of evaluated value is : %T\n",evaluatedMetricData["value"])
+		alreadyComputerAdapterValue, ok := evaluatedMetricData["value"].(*adapter.Value)
+		if ok {
+			//fmt.Println(1)
+			// Fully formed object from Language Attribute processor
+			alreadyComputerAdapterValue.StartTime = time.Now()
+			alreadyComputerAdapterValue.EndTime = time.Now()
+			alreadyComputerAdapterValue.Definition = md.definition
+			values = append(values, *alreadyComputerAdapterValue)
+		} else {
+			//fmt.Println(2)
+			// Mapish object from from Language Attribute processor. JS does this and even old GO plugins
+			specificDescriptorEvaluatedMetricData, ok := evaluatedMetricData["value"].(map[string]interface{})
 
-		if (!ok) {
+			if (!ok) {
+				k, err := ToMap(evaluatedMetricData["value"], "m")
 
-			k, err := ToMap(evaluatedMetricData["value"], "m")
+				if err != nil {
 
-			if err != nil {
+					panic(err)
+				}
 
-				panic(err)
+				specificDescriptorEvaluatedMetricData = k
 			}
 
-			specificDescriptorEvaluatedMetricData = k
+			//metricValue := specificDescriptorEvaluatedMetricData["value"]
+
+			// TEMP HACK for Prototyping. Remove the value and everything else is labels
+			delete(specificDescriptorEvaluatedMetricData, "value")
+
+			specificDescriptorEvaluatedLabelsData := specificDescriptorEvaluatedMetricData
+
+			// TODO: investigate either pooling these, or keeping a set around that has only its field's values updated.
+			// we could keep a map[metric name]value, iterate over the it updating only the fields in each value
+
+			values = append(values, adapter.Value{
+				Definition: md.definition,
+				Labels:     specificDescriptorEvaluatedLabelsData,
+				// TODO: extract standard timestamp attributes for start/end once we det'm what they are
+				StartTime:   time.Now(),
+				EndTime:     time.Now(),
+				MetricValue: evaluatedMetricData,
+			})
 		}
-
-		metricValue := specificDescriptorEvaluatedMetricData["value"]
-
-		// TEMP HACK for Prototyping. Remove the value and everything else is labels
-		delete(specificDescriptorEvaluatedMetricData, "value")
-
-		specificDescriptorEvaluatedLabelsData := specificDescriptorEvaluatedMetricData
-
-		// TODO: investigate either pooling these, or keeping a set around that has only its field's values updated.
-		// we could keep a map[metric name]value, iterate over the it updating only the fields in each value
-
-		values = append(values, adapter.Value{
-			Definition: md.definition,
-			Labels:     specificDescriptorEvaluatedLabelsData,
-			// TODO: extract standard timestamp attributes for start/end once we det'm what they are
-			StartTime:   time.Now(),
-			EndTime:     time.Now(),
-			MetricValue: metricValue,
-		})
-
 	}
 
-	//fmt.Println(values)
+	//fmt.Println("###",values)
 	if err := w.aspect.Record(values); err != nil {
 		result = multierror.Append(result, fmt.Errorf("failed to record all values: %v", err))
 	}
