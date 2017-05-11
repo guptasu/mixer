@@ -27,6 +27,35 @@ import (
 	"istio.io/mixer/pkg/pool"
 )
 
+// for generation of go code, if we want to treate well known attributes separately than custom attributes,
+// we need a way to know what is well known and what is not. This hacky maps helps with that data.
+var wellKnwonAttributeNameToAttributeFields = map[string]string {
+	"source.ip":"attrs.Source.SourceIp",
+	"source.port":"attrs.Source.SourcePort",
+	"source.name":"attrs.Source.SourceName",
+	"source.uid":"attrs.Source.SourceUid",
+	"source.namespace":"attrs.Source.SourceNamespace",
+	"source.user":"attrs.Source.SourceUser",
+	"target.ip":"attrs.Target.TargetIp",
+	"target.port":"attrs.Target.TargetPort",
+	"target.service":"attrs.Target.TargetService",
+	"target.name":"attrs.Target.TargetName",
+	"target.uid":"attrs.Target.TargetUid",
+	"target.namespace":"attrs.Target.TargetNamespace",
+	"target.user":"attrs.Target.TargetUser",
+	"request.id":"attrs.Request.RequestId",
+	"request.path":"attrs.Request.RequestPath",
+	"request.host":"attrs.Request.RequestHost",
+	"request.method":"attrs.Request.RequestMethod",
+	"request.reason":"attrs.Request.RequestReason",
+	"request.referer":"attrs.Request.RequestReferer",
+	"request.scheme":"attrs.Request.RequestScheme",
+	"request.size":"attrs.Request.RequestSize",
+	"request.useragent ":"attrs.Request.RequestUseragent",
+	"response.size":"attrs.Response.ResponseSize",
+	"response.code":"attrs.Response.ResponseCode",
+}
+
 // MutableBag is a generic mechanism to read and write a set of attributes.
 //
 // Bags can be chained together in a parent/child relationship. A child bag
@@ -36,7 +65,15 @@ import (
 type MutableBag struct {
 	parent Bag
 	values map[string]interface{}
+	WellKnownAttributes *WellKnownAttributes
 	id     int64 // strictly for use in diagnostic messages
+}
+
+type WellKnownAttributes struct {
+	Source *mixerpb.Attributes_Source
+	Target *mixerpb.Attributes_Target
+	Request *mixerpb.Attributes_Request
+	Response *mixerpb.Attributes_Response
 }
 
 var id int64
@@ -396,5 +433,11 @@ func (mb *MutableBag) update(dictionary dictionary, attrs *mixerpb.Attributes) e
 	mb.values["response.size"] = attrs.Response.ResponseSize
 	mb.values["response.code"] = attrs.Response.ResponseCode
 
+	mb.WellKnownAttributes = &WellKnownAttributes{
+		Source:attrs.Source,
+		Target:attrs.Target,
+		Request:attrs.Request,
+		Response:attrs.Response,
+	}
 	return nil
 }

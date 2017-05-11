@@ -19,8 +19,9 @@ import (
 	"plugin"
 	"istio.io/mixer/pkg/attribute"
 	"istio.io/mixer/pkg/config"
-	"istio.io/mixer/pkg/cnfgNormalizer/typeScriptGenerator"
+
 	pb "istio.io/mixer/pkg/config/proto"
+	"fmt"
 )
 
 type NormalizedGoPlugins struct {
@@ -32,21 +33,14 @@ type NormalizedGoPlugins struct {
 type CnftToGopackageNormalizer struct {
 	normalizedConfig config.NormalizedConfig
 }
+/*
 
-
-func constructAttributesForGoPlugin(requestBag *attribute.MutableBag) map[string]interface{} {
-	attribs := make(map[string]interface{})
-	for _, attribName := range requestBag.Names() {
-		attribs[typeScriptGenerator.DotCaseToCamelCase(attribName)], _ = requestBag.Get(attribName)
-	}
-	return attribs
-}
-
+*/
 // invoked at runtime
 func (n NormalizedGoPlugins) Evalaute(requestBag *attribute.MutableBag,
 	callBack func(kind string, val interface{})) [][]interface{} {
 	report, _ := n.plugin.Lookup("Report")
-	result := report.(func(map[string]interface{}) [][]interface{})(constructAttributesForGoPlugin(requestBag))
+	result := report.(func(*attribute.MutableBag) [][]interface{})(requestBag)
 
 
 	return result
@@ -64,6 +58,10 @@ func (n CnftToGopackageNormalizer) ReloadNormalizedConfigFile(fileLocation strin
 }
 
 func createGoPackageNormalizedConfig(goPackagePath string) config.NormalizedConfig {
-	p, _ := plugin.Open(goPackagePath)
+	p, err := plugin.Open(goPackagePath)
+	if err != nil {
+		fmt.Println("failed to get plugin", err)
+		panic(err)
+	}
 	return NormalizedGoPlugins{goPackagePath: goPackagePath, plugin: p}
 }

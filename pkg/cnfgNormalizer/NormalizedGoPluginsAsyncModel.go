@@ -20,6 +20,7 @@ import (
 	"istio.io/mixer/pkg/attribute"
 	"istio.io/mixer/pkg/config"
 	pb "istio.io/mixer/pkg/config/proto"
+	"istio.io/mixer/pkg/cnfgNormalizer/typeScriptGenerator"
 )
 
 type NormalizedGoPluginsAsyncModel struct {
@@ -31,6 +32,14 @@ type NormalizedGoPluginsAsyncModel struct {
 
 type CnftToGopackageNormalizerAsyncModel struct {
 	normalizedConfig config.NormalizedConfig
+}
+
+func constructAttributesForGoPlugin(requestBag *attribute.MutableBag) map[string]interface{} {
+	attribs := make(map[string]interface{})
+	for _, attribName := range requestBag.Names() {
+		attribs[typeScriptGenerator.DotCaseToCamelCase(attribName)], _ = requestBag.Get(attribName)
+	}
+	return attribs
 }
 
 // invoked at runtime

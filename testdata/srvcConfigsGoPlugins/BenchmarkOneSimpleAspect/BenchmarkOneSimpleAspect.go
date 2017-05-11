@@ -1,44 +1,43 @@
 package main
 
 import (
-	"reflect"
-	"fmt"
+	"istio.io/mixer/pkg/attribute"
 )
 /////////// USER WRITTEN CODE ///////////
-func ConstructRequestCountForPrometheusReportingAllMetrics(attributes map[string]interface{}) RequestCount {
+func ConstructRequestCountForPrometheusReportingAllMetrics(attributesBag *attribute.MutableBag) RequestCount {
 	reqCount := RequestCount{}
-	if attributes["ResponseCode"] == 0 {
-		reqCount.Value = attributes["ResponseCode"].(int64)
+	if attributesBag.WellKnownAttributes.Response.ResponseCode != 0 {
+		reqCount.Value = attributesBag.WellKnownAttributes.Response.ResponseCode
 	} else {
 		reqCount.Value = 1001
 	}
 
-	if attributes["SourceName"] == "" {
-		reqCount.Source = attributes["SourceName"].(string)
+	if attributesBag.WellKnownAttributes.Source.SourceName != "" {
+		reqCount.Source = attributesBag.WellKnownAttributes.Source.SourceName
 	} else {
 		reqCount.Source = "one1"
 	}
 
-	if attributes["SourceName"] == "" {
-		reqCount.Target = attributes["SourceName"].(string)
+	if attributesBag.WellKnownAttributes.Source.SourceName != "" {
+		reqCount.Target = attributesBag.WellKnownAttributes.Source.SourceName
 	} else {
 		reqCount.Target = "one1"
 	}
 
-	if attributes["ResponseCode"] == 0 {
-		reqCount.ResponseCode = attributes["ResponseCode"].(int64)
+	if attributesBag.WellKnownAttributes.Response.ResponseCode != 0 {
+		reqCount.ResponseCode = attributesBag.WellKnownAttributes.Response.ResponseCode
 	} else {
 		reqCount.ResponseCode = 1231
 	}
 
-	if attributes["ApiMethod"] == "" {
-		reqCount.Method = attributes["ApiMethod"].(string)
+	if attributesBag.WellKnownAttributes.Request.RequestMethod != "" {
+		reqCount.Method = attributesBag.WellKnownAttributes.Request.RequestMethod
 	} else {
 		reqCount.Method = "one1"
 	}
 
-	if attributes["ApiName"] == "" {
-		reqCount.Service = attributes["ApiName"].(string)
+	if attributesBag.WellKnownAttributes.Request.RequestMethod != "" {
+		reqCount.Service = attributesBag.WellKnownAttributes.Request.RequestMethod
 	} else {
 		reqCount.Service = "one1"
 	}
@@ -46,7 +45,7 @@ func ConstructRequestCountForPrometheusReportingAllMetrics(attributes map[string
 	return reqCount
 }
 
-func Report(attributes map[string]interface{}) [][]interface{} {
+func Report(attributes *attribute.MutableBag) [][]interface{} {
 	var result = CreateReportResult()
 
 	if true {
@@ -73,31 +72,6 @@ func CreateReportResult() *ReportResult {
 	result := make([][]interface{}, 0)
 
 	return &ReportResult{result: result}
-}
-
-
-func ToMap(in interface{}, tag string) (map[string]interface{}, error) {
-	out := make(map[string]interface{})
-
-	v := reflect.ValueOf(in)
-	if v.Kind() == reflect.Ptr {
-		v = v.Elem()
-	}
-
-	// we only accept structs
-	if v.Kind() != reflect.Struct {
-		return nil, fmt.Errorf("ToMap only accepts structs; got %T", v)
-	}
-
-	typ := v.Type()
-	for i := 0; i < v.NumField(); i++ {
-		// gets us a StructField
-		fi := typ.Field(i)
-		if tagv := fi.Tag.Get(tag); tagv != "" {
-			out[tagv] = v.Field(i).Interface()
-		}
-	}
-	return out, nil
 }
 
 
