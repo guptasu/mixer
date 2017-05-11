@@ -370,5 +370,31 @@ func (mb *MutableBag) update(dictionary dictionary, attrs *mixerpb.Attributes) e
 		}
 	}
 
+	// fill well known attributes
+	mb.values["source.ip"] = attrs.Source.SourceIp
+	mb.values["source.port"] = attrs.Source.SourcePort
+	mb.values["source.name"] = attrs.Source.SourceName
+	mb.values["source.uid"] = attrs.Source.SourceUid
+	mb.values["source.namespace"] = attrs.Source.SourceNamespace
+	mb.values["source.user"] = attrs.Source.SourceUser
+	mb.values["target.ip"] = attrs.Target.TargetIp
+	mb.values["target.port"] = attrs.Target.TargetPort
+	mb.values["target.service"] = attrs.Target.TargetService
+	mb.values["target.name"] = attrs.Target.TargetName
+	mb.values["target.uid"] = attrs.Target.TargetUid
+	mb.values["target.namespace"] = attrs.Target.TargetNamespace
+	mb.values["target.user"] = attrs.Target.TargetUser
+	mb.values["request.id"] = attrs.Request.RequestId
+	mb.values["request.path"] = attrs.Request.RequestPath
+	mb.values["request.host"] = attrs.Request.RequestHost
+	mb.values["request.method"] = attrs.Request.RequestMethod
+	mb.values["request.reason"] = attrs.Request.RequestReason
+	mb.values["request.referer"] = attrs.Request.RequestReferer
+	mb.values["request.scheme"] = attrs.Request.RequestScheme
+	mb.values["request.size"] = attrs.Request.RequestSize
+	mb.values["request.useragent "] = attrs.Request.RequestUseragent
+	mb.values["response.size"] = attrs.Response.ResponseSize
+	mb.values["response.code"] = attrs.Response.ResponseCode
+
 	return nil
 }
