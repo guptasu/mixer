@@ -111,6 +111,7 @@ func (e *accessLogsExecutor) Close() error {
 	return e.aspect.Close()
 }
 
+func (e *accessLogsExecutor) ExecuteWithGivenData(evaluatedData interface{}) rpc.Status {return rpc.Status{}}
 func (e *accessLogsExecutor) Execute(attrs attribute.Bag, mapper expr.Evaluator) rpc.Status {
 	labels := permissiveEval(e.labels, attrs, mapper)
 	templateVals := permissiveEval(e.templateExprs, attrs, mapper)

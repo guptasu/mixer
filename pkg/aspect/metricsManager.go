@@ -103,7 +103,7 @@ func (*metricsManager) ValidateConfig(c config.AspectParams, tc expr.TypeChecker
 	}
 	return
 }
-
+func (e *metricsExecutor) ExecuteWithGivenData(evaluatedData interface{}) rpc.Status {return rpc.Status{}}
 func (w *metricsExecutor) Execute(attrs attribute.Bag, mapper expr.Evaluator) rpc.Status {
 	result := &multierror.Error{}
 	var values []adapter.Value

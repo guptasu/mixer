@@ -138,6 +138,8 @@ func (f *fakeReportExecutor) Execute(attrs attribute.Bag, mapper expr.Evaluator)
 	f.called++
 	return
 }
+func (e *fakeReportExecutor) ExecuteWithGivenData(evaluatedData interface{}) rpc.Status {return rpc.Status{}}
+
 func (f *fakeReportExecutor) Close() error { return nil }
 
 func (f *fakeQuotaExecutor) Execute(attrs attribute.Bag, mapper expr.Evaluator, qma *aspect.QuotaMethodArgs) (output rpc.Status, qmr *aspect.QuotaMethodResp) {

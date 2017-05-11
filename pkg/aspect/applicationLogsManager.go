@@ -141,7 +141,7 @@ func (applicationLogsManager) ValidateConfig(c config.AspectParams, tc expr.Type
 }
 
 func (e *applicationLogsExecutor) Close() error { return e.aspect.Close() }
-
+func (e *applicationLogsExecutor) ExecuteWithGivenData(evaluatedData interface{}) rpc.Status {return rpc.Status{}}
 func (e *applicationLogsExecutor) Execute(attrs attribute.Bag, mapper expr.Evaluator) rpc.Status {
 	result := &multierror.Error{}
 	var entries []adapter.LogEntry
