@@ -30,8 +30,8 @@ func ConstructRequestCountForPrometheusReportingAllMetrics(attributesBag *attrib
 		reqCount.ResponseCode = 1231
 	}
 
-	if attributesBag.WellKnownAttributes.Request.RequestMethod != "" {
-		reqCount.Method = attributesBag.WellKnownAttributes.Request.RequestMethod
+	if x,y := attributesBag.Get("foo.bar"); y {
+		reqCount.Method = x.(string)
 	} else {
 		reqCount.Method = "one1"
 	}
@@ -41,6 +41,8 @@ func ConstructRequestCountForPrometheusReportingAllMetrics(attributesBag *attrib
 	} else {
 		reqCount.Service = "one1"
 	}
+
+
 
 	return reqCount
 }

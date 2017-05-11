@@ -70,10 +70,10 @@ type MutableBag struct {
 }
 
 type WellKnownAttributes struct {
-	Source *mixerpb.Attributes_Source
-	Target *mixerpb.Attributes_Target
-	Request *mixerpb.Attributes_Request
-	Response *mixerpb.Attributes_Response
+	Source mixerpb.Attributes_Source
+	Target mixerpb.Attributes_Target
+	Request mixerpb.Attributes_Request
+	Response mixerpb.Attributes_Response
 }
 
 var id int64
@@ -82,6 +82,7 @@ var mutableBags = sync.Pool{
 		return &MutableBag{
 			values: make(map[string]interface{}),
 			id:     atomic.AddInt64(&id, 1),
+			WellKnownAttributes: &WellKnownAttributes{},
 		}
 	},
 }
@@ -434,10 +435,10 @@ func (mb *MutableBag) update(dictionary dictionary, attrs *mixerpb.Attributes) e
 	mb.values["response.code"] = attrs.Response.ResponseCode
 
 	mb.WellKnownAttributes = &WellKnownAttributes{
-		Source:attrs.Source,
-		Target:attrs.Target,
-		Request:attrs.Request,
-		Response:attrs.Response,
+		Source:*attrs.Source,
+		Target:*attrs.Target,
+		Request:*attrs.Request,
+		Response:*attrs.Response,
 	}
 	return nil
 }

@@ -202,6 +202,8 @@ func benchmarkAdapterManagerDispatch(b *testing.B, cnftNormalizer config.ConfigN
 
 	requestBag := attribute.GetMutableBag(nil)
 	requestBag.Set(identityAttribute, identityDomainAttribute)
+	requestBag.Set("foo.bar", "helloworld")
+	requestBag.WellKnownAttributes.Source.SourceName = "awesome"
 	configs, err := adapterMgr.LoadConfigs(requestBag, adapterMgr.ReportKindSet, false, false)
 	if err != nil {
 		b.Errorf("adapterMgr.loadConfigs failed: %v", err)

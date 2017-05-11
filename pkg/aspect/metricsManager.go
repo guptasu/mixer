@@ -156,7 +156,7 @@ func (w *metricsExecutor) Execute(evaluatedValue interface{}, attrs attribute.Ba
 
 	}
 
-
+	//fmt.Println(values)
 	if err := w.aspect.Record(values); err != nil {
 		result = multierror.Append(result, fmt.Errorf("failed to record all values: %v", err))
 	}
