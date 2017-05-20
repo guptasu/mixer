@@ -202,6 +202,8 @@ func (m *Manager) loadConfigs(attrs attribute.Bag, ks config.KindSet, isPreproce
 	if glog.V(2) {
 		glog.Infof("Resolved %d configs: %v ", len(configs), configs)
 	}
+	fmt.Println("****")
+	fmt.Println(configs)
 	return configs, nil
 }
 
@@ -332,6 +334,8 @@ type result struct {
 // execute performs action described in the combined config using the attribute bag
 func (m *Manager) execute(ctx context.Context, cfg *cpb.Combined, requestBag, responseBag *attribute.MutableBag,
 	df descriptor.Finder, invokeFunc invokeExecutorFunc) (out rpc.Status) {
+	return rpc.Status{Code:0}
+	/*
 	var mgr aspect.Manager
 	var found bool
 
@@ -366,6 +370,7 @@ func (m *Manager) execute(ctx context.Context, cfg *cpb.Combined, requestBag, re
 	_ = ctx
 
 	return invokeFunc(executor, m.mapper, requestBag, responseBag)
+	*/
 }
 
 // cacheKey is used to cache fully constructed aspects

@@ -154,6 +154,23 @@ func createYamlConfigs(srvcCnfgAspect string, configRepeatCount int) (declarativ
 	return srvcCnfgFile, globalCnfgFile
 }
 
+func createNewYamlConfigs(srvcCnfgAspect string, configRepeatCount int) (declarativeSrvcCnfg *os.File, declaredGlobalCnfg *os.File) {
+	srvcCnfgFile, _ := ioutil.TempFile("", "managerDispatchBenchmarkTest")
+	globalCnfgFile, _ := ioutil.TempFile("", "managerDispatchBenchmarkTest")
+
+	_, _ = globalCnfgFile.Write([]byte(minimalGlobalCnfg))
+	_ = globalCnfgFile.Close()
+
+	var srvcCnfgBuffer bytes.Buffer
+	for i := 0; i < configRepeatCount; i++ {
+		srvcCnfgBuffer.WriteString(srvcCnfgAspect)
+	}
+	_, _ = srvcCnfgFile.Write([]byte(srvcCnfgBuffer.String()))
+	_ = srvcCnfgFile.Close()
+
+	return srvcCnfgFile, globalCnfgFile
+}
+
 var rpcStatus google_rpc.Status
 
 func benchmarkAdapterManagerDispatch(b *testing.B, declarativeSrvcCnfgFilePath string, declaredGlobalCnfgFilePath string) {
@@ -236,6 +253,97 @@ func BenchmarkOneComplexAspect(b *testing.B) {
 func Benchmark50ComplexAspect(b *testing.B) {
 	sc, gsc := createYamlConfigs(srvcCnfgComplexAspect, 50)
 	benchmarkAdapterManagerDispatch(b, sc.Name(), gsc.Name())
+	_ = os.Remove(sc.Name())
+	_ = os.Remove(gsc.Name())
+}
+
+func testNewTemplateBasedNaming(t *testing.T, declarativeSrvcCnfgFilePath string, declaredGlobalCnfgFilePath string) {
+	apiPoolSize := 1024
+	adapterPoolSize := 1024
+	identityAttribute := "target.service"
+	identityDomainAttribute := "svc.cluster.local"
+	loopDelay := time.Second * 5
+	singleThreadedGoRoutinePool := false
+
+	gp := pool.NewGoroutinePool(apiPoolSize, singleThreadedGoRoutinePool)
+	gp.AddWorkers(apiPoolSize)
+	gp.AddWorkers(apiPoolSize)
+	defer gp.Close()
+
+	adapterGP := pool.NewGoroutinePool(adapterPoolSize, singleThreadedGoRoutinePool)
+	adapterGP.AddWorkers(adapterPoolSize)
+	defer adapterGP.Close()
+
+	eval, err := expr.NewCEXLEvaluator(expr.DefaultCacheSize)
+	if err != nil {
+		t.Errorf("Failed to create expression evaluator: %v", err)
+	}
+	adapterMgr := NewManager([]pkgAdapter.RegisterFn{
+		noop.Register,
+	}, aspect.Inventory(), eval, gp, adapterGP)
+	store, err := config.NewCompatFSStore(declaredGlobalCnfgFilePath, declarativeSrvcCnfgFilePath)
+	if err != nil {
+		t.Errorf("NewCompatFSStore failed: %v", err)
+		return
+	}
+
+	cnfgMgr := config.NewManager(eval, adapterMgr.AspectValidatorFinder, adapterMgr.BuilderValidatorFinder,
+		adapterMgr.SupportedKinds, store,
+		loopDelay,
+		identityAttribute, identityDomainAttribute)
+	cnfgMgr.Register(adapterMgr)
+	cnfgMgr.Start()
+
+	requestBag := attribute.GetMutableBag(nil)
+	requestBag.Set(identityAttribute, identityDomainAttribute)
+	configs, err := adapterMgr.loadConfigs(requestBag, adapterMgr.reportKindSet, false, false)
+	if err != nil {
+		t.Errorf("adapterMgr.loadConfigs failed: %v", err)
+		return
+	}
+
+	var r google_rpc.Status
+	r = adapterMgr.dispatchReport(context.Background(), configs, requestBag, attribute.GetMutableBag(nil))
+	rpcStatus = r
+	if rpcStatus.Code != 0 {
+		t.Errorf("dispatchReport benchmark test returned status code %d; expected 0", rpcStatus.Code)
+	}
+}
+
+func TestNewConfig(t *testing.T) {
+	scnfg := `
+subject: namespace:ns
+
+constructors:
+- type: mytype1
+  name: myname1
+  params:
+
+actions:
+- handler: foo
+  instances:
+  - bar1
+  - bar2
+
+rules:
+- selector: true
+  aspects:
+  - kind: metrics
+    adapter: no-op
+    params:
+      metrics:
+      - descriptorName: request_count
+        value: response.code | 100
+        labels:
+          source: source.name | target.name | source.name | target.name | "one"
+          target: source.name | target.name | source.name | "one"
+          service: target.name | api.name | target.name | "one"
+          method: api.method | target.name | api.method | target.name | "one"
+          response_code: response.code | response.code | response.code | response.code | response.code | response.code | response.code | response.code | 111
+`
+
+	sc, gsc := createNewYamlConfigs(scnfg, 1)
+	testNewTemplateBasedNaming(t, sc.Name(), gsc.Name())
 	_ = os.Remove(sc.Name())
 	_ = os.Remove(gsc.Name())
 }

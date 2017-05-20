@@ -18,6 +18,7 @@ package istio_mixer_v1_config
 type Combined struct {
 	Builder *Adapter
 	Aspect  *Aspect
+	Action  *Action
 }
 
 func (c *Combined) String() (ret string) {

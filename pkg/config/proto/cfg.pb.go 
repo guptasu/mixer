@@ -29,14 +29,14 @@ package istio_mixer_v1_config
 import proto "github.com/golang/protobuf/proto"
 import fmt "fmt"
 import math "math"
-
-import istio_mixer_v1_config_descriptor1 "istio.io/api/mixer/v1/config/descriptor"
-import istio_mixer_v1_config_descriptor2 "istio.io/api/mixer/v1/config/descriptor"
-import istio_mixer_v1_config_descriptor3 "istio.io/api/mixer/v1/config/descriptor"
-import istio_mixer_v1_config_descriptor4 "istio.io/api/mixer/v1/config/descriptor"
-import istio_mixer_v1_config_descriptor5 "istio.io/api/mixer/v1/config/descriptor"
-import istio_mixer_v1_config_descriptor "istio.io/api/mixer/v1/config/descriptor"
-import istio_mixer_v1_config_descriptor6 "istio.io/api/mixer/v1/config/descriptor"
+import google_protobuf "github.com/golang/protobuf/ptypes/struct"
+import istio_mixer_v1_config_descriptor1 "mixer/v1/config/descriptor"
+import istio_mixer_v1_config_descriptor2 "mixer/v1/config/descriptor"
+import istio_mixer_v1_config_descriptor3 "mixer/v1/config/descriptor"
+import istio_mixer_v1_config_descriptor4 "mixer/v1/config/descriptor"
+import istio_mixer_v1_config_descriptor5 "mixer/v1/config/descriptor"
+import istio_mixer_v1_config_descriptor "mixer/v1/config/descriptor"
+import istio_mixer_v1_config_descriptor6 "mixer/v1/config/descriptor"
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -146,9 +146,9 @@ func (m *Action) GetInstances() []string {
 }
 
 type Constructor struct {
-	Type   string      `protobuf:"bytes,1,opt,name=type" json:"type,omitempty"`
-	Name   string      `protobuf:"bytes,2,opt,name=name" json:"name,omitempty"`
-	Params interface{} `protobuf:"bytes,3,opt,name=params" json:"params,omitempty"`
+	Type   string                  `protobuf:"bytes,1,opt,name=type" json:"type,omitempty"`
+	Name   string                  `protobuf:"bytes,2,opt,name=name" json:"name,omitempty"`
+	Params *google_protobuf.Struct `protobuf:"bytes,3,opt,name=params" json:"params,omitempty"`
 }
 
 func (m *Constructor) Reset()                    { *m = Constructor{} }
@@ -170,7 +170,7 @@ func (m *Constructor) GetName() string {
 	return ""
 }
 
-func (m *Constructor) GetParams() interface{} {
+func (m *Constructor) GetParams() *google_protobuf.Struct {
 	if m != nil {
 		return m.Params
 	}
@@ -254,7 +254,7 @@ type Aspect struct {
 	// Mixer will use the adapter of the target kind named "default".
 	Adapter string `protobuf:"bytes,2,opt,name=adapter" json:"adapter,omitempty"`
 	// Required. Struct representation of a proto defined by each aspect kind.
-	Params interface{} `protobuf:"bytes,4,opt,name=params" json:"params,omitempty"`
+	Params *google_protobuf.Struct `protobuf:"bytes,4,opt,name=params" json:"params,omitempty"`
 }
 
 func (m *Aspect) Reset()                    { *m = Aspect{} }
@@ -276,7 +276,7 @@ func (m *Aspect) GetAdapter() string {
 	return ""
 }
 
-func (m *Aspect) GetParams() interface{} {
+func (m *Aspect) GetParams() *google_protobuf.Struct {
 	if m != nil {
 		return m.Params
 	}
@@ -312,7 +312,7 @@ type Adapter struct {
 	Impl string `protobuf:"bytes,3,opt,name=impl" json:"impl,omitempty"`
 	// Optional, depends on adapter implementation. Struct representation of a
 	// proto defined by the implementation; this varies depending on `impl`.
-	Params interface{} `protobuf:"bytes,4,opt,name=params" json:"params,omitempty"`
+	Params *google_protobuf.Struct `protobuf:"bytes,4,opt,name=params" json:"params,omitempty"`
 }
 
 func (m *Adapter) Reset()                    { *m = Adapter{} }
@@ -341,7 +341,7 @@ func (m *Adapter) GetImpl() string {
 	return ""
 }
 
-func (m *Adapter) GetParams() interface{} {
+func (m *Adapter) GetParams() *google_protobuf.Struct {
 	if m != nil {
 		return m.Params
 	}
@@ -553,7 +553,7 @@ func (m *AttributeManifest_AttributeInfo) GetValueType() istio_mixer_v1_config_d
 	if m != nil {
 		return m.ValueType
 	}
-	return istio_mixer_v1_config_descriptor.VALUE_TYPE_UNSPECIFIED
+	return istio_mixer_v1_config_descriptor.ValueType_VALUE_TYPE_UNSPECIFIED
 }
 
 // Uri represents a properly formed URI.

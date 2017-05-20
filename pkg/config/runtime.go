@@ -83,7 +83,7 @@ func (r *runtime) Resolve(bag attribute.Bag, set KindSet, strict bool) (dlist []
 		glog.Infof("resolving for kinds: %s", set)
 		defer func() { glog.Infof("resolved configs (err=%v): %s", err, dlist) }()
 	}
-	return resolve(
+	return resolveActions(
 		bag,
 		set,
 		r.rule,
@@ -105,7 +105,7 @@ func (r *runtime) ResolveUnconditional(bag attribute.Bag, set KindSet, strict bo
 		glog.Infof("unconditionally resolving for kinds: %s", set)
 		defer func() { glog.Infof("unconditionally resolved configs (err=%v): %s", err, out) }()
 	}
-	return resolve(
+	return resolveActions(
 		bag,
 		set,
 		r.rule,
@@ -178,6 +178,60 @@ func resolve(bag attribute.Bag, kindSet KindSet, rules map[rulesKey]*pb.ServiceC
 	}
 
 	return dlistout, nil
+}
+
+// resolve - the main config resolution function.
+func resolveActions(bag attribute.Bag, kindSet KindSet, rules map[rulesKey]*pb.ServiceConfig, resolveRules resolveRulesFunc,
+	onlyEmptySelectors bool, identityAttribute string, identityAttributeDomain string, strictSelectorEval bool) (dlist []*pb.Combined, err error) {
+	scopes := make([]string, 0, 10)
+
+	fmt.Println(0)
+	attr, _ := bag.Get(identityAttribute)
+
+	if attr == nil {
+		fmt.Println(1)
+		// it is ok for identity attributes to be absent
+		// during pre processing. since global scope always applies
+		// set it to that.
+		if onlyEmptySelectors {
+			scopes = []string{global}
+		} else {
+			glog.Warningf("%s attribute not found in %p", identityAttribute, bag)
+			return nil, fmt.Errorf("%s attribute not found", identityAttribute)
+		}
+	} else if scopes, err = GetScopes(attr.(string), identityAttributeDomain, scopes); err != nil {
+		return nil, err
+	}
+	fmt.Println(2)
+	dlist = make([]*pb.Combined, 0, resolveSize)
+
+	for idx := 0; idx < len(scopes); idx++ {
+		fmt.Println(3)
+		scope := scopes[idx]
+		for j := idx; j < len(scopes); j++ {
+			fmt.Println(4)
+			subject := scopes[j]
+			key := rulesKey{scope, subject}
+			rule := rules[key]
+			if rule == nil {
+				glog.V(2).Infof("no rules for %s", key)
+				continue
+				fmt.Println(5)
+			}
+
+			for _, d := range rule.GetActions() {
+				t := pb.Combined{Aspect:nil, Builder:nil, Action:d}
+				dlist = append(dlist,&t)
+				fmt.Println(6, dlist, "--", t, "++", d)
+			}
+			fmt.Println(7)
+		}
+		fmt.Println(8)
+
+	}
+	fmt.Println(9, dlist)
+
+	return dlist, nil
 }
 
 func (r *runtime) evalPredicate(selector string, bag attribute.Bag) (bool, error) {
