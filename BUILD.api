@@ -51,6 +51,9 @@ DESCRIPTOR_FILE_GROUP = [
     "mixer/v1/config/descriptor/principal_descriptor.proto",
     "mixer/v1/config/descriptor/quota_descriptor.proto",
     "mixer/v1/config/descriptor/value_type.proto",
+    "mixer/v1/config/descriptor/type_descriptor.proto",
+    "mixer/v1/config/descriptor/metric_template_descriptor.proto",
+    "mixer/v1/config/descriptor/template_variety_descriptor.proto",
 ]
 
 gogoslick_proto_library(
@@ -63,6 +66,9 @@ gogoslick_proto_library(
         "mixer/v1/config/descriptor/principal_descriptor.proto": "istio.io/api/mixer/v1/config/descriptor",
         "mixer/v1/config/descriptor/quota_descriptor.proto": "istio.io/api/mixer/v1/config/descriptor",
         "mixer/v1/config/descriptor/value_type.proto": "istio.io/api/mixer/v1/config/descriptor",
+        "mixer/v1/config/descriptor/template_variety_descriptor.proto": "istio.io/api/mixer/v1/config/descriptor",
+        "mixer/v1/config/descriptor/type_descriptor.proto": "istio.io/api/mixer/v1/config/descriptor",
+        "mixer/v1/config/descriptor/metric_template_descriptor.proto": "istio.io/api/mixer/v1/config/descriptor",
     },
     imports = [
         "../../external/com_github_google_protobuf/src",
@@ -88,6 +94,7 @@ gogoslick_proto_library(
     name = "mixer/v1/config/descriptor",
     importmap = {
         "google/protobuf/duration.proto": "github.com/gogo/protobuf/types",
+        "google/protobuf/struct.proto": "github.com/gogo/protobuf/types",
     },
     imports = [
         "../../external/com_github_google_protobuf/src",
