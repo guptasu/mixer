@@ -10,6 +10,9 @@ enum TemplateVariety {
 }
 
 extend google.protobuf.MessageOptions {
-  // See `VisibilityRule`.
   TemplateVariety template_variety = 72295727;
+}
+
+extend google.protobuf.FieldOptions {
+  bool expressed_in_constructor = 72295728;
 }

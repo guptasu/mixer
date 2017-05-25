@@ -1,7 +1,5 @@
 package listtemplate
 
-import istio_mixer_v1_config_descriptor "istio.io/api/mixer/v1/config/descriptor"
-
 /*
 
 This is the interface that adapters need to implement if they want to do check call based on the ListTemplate input.
@@ -9,34 +7,31 @@ This is the interface that adapters need to implement if they want to do check c
 For example:
 
 constructors:
-- name: MyListConstructor
-  type: MyBlacklistCheckerType
+- name: MyListCheckerConstructor
+  type: GenericListCheckerType
   params:
+    blacklist: true
     checkExpression: source.ip
 
 types:
-- name: MyBlacklistCheckerType
+- name: GenericListCheckerType
   template: ListTemplate
   params:
-    blacklist: true
-    checkExpression: STRING
-
 
 The resulting ListIntance would look like:
 
 SampleListInstance = ListIntance {
   // consider source.ip evaluated to 'foo.bar.com' during request time.
+  Blacklist = true
   CheckExpression = "foo.bar.com"
   Template = &MyListTemplate
 }
 
-The resulting ListTemplate would look like:
 MyListTemplate = ListTemplate {
-  blacklist = true
-  checkExpression = STRING
 }
 
-Those are the two objects needed to invoke the adapters.
+Those are the two objects needed to invoke the adapter's Configure and
+Process calls.
 */
 
 type ListProcessor interface {

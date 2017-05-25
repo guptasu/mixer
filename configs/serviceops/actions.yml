@@ -1,4 +1,5 @@
 actions:
 - handler: versionList
   instances:
-  - MyListConstructor
+  - MyListCheckerConstructor
+
