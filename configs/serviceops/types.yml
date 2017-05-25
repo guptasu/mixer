@@ -1,4 +1,4 @@
 types:
-- name: GenericListCheckerType
-  template: ListTemplate
+- name: global/types/GenericListCheckerType
+  template: global/template/ListTemplate
   params:
