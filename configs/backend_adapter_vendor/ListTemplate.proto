@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+//import "../mixer/TemplateVariety.proto";
+import "mixer/configs/mixer/TemplateVariety.proto";
+import "mixer/v1/config/descriptor/value_type.proto";
+
+package istio.mixer.v1.config.template;
+
+message ListTemplate {
+  option (istio.mixer.v1.config.template.template_variety) = TEMPLATE_VARIETY_CHECK;
+
+  // blacklist determines if this behaves like a blacklist
+  // default is whitelist
+  bool blacklist = 2;
+
+  // check_expression is the expression evaluated at runtime to derive the value that is checked against the list
+  ValueType check_expression = 3;
+}

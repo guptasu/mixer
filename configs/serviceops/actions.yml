@@ -1,0 +1,4 @@
+actions:
+- handler: versionList
+  instances:
+  - MyListConstructor
