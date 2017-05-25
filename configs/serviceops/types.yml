@@ -1,0 +1,6 @@
+types:
+- name: MyBlacklistCheckerType
+  template: ListTemplate
+  params:
+    blacklist: true
+    checkExpression: STRING
