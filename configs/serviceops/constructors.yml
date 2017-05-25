@@ -1,5 +1,6 @@
 constructors:
-- name: MyListConstructor
-  type: MyBlacklistCheckerType
+- name: MyListCheckerConstructor
+  type: GenericListCheckerType
   params:
+    blacklist: true
     checkExpression: source.ip

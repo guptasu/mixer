@@ -1,30 +1,23 @@
 package listtemplate
 
-import istio_mixer_v1_config_descriptor "istio.io/api/mixer/v1/config/descriptor"
-
 /*
 
 This is the struct that users will write within the type
 
 In the below types, everything under the params should match the ListTemplate struct
 
-Example : two types defined:
+Example:
 
 types:
-- name: MyBlacklistCheckerType
+- name: GenericListCheckerType
   template: ListTemplate
   params:
-    blacklist: true
-    checkExpression: STRING
-
-- name: MyWhitelistCheckerType
-  template: ListTemplate
-  params:
-    blacklist: false
-    checkExpression: STRING
 
 */
 type ListTemplate struct {
-  blacklist bool
-  checkExpression istio_mixer_v1_config_descriptor.ValueType
+  // This is empty since for ListTemplate there are :
+  // - no ValueType expressed_in_constructor fields.
+  // - no fields other than expressed_in_constructor annotated.
+  //
+  // If any of the above were true, this struct would be non empty.
 }

@@ -1,8 +1,7 @@
 syntax = "proto3";
 
 //import "../mixer/TemplateVariety.proto";
-import "mixer/configs/mixer/TemplateVariety.proto";
-import "mixer/v1/config/descriptor/value_type.proto";
+import "mixer/configs/mixer/TemplateExtensions.proto";
 
 package istio.mixer.v1.config.template;
 
@@ -11,8 +10,8 @@ message ListTemplate {
 
   // blacklist determines if this behaves like a blacklist
   // default is whitelist
-  bool blacklist = 2;
+  bool blacklist = 2 [(istio.mixer.v1.config.template.expressed_in_constructor) = true];
 
   // check_expression is the expression evaluated at runtime to derive the value that is checked against the list
-  ValueType check_expression = 3;
+  string check_expression = 3 [(istio.mixer.v1.config.template.expressed_in_constructor) = true];
 }
