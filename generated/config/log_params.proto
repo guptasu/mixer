@@ -1,0 +1,24 @@
+// We need the params the adapter defines, but we also need metadata:
+// a name, adapter name, inlined w/ adapter params. Thinking here is
+// that they give us their input params, we autogen the final config.
+
+syntax = "proto3";
+
+package istio.mixer.adapter.log;
+
+message LogParams {
+    string name = 1;
+    string adapter = 2;
+
+    // Stream is used to select between different logs output sinks.
+    enum Stream {
+        // STDERR refers to os.Stderr.
+        STDERR = 0;
+        // STDOUT refers to os.Stdout.
+        STDOUT = 1;
+    }
+
+    // Selects which standard stream to write to for log entries.
+    // STDERR is the default Stream.
+    Stream log_stream = 3;
+}

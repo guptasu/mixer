@@ -1,0 +1,1 @@
+This is what we expect the adapter author to provide. They then run the mixer codegen CLI which spits out the contents of the autogen directory.
