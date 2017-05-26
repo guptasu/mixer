@@ -1,0 +1,44 @@
+types:
+# yaml version of a log_template proto:
+- name: global/types/ApacheCommonLog-text
+  description: Apache common log template
+  template: istio.mixer.adapter.log.LogEntryTemplate # qualified proto name
+  payloadFormat: TEXT
+  logTemplate: '{{or (.originIp) "-"}} - {{or (.sourceUser) "-"}} [{{or (.timestamp.Format "02/Jan/2006:15:04:05 -0700") "-"}}] "{{or (.method) "-"}} {{or (.url) "-"}} {{or (.protocol) "-"}}" {{or (.responseCode) "-"}} {{or (.responseSize) "-"}}'
+  dimensions:
+    originIp: IP_ADDRESS
+    sourceUser: STRING
+    timestamp: TIMESTAMP
+    method: STRING
+    url: STRING
+    protocol: STRING
+    responseCode: INT64
+    responseSize: INT64
+
+constructors:
+- name: global/constructors/ApacheCommonLog-text
+  type: global/types/ApacheCommonLog-text
+  params:
+    logTemplate: # TODO: this is broken: we need a list of expressions to populate the template,
+                 # but we don't know we need to generate that in our proto definition. Not sure what
+                 # we need to do here.
+    dimensions:
+      originIp: "origin.ip"
+      sourceUser: "source.user"
+      timestamp: "request.time"
+      method: "request.method"
+      url: "request.url"
+      protocol: "request.scheme"
+      responseSize: "response.size"
+      responseCode: "response.code"
+
+handlers:
+- name: istio/mixer/example-logger
+  adapter: example-logger
+  logStream: STDOUT
+
+actions:
+- selector: true
+  handler: istio/mixer/example-logger
+  instances:
+  - global/constructors/ApacheCommonLog-text

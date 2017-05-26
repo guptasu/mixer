@@ -5,7 +5,7 @@ syntax = "proto3";
 
 package istio.mixer.adapter.log;
 
-message LogType {
+message LogConstructor {
   string name = 1;
 
   // The name of the template: istio.mixer.adapter.log.LogEntryTemplate.
