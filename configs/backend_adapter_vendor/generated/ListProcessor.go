@@ -8,14 +8,14 @@ For example:
 
 constructors:
 - name: MyListCheckerConstructor
-  type: global/types/GenericListCheckerType
+  type: GenericListCheckerType
   params:
     blacklist: true
     checkExpression: source.ip
 
 types:
-- name: global/types/GenericListCheckerType
-  template: global/template/ListTemplate
+- name: GenericListCheckerType
+  template: ListTemplate
   params:
 
 The resulting ListIntance would look like:

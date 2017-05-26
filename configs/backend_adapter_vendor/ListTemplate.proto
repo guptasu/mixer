@@ -7,7 +7,7 @@ package istio.mixer.v1.config.template;
 
 message ListTemplate {
   option (istio.mixer.v1.config.template.template_variety) = TEMPLATE_VARIETY_CHECK;
-  option (istio.mixer.v1.config.template.template_name) = "global/template/ListTemplate";
+  option (istio.mixer.v1.config.template.template_name) = "ListTemplate";
 
   // blacklist determines if this behaves like a blacklist
   // default is whitelist
@@ -20,7 +20,7 @@ message ListTemplate {
 // An alternate way to expressing same information as above via nested messages
 message AlternateListTemplate {
   option (istio.mixer.v1.config.template.template_variety) = TEMPLATE_VARIETY_CHECK;
-  option (istio.mixer.v1.config.template.template_name) = "global/template/ListTemplate";
+  option (istio.mixer.v1.config.template.template_name) = "ListTemplate";
   message TypeTemplate {
     // EMPTY, since nothing type needs to specify
   }

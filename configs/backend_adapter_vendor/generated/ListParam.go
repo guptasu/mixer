@@ -8,7 +8,7 @@ In the below constructor, everything under the params should match the ListParam
 
 constructors:
 - name: MyListCheckerConstructor
-  type: global/types/GenericListCheckerType
+  type: GenericListCheckerType
   params:
     blacklist: true
     checkExpression: source.ip
