@@ -1,6 +1,6 @@
 constructors:
 - name: MyListCheckerConstructor
-  type: global/types/GenericListCheckerType
+  type: GenericListCheckerType
   params:
     blacklist: true
     checkExpression: source.ip

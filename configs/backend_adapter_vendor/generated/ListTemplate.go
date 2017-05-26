@@ -9,13 +9,13 @@ In the below types, everything under the params should match the ListTemplate st
 Example:
 
 types:
-- name: global/types/GenericListCheckerType
-  template: global/template/ListTemplate
+- name: GenericListCheckerType
+  template: ListTemplate
   params:
 
 */
 type ListTemplate struct {
-  // This is empty since for global/template/ListTemplate there are :
+  // This is empty since for ListTemplate there are :
   // - no ValueType expressed_in_constructor fields.
   // - no fields other than expressed_in_constructor annotated.
   //
