@@ -1,0 +1,5 @@
+handlers:
+- name: "prometheus.io/istio/handler"
+  adapter: "prometheus"
+  mixerPort: 42422
+  metricsPath: "/metrics"

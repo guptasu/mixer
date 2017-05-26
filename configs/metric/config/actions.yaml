@@ -1,0 +1,7 @@
+actions:
+- selector: *
+  handler: prometheus.io/istio/handler
+  instances_from:
+  - global/constructors/request_count
+  - global/constructors/response_duration
+  - global/constructors/response_size
