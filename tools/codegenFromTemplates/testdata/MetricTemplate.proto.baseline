@@ -1,3 +1,4 @@
+********* MyMetric.Proto *********
 // Copyright 2017 Istio Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,3 +25,5 @@ import "google/protobuf/any.proto";
 message MetricTemplateParam {
   string typeName = 1;
 }
+********* END - MyMetric.Proto *********
+
