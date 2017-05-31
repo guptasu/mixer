@@ -1,0 +1,55 @@
+syntax = "proto3";
+
+package foo.bar.mymetric;
+
+import "mixer/pkg/templates/TemplateExtensions.proto";
+import "mixer/v1/config/descriptor/value_type.proto";
+import "google/protobuf/struct.proto";
+
+option (mixer.v1.config.template.template_variety) = TEMPLATE_VARIETY_REPORT;
+
+option (mixer.v1.config.template.template_name) = "Metric";
+
+message Type {
+    istio.mixer.v1.config.descriptor.ValueType value = 1;
+    map<string, istio.mixer.v1.config.descriptor.ValueType> dimensions = 2;
+    string description = 3;
+    Kind kind = 4;
+}
+
+message Constructor {
+    string value = 1 [(mixer.v1.config.template.is_expr) = true];
+    // This implies that values of the map are going to be expressions.
+    map<string, string> dimensions = 2 [(mixer.v1.config.template.is_expr) = true];
+}
+
+enum Kind {
+    METRIC_KIND_UNSPECIFIED = 0;
+    GAUGE = 1;
+    COUNTER = 2;
+    DISTRIBUTION = 3;
+}
+
+message LinearBuckets {
+    int32 num_finite_buckets = 1;
+    double width = 2;
+    double offset = 3;
+}
+
+message ExponentialBuckets {
+    int32 num_finite_buckets = 1;
+    double growth_factor = 2;
+    double scale = 3;
+}
+
+message ExplicitBuckets {
+    repeated double bounds = 1;
+}
+
+message BucketsDefinition {
+    oneof definition {
+        LinearBuckets linear_buckets = 1;
+        ExponentialBuckets exponential_buckets = 2;
+        ExplicitBuckets explicit_buckets = 3;
+    }
+}
