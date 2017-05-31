@@ -1,9 +1,9 @@
 package main
 
 import (
-	"fmt"
 	"text/template"
 	"os"
+	"path"
 )
 
 type Generator struct {
@@ -15,15 +15,16 @@ type Data struct {
 }
 
 func (g *Generator) generate(args []string) error {
-	fmt.Println(args)
-	fmt.Println("output dir is: ", g.outputDirFullPath)
 	// TODO : Embed these files as resources.
 	tmpl, err := template.New("TemplateToProto.tmpl.proto").ParseFiles("TemplateToProto.tmpl.proto")
 	if err != nil {
 		panic(err)
 	}
-
-	err = tmpl.Execute(os.Stdout, Data{TypeMessageName:"MetricTemplateParam"})
+	file,err := os.Create(path.Join(g.outputDirFullPath, "SAMPLEGENERATED.proto"))
+	if err != nil {
+		panic(err)
+	}
+	err = tmpl.Execute(file, Data{TypeMessageName:"MetricTemplateParam"})
 	if err != nil { panic(err) }
 
 	return nil
