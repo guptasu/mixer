@@ -188,10 +188,12 @@ const (
 	rules       = "rules"
 	adapters    = "adapters"
 	handlers    = "handlers"
+	types       = "types"
 	descriptors = "descriptors"
 
 	keyAdapters            = "/scopes/global/adapters"
 	keyHandlers            = "/scopes/global/handlers"
+	keyTypes            = "/scopes/global/types"
 	keyDescriptors         = "/scopes/global/descriptors"
 	keyGlobalServiceConfig = "/scopes/global/subjects/global/rules"
 )
@@ -320,7 +322,7 @@ func (p *validator) validateAdapters(key string, cfg string) (ce *adapter.Config
 	return
 }
 
-func (p *validator) validateHandlers(key string, cfg string) (ce *adapter.ConfigErrors) {
+func (p *validator) validateHandlers(key string, cfg string, dispatcher *typeConfigDispatcher) (ce *adapter.ConfigErrors) {
 	var ferr error
 	var data []byte
 
@@ -346,8 +348,12 @@ func (p *validator) validateHandlers(key string, cfg string) (ce *adapter.Config
 		}
 		// ignore bool arg since it has to succeed as the last
 		// step succeeded.
+
 		handler,_ := p.handlerFinder(hh.Adapter)
 		handler.Configure(acfg)
+		// Configure handler for all available types
+		//configureTypes(handler, m.GetTypes())
+		dispatcher.configureTypes(handler)
 
 		hh.Params = acfg
 		//// check which kinds aa.Impl provides
@@ -431,6 +437,8 @@ func classifyKeys(cfg map[string]string) map[string][]string {
 			k = adapters
 		case handlers:
 			k = handlers
+		case types:
+			k = types
 		case descriptors:
 			k = descriptors
 		default:
@@ -454,6 +462,18 @@ func descriptorKey(scope string) string {
 func (p *validator) validate(cfg map[string]string) (rt *Validated, ce *adapter.ConfigErrors) {
 	keymap := classifyKeys(cfg)
 
+	d, err := CreateTypeConfigDispatcher()
+	if err != nil {
+		panic ("TODO, validation of types")
+	}
+
+	for _, tt := range keymap[types] {
+		types, _ := p.getTypes(tt, cfg[tt])
+		if re := d.appendTypes(types); re != nil {
+			return rt, ce.Appendf("config of types failed", "failed validation")
+		}
+	}
+
 	for _, kk := range keymap[descriptors] {
 		if re := p.validateDescriptors(kk, cfg[kk]); re != nil {
 			return rt, ce.Appendf("descriptorConfig", "failed validation").Extend(re)
@@ -467,7 +487,7 @@ func (p *validator) validate(cfg map[string]string) (rt *Validated, ce *adapter.
 	}
 
 	for _, kk := range keymap[handlers] {
-		if re := p.validateHandlers(kk, cfg[kk]); re != nil {
+		if re := p.validateHandlers(kk, cfg[kk], d); re != nil {
 			return rt, ce.Appendf("handlerConfig", "failed validation").Extend(re)
 		}
 	}
@@ -484,6 +504,24 @@ func (p *validator) validate(cfg map[string]string) (rt *Validated, ce *adapter.
 		}
 	}
 	return p.validated, nil
+}
+
+func (p *validator) getTypes(key string, cfg string) (types []*pb.Type, ce *adapter.ConfigErrors) {
+	var ferr error
+	var data []byte
+
+	if data, _, ferr = compatfilterConfig(cfg, func(s string) bool {
+		return s == "types"
+	}); ferr != nil {
+		return nil, ce.Appendf("types", "failed to unmarshal config into proto with err: %v", ferr)
+	}
+
+	var m= &pb.GlobalConfig{}
+	if err := yaml.Unmarshal(data, m); err != nil {
+		return nil, ce.Appendf("adapterConfig", "failed to unmarshal config into proto: %v", err)
+	}
+
+	return m.GetTypes(), nil;
 }
 
 // ValidateServiceConfig validates service config.

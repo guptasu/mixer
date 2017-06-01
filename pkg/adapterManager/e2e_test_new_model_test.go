@@ -61,6 +61,16 @@ manifests:
 handlers:
   - name: mygRPCAdapter
     adapter: grpcAdapter
+
+types:
+  - name: myMetricTypeReqCount
+    template: foo.bar.mymetric.MyMetric
+    params:
+      kind: 3
+      value: 2
+      dimensions:
+        source: 1
+        target: 1
 `
 
 	srvcCnfgConstInitialSection_2 = `

@@ -55,10 +55,10 @@ func (builder) DefaultConfig() proto.Message { return &types.Empty{} }
 
 /////////// ALL THE BELOW CODE IS GENERATED FROM TEMPLATES //////////////////
 func (builder) ConfigureMyMetric(typeParams map[string]foo_bar_mymetric.Type) {
-	fmt.Println("ConfigureMyMetric called")
+	fmt.Println("ConfigureMyMetric called with", typeParams)
 }
 func (builder) ProcessMyMetric(instances []foo_bar_mymetric.Instance) {
-	fmt.Println("ProcessMyMetric called")
+	fmt.Println("ProcessMyMetric called with", instances)
 }
 
 // Register registers the no-op adapter as every aspect.
