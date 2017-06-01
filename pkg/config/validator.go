@@ -128,7 +128,8 @@ type (
 	// It has been validated as internally consistent and correct.
 	Validated struct {
 		adapterByName map[adapterKey]*pb.Adapter
-		handlerByName map[string]*pb.Handler
+		handlerByName map[string]config.Handler
+		typesToTemplate map[string]string
 		// descriptors and adapters are only allowed in global scope
 		adapter    map[string]*pb.GlobalConfig
 		handler    map[string]*pb.GlobalConfig
@@ -155,7 +156,7 @@ func (v *Validated) Clone() *Validated {
 		aa[k] = a
 	}
 
-	hh := map[string]*pb.Handler{}
+	hh := map[string]config.Handler{}
 	for k, a := range v.handlerByName {
 		hh[k] = a
 	}
@@ -340,7 +341,8 @@ func (p *validator) validateHandlers(key string, cfg string, dispatcher *typeCon
 	var acfg proto.Message
 	var err *adapter.ConfigErrors
 	// FIXME update this when we start supporting adapters defined in multiple scopes
-	p.validated.handlerByName = make(map[string]*pb.Handler)
+	p.validated.handlerByName = make(map[string]config.Handler)
+
 	for _, hh := range m.GetHandlers() {
 		if acfg, err = convertHandlerParams(p.handlerFinder, hh.Adapter, hh.Params, p.strict); err != nil {
 			ce = ce.Appendf("Adapter: "+hh.Adapter, "failed to convert aspect params to proto: %v", err)
@@ -350,6 +352,7 @@ func (p *validator) validateHandlers(key string, cfg string, dispatcher *typeCon
 		// step succeeded.
 
 		handler,_ := p.handlerFinder(hh.Adapter)
+		p.validated.handlerByName[hh.Adapter] = handler
 		handler.Configure(acfg)
 		// Configure handler for all available types
 		//configureTypes(handler, m.GetTypes())
@@ -503,6 +506,8 @@ func (p *validator) validate(cfg map[string]string) (rt *Validated, ce *adapter.
 			return rt, ce.Appendf("serviceConfig", "failed validation").Extend(re)
 		}
 	}
+
+	p.validated.typesToTemplate = d.GetTypeToTemplateMapping()
 	return p.validated, nil
 }
 

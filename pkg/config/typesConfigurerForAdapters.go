@@ -35,6 +35,16 @@ func (t *typeConfigDispatcher) appendTypes(types []*pb.Type) error {
 	return nil
 }
 
+func (t *typeConfigDispatcher) GetTypeToTemplateMapping() map[string]string {
+	allTypesToTemplate := make(map[string]string)
+	for templateName, types := range t.templateToTypes {
+		for k,_ := range types {
+			allTypesToTemplate[k] = templateName
+		}
+	}
+	return allTypesToTemplate
+}
+
 func CreateTypeConfigDispatcher() (*typeConfigDispatcher, error) {
 	templateToTypes := make(map[string]map[string]interface{})
 	return &typeConfigDispatcher{templateToTypes: templateToTypes}, nil

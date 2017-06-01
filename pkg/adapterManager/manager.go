@@ -153,6 +153,13 @@ func (m *Manager) Check(ctx context.Context, requestBag, responseBag *attribute.
 }
 
 func (m *Manager) dispatchReport(ctx context.Context, configs []*cpb.Combined, requestBag, responseBag *attribute.MutableBag) rpc.Status {
+	// HACK for POC
+
+	for _, config := range configs {
+		rd := CreateRuntimeInstanceDispatcher(config.TypesToTemplate, config.Constructors)
+		rd.DispatchToHandler([]*cpb.Action{config.Action})
+	}
+
 	return m.dispatch(ctx, requestBag, responseBag, configs,
 		func(executor aspect.Executor, evaluator expr.Evaluator, requestBag, responseBag *attribute.MutableBag) rpc.Status {
 			rw := executor.(aspect.ReportExecutor)
@@ -167,6 +174,7 @@ func (m *Manager) Report(ctx context.Context, requestBag, responseBag *attribute
 		glog.Error(err)
 		return status.WithError(err)
 	}
+
 	return m.dispatchReport(ctx, configs, requestBag, responseBag)
 }
 

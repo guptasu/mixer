@@ -56,25 +56,26 @@ func GetDispatchMethod(templateName string) (wrappertypes.InstanceToReportFnDisp
 	} else {
 		panic("should not happen as config should be already valid")
 	}
-	// return allReportCalls, allCheckCalls
 }
 
 //////////////////////////// GENERATED FROM MYMETRIC TEMPLATE //////////////////////////////////////////////
-
 func dispatchMyMetricInstance(handler adapter_cnfg.Handler, vals []*wrappertypes.InstanceMakerInfo) interface{} {
 	fmt.Println(vals)
-	myMetricInstances := make([]mymetric.Instance, 0)
-	for _, m := range vals {
-		myMetricInstances = append(myMetricInstances, constructMyMetricInstance(m))
-	}
-	handler.(mymetric.MyMetricProcessor).ProcessMyMetric(myMetricInstances)
+
+	fmt.Println("about to call handler with instance", handler, vals)
+	//handler.(mymetric.MyMetricProcessor).ProcessMyMetric(constructMyMetricInstance(vals))
 	return nil
 }
 
-func constructMyMetricInstance(instanceMakerInfe *wrappertypes.InstanceMakerInfo) mymetric.Instance {
-	////////////
-	// TODO add all the expression evaluation and construction of metricInstance.
-	///////////
-	metricInstance := mymetric.Instance{TypeName: "instantiating this type"}
-	return metricInstance
+func constructMyMetricInstance(instanceMakers []*wrappertypes.InstanceMakerInfo) []mymetric.Instance {
+	myMetricInstances := make([]mymetric.Instance, 0)
+	for _, _ = range instanceMakers {
+		////////////
+		// TODO add all the expression evaluation and construction of metricInstance.
+		///////////
+		//params.
+		metricInstance := mymetric.Instance{TypeName: "instantiating this type"}
+		myMetricInstances = append(myMetricInstances, metricInstance)
+	}
+	return myMetricInstances
 }

@@ -15,7 +15,7 @@
 package adapterManager
 
 import (
-	"istio.io/api/mixer/v1/config"
+	"istio.io/mixer/pkg/config/proto"
 	"istio.io/mixer/pkg/adapterManager/wrappertypes"
 	inst_dispatcher "istio.io/mixer/pkg/adapterManager/generated"
 )
@@ -27,13 +27,9 @@ type RuntimeInstanceDispatcher struct {
 
 // Should be instantiated during config time.
 func CreateRuntimeInstanceDispatcher(
-	types []istio_mixer_v1_config.Type,
-	constructors []istio_mixer_v1_config.Constructor) {
+	typeToTmplt map[string]string,
+	constructors []*istio_mixer_v1_config.Constructor) *RuntimeInstanceDispatcher {
 
-	typeToTmplt := make(map[string]string)
-	for _, typ := range types {
-		typeToTmplt[typ.Name] = typ.Template
-	}
 
 	result := make(map[string]*wrappertypes.InstanceMakerInfo)
 
@@ -47,13 +43,10 @@ func CreateRuntimeInstanceDispatcher(
 			TemplateName:     templateName,     // Template is needed to group the instances before passing to Adapters
 		}
 	}
+	return &RuntimeInstanceDispatcher{constructors: result}
 }
 
-func (r *RuntimeInstanceDispatcher) getTemplate(instName string) string {
-	return r.constructors[instName].TemplateName
-}
-
-func (r *RuntimeInstanceDispatcher) dispatchToHandler(actions []istio_mixer_v1_config.Action) {
+func (r *RuntimeInstanceDispatcher) DispatchToHandler(actions []*istio_mixer_v1_config.Action) {
 	// TODO add go routines here to fan out.
 
 	for _, action := range actions {
@@ -84,6 +77,6 @@ func (r *RuntimeInstanceDispatcher) getConstructorsGroupedPerTemplate(instanceNa
 	return constGroupsPerTemplate
 }
 
-func (r *RuntimeInstanceDispatcher) evaluateConstructorParams(params interface{}) interface{} {
-	return nil
+func (r *RuntimeInstanceDispatcher) getTemplate(instName string) string {
+	return r.constructors[instName].TemplateName
 }

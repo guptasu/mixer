@@ -14,11 +14,18 @@
 
 package istio_mixer_v1_config
 
+import (
+	"istio.io/mixer/pkg/adapter/config"
+)
+
 // Combined config is given to aspect managers.
 type Combined struct {
-	Builder *Adapter
-	Aspect  *Aspect
-	Action  *Action
+	Builder        *Adapter
+	Aspect         *Aspect
+	Action         *Action
+	TypesToTemplate          map[string]string
+	HandlersByName map[string] config.Handler
+	Constructors   []*Constructor
 }
 
 func (c *Combined) String() (ret string) {

@@ -97,7 +97,7 @@ func (r *runtime) Resolve(bag attribute.Bag, set KindSet, strict bool) (dlist []
 	fmt.Println("*****")
 	fmt.Println(r.rule[rulesKey{Scope: "global", Subject: "global"}].ActionRules)
 	a := r.rule[rulesKey{Scope: "global", Subject: "global"}].ActionRules[0].Actions[0]
-	c = append(c, &pb.Combined{Action:a})
+	c = append(c, &pb.Combined{Action: a, Constructors: r.rule[rulesKey{Scope: "global", Subject: "global"}].GetConstructors(), HandlersByName: r.handlerByName, TypesToTemplate:r.typesToTemplate})
 	return c, err
 }
 
