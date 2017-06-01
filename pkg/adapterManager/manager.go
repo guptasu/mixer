@@ -63,7 +63,6 @@ type Manager struct {
 	managers          [config.NumKinds]aspect.Manager
 	mapper            expr.Evaluator
 	builders          builderFinder
-	builders2          builderFinder
 	checkKindSet      config.KindSet
 	reportKindSet     config.KindSet
 	quotaKindSet      config.KindSet
@@ -96,15 +95,14 @@ type builderFinder interface {
 func NewManager(builders []adapter.RegisterFn, builders2 []adapter.RegisterFn2, inventory aspect.ManagerInventory,
 	exp expr.Evaluator, gp *pool.GoroutinePool, adapterGP *pool.GoroutinePool) *Manager {
 	mm := Aspects(inventory)
-	return newManager(newRegistry(builders), newRegistry2(builders2), mm, exp, inventory, gp, adapterGP)
+	return newManager(newRegistry(builders, builders2), mm, exp, inventory, gp, adapterGP)
 }
 
-func newManager(r builderFinder, r2 builderFinder, m [config.NumKinds]aspect.Manager, exp expr.Evaluator,
+func newManager(r builderFinder, m [config.NumKinds]aspect.Manager, exp expr.Evaluator,
 	inventory aspect.ManagerInventory, gp *pool.GoroutinePool, adapterGP *pool.GoroutinePool) *Manager {
 
 	mg := &Manager{
 		builders:      r,
-		builders2:      r2,
 		managers:      m,
 		mapper:        exp,
 		executorCache: make(map[cacheKey]aspect.Executor),
@@ -481,7 +479,7 @@ func (m *Manager) BuilderValidatorFinder(name string) (adapter.ConfigValidator, 
 }
 
 func (m *Manager) HandlerFinder(name string) (adptCnfg.Handler, bool) {
-	return m.builders2.FindHandler(name)
+	return m.builders.FindHandler(name)
 }
 
 // SupportedKinds returns the set of aspect kinds supported by the builder

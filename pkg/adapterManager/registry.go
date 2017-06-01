@@ -48,12 +48,20 @@ type registry struct {
 }
 
 // newRegistry returns a new Builder registry.
-func newRegistry(builders []adapter.RegisterFn) *registry {
+func newRegistry(builders []adapter.RegisterFn, builders2 []adapter.RegisterFn2) *registry {
 	r := &registry{make(BuildersByName), make(map[string]*adpCnfg.Handler)}
 	for idx, builder := range builders {
 		glog.V(3).Infof("Registering [%d] %#v", idx, builder)
 		builder(r)
 	}
+
+	if builders2 != nil {
+		for idx, builder := range builders2 {
+			glog.V(3).Infof("Registering [%d] %#v", idx, builder)
+			builder(r)
+		}
+	}
+
 	// ensure interfaces are satisfied.
 	// should be compiled out.
 	var _ adapter.Registrar = r
@@ -61,22 +69,9 @@ func newRegistry(builders []adapter.RegisterFn) *registry {
 	return r
 }
 
-func newRegistry2(builders []adapter.RegisterFn2) *registry {
-	r := &registry{make(BuildersByName), make(map[string]*adpCnfg.Handler)}
-	for idx, builder := range builders {
-		glog.V(3).Infof("Registering [%d] %#v", idx, builder)
-		builder(r)
-	}
-	// ensure interfaces are satisfied.
-	// should be compiled out.
-	var _ adapter.Registrar2 = r
-	var _ builderFinder = r
-	return r
-}
-
 // BuilderMap returns the known builders, indexed by kind.
 func BuilderMap(builders []adapter.RegisterFn) BuildersByName {
-	return newRegistry(builders).builders
+	return newRegistry(builders, nil).builders
 }
 
 // FindBuilder finds builder by name.
