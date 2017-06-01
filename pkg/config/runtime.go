@@ -95,8 +95,9 @@ func (r *runtime) Resolve(bag attribute.Bag, set KindSet, strict bool) (dlist []
 		r.identityAttributeDomain,
 		strict)
 	fmt.Println("*****")
-	fmt.Println(r)
-
+	fmt.Println(r.rule[rulesKey{Scope: "global", Subject: "global"}].ActionRules)
+	a := r.rule[rulesKey{Scope: "global", Subject: "global"}].ActionRules[0].Actions[0]
+	c = append(c, &pb.Combined{Action:a})
 	return c, err
 }
 
