@@ -147,13 +147,13 @@ func (e *applicationLogsExecutor) Execute(attrs attribute.Bag, mapper expr.Evalu
 	var entries []adapter.LogEntry
 
 	for name, md := range e.metadata {
-		labels, err := evalAll(md.labels, attrs, mapper)
+		labels, err := EvalAll(md.labels, attrs, mapper)
 		if err != nil {
 			result = multierror.Append(result, fmt.Errorf("failed to eval labels for log entry '%s': %v", name, err))
 			continue
 		}
 
-		templateVals, err := evalAll(md.tmplExprs, attrs, mapper)
+		templateVals, err := EvalAll(md.tmplExprs, attrs, mapper)
 		if err != nil {
 			result = multierror.Append(result, fmt.Errorf("failed to eval template values for log entry '%s': %v", name, err))
 			continue

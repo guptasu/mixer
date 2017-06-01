@@ -128,7 +128,7 @@ func (w *quotasExecutor) Execute(attrs attribute.Bag, mapper expr.Evaluator, qma
 		return status.WithInvalidArgument(msg), nil
 	}
 
-	labels, err := evalAll(info.labels, attrs, mapper)
+	labels, err := EvalAll(info.labels, attrs, mapper)
 	if err != nil {
 		msg := fmt.Sprintf("Unable to evaluate labels for quota '%s': %v", qma.Quota, err)
 		glog.Error(msg)

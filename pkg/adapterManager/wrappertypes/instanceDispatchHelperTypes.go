@@ -14,11 +14,14 @@
 
 package wrappertypes
 
-import "istio.io/mixer/pkg/adapter/config"
+import (
+	"istio.io/mixer/pkg/adapter/config"
+	"istio.io/mixer/pkg/attribute"
+)
 
 // TODO: the two types should be different.
-type InstanceToReportFnDispatcher func(handler config.Handler, instanceMakers []*InstanceMakerInfo) interface{}
-type InstanceToCheckFnDispatcher func(handler config.Handler, instanceMakers []*InstanceMakerInfo) interface{}
+type InstanceToReportFnDispatcher func(handler config.Handler, instanceMakers []*InstanceMakerInfo, reqBag *attribute.MutableBag) interface{}
+type InstanceToCheckFnDispatcher func(handler config.Handler, instanceMakers []*InstanceMakerInfo, reqBag *attribute.MutableBag) interface{}
 
 type InstanceMakerInfo struct {
 	TypeName         string

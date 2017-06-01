@@ -156,15 +156,16 @@ func (m *Manager) dispatchReport(ctx context.Context, configs []*cpb.Combined, r
 	// HACK for POC
 
 	for _, config := range configs {
-		rd := CreateRuntimeInstanceDispatcher(config.TypesToTemplate, config.Constructors)
-		rd.DispatchToHandler([]*cpb.Action{config.Action})
+		rd := CreateRuntimeInstanceDispatcher(config.TypesToTemplate, config.Constructors, config.HandlersByName)
+		rd.DispatchToHandler([]*cpb.Action{config.Action}, requestBag)
 	}
 
-	return m.dispatch(ctx, requestBag, responseBag, configs,
-		func(executor aspect.Executor, evaluator expr.Evaluator, requestBag, responseBag *attribute.MutableBag) rpc.Status {
-			rw := executor.(aspect.ReportExecutor)
-			return rw.Execute(requestBag, evaluator)
-		})
+	return rpc.Status{}
+	//return m.dispatch(ctx, requestBag, responseBag, configs,
+	//	func(executor aspect.Executor, evaluator expr.Evaluator, requestBag, responseBag *attribute.MutableBag) rpc.Status {
+	//		rw := executor.(aspect.ReportExecutor)
+	//		return rw.Execute(requestBag, evaluator)
+	//	})
 }
 
 // Report dispatches to the set of aspects associated with the Report API method

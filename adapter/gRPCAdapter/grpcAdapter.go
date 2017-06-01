@@ -33,7 +33,7 @@ func (Adapter) ProcessMetric(instances []metric.Instance) {
 	fmt.Println("ConfigureMetricCalled with", instances)
 }
 
-func (builder) Name() string        { return "grpcAdapter" }
+func (builder) Name() string        { return "mygRPCAdapter" }
 func (builder) Description() string { return "an adapter that does nothing" }
 func (builder) Close() error        { return nil }
 

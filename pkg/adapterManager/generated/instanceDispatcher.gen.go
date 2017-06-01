@@ -18,10 +18,19 @@
 package adapterManager
 
 import (
-	"fmt"
 	adapter_cnfg "istio.io/mixer/pkg/adapter/config"
 	"istio.io/mixer/pkg/adapterManager/wrappertypes"
+	//"istio.io/mixer/pkg/expr"
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"github.com/gogo/protobuf/jsonpb"
+	"github.com/golang/protobuf/proto"
+	"istio.io/mixer/pkg/attribute"
 	"istio.io/mixer/pkg/templates/mymetric/generated"
+	"istio.io/mixer/pkg/templates/mymetric/generated/config"
+	"istio.io/mixer/pkg/expr"
+	"istio.io/mixer/pkg/aspect"
 )
 
 // TODO: use correc type for kind
@@ -59,23 +68,41 @@ func GetDispatchMethod(templateName string) (wrappertypes.InstanceToReportFnDisp
 }
 
 //////////////////////////// GENERATED FROM MYMETRIC TEMPLATE //////////////////////////////////////////////
-func dispatchMyMetricInstance(handler adapter_cnfg.Handler, vals []*wrappertypes.InstanceMakerInfo) interface{} {
-	fmt.Println(vals)
-
-	fmt.Println("about to call handler with instance", handler, vals)
-	//handler.(mymetric.MyMetricProcessor).ProcessMyMetric(constructMyMetricInstance(vals))
+func dispatchMyMetricInstance(handler adapter_cnfg.Handler, vals []*wrappertypes.InstanceMakerInfo, reqBag *attribute.MutableBag) interface{} {
+	//_ = constructMyMetricInstance(vals)
+	handler.(mymetric.MyMetricProcessor).ProcessMyMetric(constructMyMetricInstance(vals, reqBag))
 	return nil
 }
 
-func constructMyMetricInstance(instanceMakers []*wrappertypes.InstanceMakerInfo) []mymetric.Instance {
+func constructMyMetricInstance(instanceMakers []*wrappertypes.InstanceMakerInfo, reqBag *attribute.MutableBag) []mymetric.Instance {
 	myMetricInstances := make([]mymetric.Instance, 0)
-	for _, _ = range instanceMakers {
-		////////////
-		// TODO add all the expression evaluation and construction of metricInstance.
-		///////////
-		//params.
-		metricInstance := mymetric.Instance{TypeName: "instantiating this type"}
+	for _, instanceMaker := range instanceMakers {
+		data := &foo_bar_mymetric.Constructor{}
+		err := decode(instanceMaker.Params, data, false)
+		if err != nil {
+			panic(err)
+		}
+		ex, _ := expr.NewCEXLEvaluator(expr.DefaultCacheSize)
+		v, _ := ex.Eval(data.Value, reqBag)
+		//if err != nil {
+		//	panic(err)
+		//}
+		dimensions,_ := aspect.EvalAll(data.Dimensions, reqBag, ex)
+		metricInstance := mymetric.Instance{TypeName: instanceMaker.TypeName, Value: v, Dimensions:dimensions}
 		myMetricInstances = append(myMetricInstances, metricInstance)
 	}
 	return myMetricInstances
+}
+
+func decode(src interface{}, dst proto.Message, strict bool) error {
+	ba, err := json.Marshal(src)
+	if err != nil {
+		return fmt.Errorf("failed to marshal config into json: %v", err)
+	}
+	um := jsonpb.Unmarshaler{AllowUnknownFields: !strict}
+	if err := um.Unmarshal(bytes.NewReader(ba), dst); err != nil {
+		b2, _ := json.Marshal(dst)
+		return fmt.Errorf("failed to unmarshal config <%s> into proto: %v %s", string(ba), err, string(b2))
+	}
+	return nil
 }

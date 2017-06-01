@@ -18,17 +18,20 @@ import (
 	"istio.io/mixer/pkg/config/proto"
 	"istio.io/mixer/pkg/adapterManager/wrappertypes"
 	inst_dispatcher "istio.io/mixer/pkg/adapterManager/generated"
+	"istio.io/mixer/pkg/adapter/config"
+	"istio.io/mixer/pkg/attribute"
 )
 
 
 type RuntimeInstanceDispatcher struct {
 	constructors map[string]*wrappertypes.InstanceMakerInfo
+	handlers map[string]config.Handler
 }
 
 // Should be instantiated during config time.
 func CreateRuntimeInstanceDispatcher(
 	typeToTmplt map[string]string,
-	constructors []*istio_mixer_v1_config.Constructor) *RuntimeInstanceDispatcher {
+	constructors []*istio_mixer_v1_config.Constructor, handlers map[string]config.Handler) *RuntimeInstanceDispatcher {
 
 
 	result := make(map[string]*wrappertypes.InstanceMakerInfo)
@@ -43,10 +46,10 @@ func CreateRuntimeInstanceDispatcher(
 			TemplateName:     templateName,     // Template is needed to group the instances before passing to Adapters
 		}
 	}
-	return &RuntimeInstanceDispatcher{constructors: result}
+	return &RuntimeInstanceDispatcher{constructors: result, handlers:handlers}
 }
 
-func (r *RuntimeInstanceDispatcher) DispatchToHandler(actions []*istio_mixer_v1_config.Action) {
+func (r *RuntimeInstanceDispatcher) DispatchToHandler(actions []*istio_mixer_v1_config.Action, reqBag *attribute.MutableBag) {
 	// TODO add go routines here to fan out.
 
 	for _, action := range actions {
@@ -54,11 +57,11 @@ func (r *RuntimeInstanceDispatcher) DispatchToHandler(actions []*istio_mixer_v1_
 		constructorsGroupedPerTemplate := r.getConstructorsGroupedPerTemplate(action.Instances)
 
 		for templateName, instanceMakerInfos := range constructorsGroupedPerTemplate {
-			c,r := inst_dispatcher.GetDispatchMethod(templateName)
-			if c != nil {
-				c(nil, instanceMakerInfos)
+			rpt,chk:= inst_dispatcher.GetDispatchMethod(templateName)
+			if chk != nil {
+				chk(r.handlers[action.Handler], instanceMakerInfos, reqBag)
 			}else {
-				r(nil, instanceMakerInfos)
+				rpt(r.handlers[action.Handler], instanceMakerInfos, reqBag)
 			}
 		}
 	}

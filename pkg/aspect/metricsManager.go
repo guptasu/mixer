@@ -114,7 +114,7 @@ func (w *metricsExecutor) Execute(attrs attribute.Bag, mapper expr.Evaluator) rp
 			result = multierror.Append(result, fmt.Errorf("failed to eval metric value for metric '%s': %v", name, err))
 			continue
 		}
-		labels, err := evalAll(md.labels, attrs, mapper)
+		labels, err := EvalAll(md.labels, attrs, mapper)
 		if err != nil {
 			result = multierror.Append(result, fmt.Errorf("failed to eval labels for metric '%s': %v", name, err))
 			continue

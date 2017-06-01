@@ -52,7 +52,7 @@ func TestEvalAll(t *testing.T) {
 
 	for idx, tt := range tests {
 		t.Run(fmt.Sprintf("[%d] %s", idx, tt.name), func(t *testing.T) {
-			out, err := evalAll(tt.exprs, bag, eval)
+			out, err := EvalAll(tt.exprs, bag, eval)
 			if err != nil {
 				if tt.err == "" {
 					t.Errorf("ValidateConfig(tt.cfg, tt.v, tt.df) = '%s', wanted no err", err.Error())

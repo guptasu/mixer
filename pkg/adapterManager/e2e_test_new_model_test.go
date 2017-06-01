@@ -60,7 +60,7 @@ manifests:
 
 handlers:
   - name: mygRPCAdapter
-    adapter: grpcAdapter
+    adapter: mygRPCAdapter
 
 types:
   - name: myMetricTypeReqCount
@@ -156,6 +156,8 @@ func benchmarkAdapterManagerDispatch_2(t *testing.T, declarativeSrvcCnfgFilePath
 
 	requestBag := attribute.GetMutableBag(nil)
 	requestBag.Set(identityAttribute, identityDomainAttribute)
+	requestBag.Set("response.code", 200)
+	requestBag.Set("source.name", "mysourcename")
 	configs, err := adapterMgr.loadConfigs(requestBag, adapterMgr.reportKindSet, false, false)
 	if err != nil {
 		t.Errorf("adapterMgr.loadConfigs failed: %v", err)

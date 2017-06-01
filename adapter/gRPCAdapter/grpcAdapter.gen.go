@@ -26,12 +26,12 @@ import (
 
 /////////// ALL THE BELOW CODE IS GENERATED FROM TEMPLATES //////////////////
 func (builder) ConfigureMyMetric(typeParams map[string]foo_bar_mymetric.Type) {
-	fmt.Println("ConfigureMyMetric called with", typeParams)
+	fmt.Println("ConfigureMyMetric in gRPC Adapter called with", typeParams)
 }
 
 
 func (builder) ProcessMyMetric(instances []mymetric.Instance) {
-	fmt.Println("ProcessMyMetric called with", instances)
+	fmt.Println("ProcessMyMetric in gRPC Adapter called with", instances)
 }
 
 // Register registers the no-op adapter as every aspect.

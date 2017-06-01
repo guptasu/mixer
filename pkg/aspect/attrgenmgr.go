@@ -85,7 +85,7 @@ func (attrGenMgr) NewPreprocessExecutor(cfg *cpb.Combined, b adapter.Builder, en
 
 func (e *attrGenExec) Execute(attrs attribute.Bag, mapper expr.Evaluator) (*PreprocessResult, rpc.Status) {
 	attrGen := e.aspect
-	in, err := evalAll(e.params.InputExpressions, attrs, mapper)
+	in, err := EvalAll(e.params.InputExpressions, attrs, mapper)
 	if err != nil {
 		errMsg := "Could not evaluate input expressions for attribute generation."
 		glog.Error(errMsg, err)
