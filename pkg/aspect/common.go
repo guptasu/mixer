@@ -25,7 +25,7 @@ import (
 	"istio.io/mixer/pkg/expr"
 )
 
-func evalAll(expressions map[string]string, attrs attribute.Bag, eval expr.Evaluator) (map[string]interface{}, error) {
+func EvalAll(expressions map[string]string, attrs attribute.Bag, eval expr.Evaluator) (map[string]interface{}, error) {
 	result := &multierror.Error{}
 	labels := make(map[string]interface{}, len(expressions))
 	for label, texpr := range expressions {

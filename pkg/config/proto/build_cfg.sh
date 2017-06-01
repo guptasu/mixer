@@ -33,7 +33,7 @@ echo "// ${CKSUM}"  >> ${TMPF}
 cat ${PB} >> ${TMPF}
 mv ${TMPF} ${PB}
 
-sed -i \
+sed -i ' '\
   -e 's/*google_protobuf.Struct/interface{}/g' \
   -e 's|mixer/v1/config/descriptor|istio.io/api/mixer/v1/config/descriptor|g' \
   -e 's/ValueType_VALUE_TYPE_UNSPECIFIED/VALUE_TYPE_UNSPECIFIED/g' \

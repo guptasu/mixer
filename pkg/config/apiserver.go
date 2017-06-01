@@ -218,7 +218,7 @@ func (a *API) register(c *restful.Container) {
 
 // NewAPI creates a new API server
 func NewAPI(version string, port uint16, tc expr.TypeChecker, aspectFinder AspectValidatorFinder,
-	builderFinder BuilderValidatorFinder, findAspects AdapterToAspectMapper, store KeyValueStore) *API {
+	builderFinder BuilderValidatorFinder, findAspects AdapterToAspectMapper, store KeyValueStore, handlerFinder HandlerFinder) *API {
 	c := restful.NewContainer()
 	a := &API{
 		version:  version,
@@ -226,7 +226,7 @@ func NewAPI(version string, port uint16, tc expr.TypeChecker, aspectFinder Aspec
 		store:    store,
 		readBody: ioutil.ReadAll,
 		validate: func(cfg map[string]string) (*Validated, descriptor.Finder, *adapter.ConfigErrors) {
-			v := newValidator(aspectFinder, builderFinder, findAspects, true, tc)
+			v := newValidator(aspectFinder, builderFinder, findAspects, true, tc, handlerFinder)
 			rt, ce := v.validate(cfg)
 			return rt, v.descriptorFinder, ce
 		},

@@ -26,8 +26,9 @@ import (
 
 	"github.com/golang/glog"
 	rpc "github.com/googleapis/googleapis/google/rpc"
-
+	generated_adapter_registrar "istio.io/mixer/pkg/adapter/generated"
 	"istio.io/mixer/pkg/adapter"
+	adptCnfg "istio.io/mixer/pkg/adapter/config"
 	"istio.io/mixer/pkg/aspect"
 	"istio.io/mixer/pkg/attribute"
 	"istio.io/mixer/pkg/config"
@@ -62,6 +63,7 @@ type Manager struct {
 	managers          [config.NumKinds]aspect.Manager
 	mapper            expr.Evaluator
 	builders          builderFinder
+	builders2          builderFinder2
 	checkKindSet      config.KindSet
 	reportKindSet     config.KindSet
 	quotaKindSet      config.KindSet
@@ -88,18 +90,24 @@ type builderFinder interface {
 	SupportedKinds(builder string) config.KindSet
 }
 
-// NewManager creates a new adapterManager.
-func NewManager(builders []adapter.RegisterFn, inventory aspect.ManagerInventory,
-	exp expr.Evaluator, gp *pool.GoroutinePool, adapterGP *pool.GoroutinePool) *Manager {
-	mm := Aspects(inventory)
-	return newManager(newRegistry(builders), mm, exp, inventory, gp, adapterGP)
+type builderFinder2 interface {
+	FindHandler(name string) (adptCnfg.Handler, bool)
 }
 
-func newManager(r builderFinder, m [config.NumKinds]aspect.Manager, exp expr.Evaluator,
+
+// NewManager creates a new adapterManager.
+func NewManager(builders []adapter.RegisterFn, builders2 []generated_adapter_registrar.RegisterFn2, inventory aspect.ManagerInventory,
+	exp expr.Evaluator, gp *pool.GoroutinePool, adapterGP *pool.GoroutinePool) *Manager {
+	mm := Aspects(inventory)
+	return newManager(newRegistry(builders), newRegistry2(builders2), mm, exp, inventory, gp, adapterGP)
+}
+
+func newManager(r builderFinder, r2 builderFinder2, m [config.NumKinds]aspect.Manager, exp expr.Evaluator,
 	inventory aspect.ManagerInventory, gp *pool.GoroutinePool, adapterGP *pool.GoroutinePool) *Manager {
 
 	mg := &Manager{
 		builders:      r,
+		builders2:      r2,
 		managers:      m,
 		mapper:        exp,
 		executorCache: make(map[cacheKey]aspect.Executor),
@@ -145,11 +153,19 @@ func (m *Manager) Check(ctx context.Context, requestBag, responseBag *attribute.
 }
 
 func (m *Manager) dispatchReport(ctx context.Context, configs []*cpb.Combined, requestBag, responseBag *attribute.MutableBag) rpc.Status {
-	return m.dispatch(ctx, requestBag, responseBag, configs,
-		func(executor aspect.Executor, evaluator expr.Evaluator, requestBag, responseBag *attribute.MutableBag) rpc.Status {
-			rw := executor.(aspect.ReportExecutor)
-			return rw.Execute(requestBag, evaluator)
-		})
+	// HACK for POC
+
+	for _, config := range configs {
+		rd := CreateRuntimeInstanceDispatcher(config.TypesToTemplate, config.Constructors, config.HandlersByName)
+		rd.DispatchToHandler([]*cpb.Action{config.Action}, requestBag)
+	}
+
+	return rpc.Status{}
+	//return m.dispatch(ctx, requestBag, responseBag, configs,
+	//	func(executor aspect.Executor, evaluator expr.Evaluator, requestBag, responseBag *attribute.MutableBag) rpc.Status {
+	//		rw := executor.(aspect.ReportExecutor)
+	//		return rw.Execute(requestBag, evaluator)
+	//	})
 }
 
 // Report dispatches to the set of aspects associated with the Report API method
@@ -159,6 +175,7 @@ func (m *Manager) Report(ctx context.Context, requestBag, responseBag *attribute
 		glog.Error(err)
 		return status.WithError(err)
 	}
+
 	return m.dispatchReport(ctx, configs, requestBag, responseBag)
 }
 
@@ -473,6 +490,10 @@ func (m *Manager) AspectValidatorFinder(kind config.Kind) (config.AspectValidato
 // BuilderValidatorFinder returns a BuilderValidatorFinder for builders.
 func (m *Manager) BuilderValidatorFinder(name string) (adapter.ConfigValidator, bool) {
 	return m.builders.FindBuilder(name)
+}
+
+func (m *Manager) HandlerFinder(name string) (adptCnfg.Handler, bool) {
+	return m.builders2.FindHandler(name)
 }
 
 // SupportedKinds returns the set of aspect kinds supported by the builder

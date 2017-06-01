@@ -41,6 +41,7 @@ import (
 	"istio.io/mixer/pkg/config/descriptor"
 	pb "istio.io/mixer/pkg/config/proto"
 	"istio.io/mixer/pkg/expr"
+	"istio.io/mixer/pkg/adapter/config"
 )
 
 type (
@@ -71,14 +72,18 @@ type (
 	// AdapterToAspectMapper returns the set of aspect kinds implemented by
 	// the given builder.
 	AdapterToAspectMapper func(builder string) KindSet
+
+
+	HandlerFinder func(name string) (config.Handler, bool)
 )
 
 // newValidator returns a validator given component validators.
 func newValidator(managerFinder AspectValidatorFinder, adapterFinder BuilderValidatorFinder,
-	findAspects AdapterToAspectMapper, strict bool, typeChecker expr.TypeChecker) *validator {
+	findAspects AdapterToAspectMapper, strict bool, typeChecker expr.TypeChecker, handlerFinder HandlerFinder) *validator {
 	return &validator{
 		managerFinder: managerFinder,
 		adapterFinder: adapterFinder,
+		handlerFinder: handlerFinder,
 		findAspects:   findAspects,
 		strict:        strict,
 		typeChecker:   typeChecker,
@@ -86,6 +91,7 @@ func newValidator(managerFinder AspectValidatorFinder, adapterFinder BuilderVali
 			adapterByName: make(map[adapterKey]*pb.Adapter),
 			rule:          make(map[rulesKey]*pb.ServiceConfig),
 			adapter:       make(map[string]*pb.GlobalConfig),
+			handler:       make(map[string]*pb.GlobalConfig),
 			descriptor:    make(map[string]*pb.GlobalConfig),
 			shas:          make(map[string][sha1.Size]byte),
 		},
@@ -97,6 +103,7 @@ type (
 	validator struct {
 		managerFinder    AspectValidatorFinder
 		adapterFinder    BuilderValidatorFinder
+		handlerFinder    HandlerFinder
 		findAspects      AdapterToAspectMapper
 		descriptorFinder descriptor.Finder
 		strict           bool
@@ -121,8 +128,12 @@ type (
 	// It has been validated as internally consistent and correct.
 	Validated struct {
 		adapterByName map[adapterKey]*pb.Adapter
+		handlerByName map[string]config.Handler
+		typesToTemplate map[string]string
 		// descriptors and adapters are only allowed in global scope
 		adapter    map[string]*pb.GlobalConfig
+		handler    map[string]*pb.GlobalConfig
+
 		descriptor map[string]*pb.GlobalConfig
 		rule       map[rulesKey]*pb.ServiceConfig
 		shas       map[string][sha1.Size]byte
@@ -145,6 +156,11 @@ func (v *Validated) Clone() *Validated {
 		aa[k] = a
 	}
 
+	hh := map[string]config.Handler{}
+	for k, a := range v.handlerByName {
+		hh[k] = a
+	}
+
 	rule := map[rulesKey]*pb.ServiceConfig{}
 	for k, a := range v.rule {
 		rule[k] = a
@@ -157,6 +173,7 @@ func (v *Validated) Clone() *Validated {
 
 	return &Validated{
 		adapterByName: aa,
+		handlerByName: hh,
 		rule:          rule,
 		adapter:       copyDescriptors(v.adapter),
 		descriptor:    copyDescriptors(v.descriptor),
@@ -171,9 +188,13 @@ const (
 	subjects    = "subjects"
 	rules       = "rules"
 	adapters    = "adapters"
+	handlers    = "handlers"
+	types       = "types"
 	descriptors = "descriptors"
 
 	keyAdapters            = "/scopes/global/adapters"
+	keyHandlers            = "/scopes/global/handlers"
+	keyTypes            = "/scopes/global/types"
 	keyDescriptors         = "/scopes/global/descriptors"
 	keyGlobalServiceConfig = "/scopes/global/subjects/global/rules"
 )
@@ -302,6 +323,55 @@ func (p *validator) validateAdapters(key string, cfg string) (ce *adapter.Config
 	return
 }
 
+func (p *validator) validateHandlers(key string, cfg string, dispatcher *typeConfigDispatcher) (ce *adapter.ConfigErrors) {
+	var ferr error
+	var data []byte
+
+	if data, _, ferr = compatfilterConfig(cfg, func(s string) bool {
+		return s == "handlers"
+	}); ferr != nil {
+		return ce.Appendf("handlerConfig", "failed to unmarshal config into proto with err: %v", ferr)
+	}
+
+	var m = &pb.GlobalConfig{}
+	if err := yaml.Unmarshal(data, m); err != nil {
+		return ce.Appendf("handlerConfig", "failed to unmarshal config into proto: %v", err)
+	}
+
+	var acfg proto.Message
+	var err *adapter.ConfigErrors
+	// FIXME update this when we start supporting adapters defined in multiple scopes
+	p.validated.handlerByName = make(map[string]config.Handler)
+
+	for _, hh := range m.GetHandlers() {
+		if acfg, err = convertHandlerParams(p.handlerFinder, hh.Adapter, hh.Params, p.strict); err != nil {
+			ce = ce.Appendf("Adapter: "+hh.Adapter, "failed to convert aspect params to proto: %v", err)
+			continue
+		}
+		// ignore bool arg since it has to succeed as the last
+		// step succeeded.
+
+		handler,_ := p.handlerFinder(hh.Adapter)
+		p.validated.handlerByName[hh.Adapter] = handler
+		handler.Configure(acfg)
+		// Configure handler for all available types
+		//configureTypes(handler, m.GetTypes())
+		dispatcher.configureTypes(handler)
+
+		hh.Params = acfg
+		//// check which kinds aa.Impl provides
+		//// Then register it for all of them.
+		//kinds := p.findAspects(hh.Impl)acfg
+		//for kind := Kind(0); kind < NumKinds; kind++ {
+		//	if kinds.IsSet(kind) {
+		//		p.validated.adapterByName[adapterKey{kind, hh.Name}] = hh
+		//	}
+		//}
+	}
+	p.validated.handler[key] = m
+	return
+}
+
 // ValidateSelector ensures that the selector is valid per expression language.
 func (p *validator) validateSelector(selector string, df expr.AttributeDescriptorFinder) (err error) {
 	// empty selector always selects
@@ -368,6 +438,10 @@ func classifyKeys(cfg map[string]string) map[string][]string {
 			k = rules
 		case adapters:
 			k = adapters
+		case handlers:
+			k = handlers
+		case types:
+			k = types
 		case descriptors:
 			k = descriptors
 		default:
@@ -391,6 +465,18 @@ func descriptorKey(scope string) string {
 func (p *validator) validate(cfg map[string]string) (rt *Validated, ce *adapter.ConfigErrors) {
 	keymap := classifyKeys(cfg)
 
+	d, err := CreateTypeConfigDispatcher()
+	if err != nil {
+		panic ("TODO, validation of types")
+	}
+
+	for _, tt := range keymap[types] {
+		types, _ := p.getTypes(tt, cfg[tt])
+		if re := d.appendTypes(types); re != nil {
+			return rt, ce.Appendf("config of types failed", "failed validation")
+		}
+	}
+
 	for _, kk := range keymap[descriptors] {
 		if re := p.validateDescriptors(kk, cfg[kk]); re != nil {
 			return rt, ce.Appendf("descriptorConfig", "failed validation").Extend(re)
@@ -400,6 +486,12 @@ func (p *validator) validate(cfg map[string]string) (rt *Validated, ce *adapter.
 	for _, kk := range keymap[adapters] {
 		if re := p.validateAdapters(kk, cfg[kk]); re != nil {
 			return rt, ce.Appendf("adapterConfig", "failed validation").Extend(re)
+		}
+	}
+
+	for _, kk := range keymap[handlers] {
+		if re := p.validateHandlers(kk, cfg[kk], d); re != nil {
+			return rt, ce.Appendf("handlerConfig", "failed validation").Extend(re)
 		}
 	}
 
@@ -414,7 +506,27 @@ func (p *validator) validate(cfg map[string]string) (rt *Validated, ce *adapter.
 			return rt, ce.Appendf("serviceConfig", "failed validation").Extend(re)
 		}
 	}
+
+	p.validated.typesToTemplate = d.GetTypeToTemplateMapping()
 	return p.validated, nil
+}
+
+func (p *validator) getTypes(key string, cfg string) (types []*pb.Type, ce *adapter.ConfigErrors) {
+	var ferr error
+	var data []byte
+
+	if data, _, ferr = compatfilterConfig(cfg, func(s string) bool {
+		return s == "types"
+	}); ferr != nil {
+		return nil, ce.Appendf("types", "failed to unmarshal config into proto with err: %v", ferr)
+	}
+
+	var m= &pb.GlobalConfig{}
+	if err := yaml.Unmarshal(data, m); err != nil {
+		return nil, ce.Appendf("adapterConfig", "failed to unmarshal config into proto: %v", err)
+	}
+
+	return m.GetTypes(), nil;
 }
 
 // ValidateServiceConfig validates service config.
@@ -450,6 +562,24 @@ func unknownKind(name string) error {
 // convertAdapterParams converts returns a typed proto message based on available validator.
 func convertAdapterParams(f BuilderValidatorFinder, name string, params interface{}, strict bool) (ac adapter.Config, ce *adapter.ConfigErrors) {
 	var avl adapter.ConfigValidator
+	var found bool
+
+	if avl, found = f(name); !found {
+		return nil, ce.Append(name, unknownValidator(name))
+	}
+
+	ac = avl.DefaultConfig()
+	if err := decode(params, ac, strict); err != nil {
+		return nil, ce.Appendf(name, "failed to decode adapter params: %v", err)
+	}
+	if err := avl.ValidateConfig(ac); err != nil {
+		return nil, ce.Appendf(name, "adapter validation failed: %v", err)
+	}
+	return ac, nil
+}
+
+func convertHandlerParams(f HandlerFinder, name string, params interface{}, strict bool) (ac adapter.Config, ce *adapter.ConfigErrors) {
+	var avl config.Handler
 	var found bool
 
 	if avl, found = f(name); !found {

@@ -12,28 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package istio_mixer_v1_config
+package wrappertypes
 
 import (
 	"istio.io/mixer/pkg/adapter/config"
+	"istio.io/mixer/pkg/attribute"
 )
 
-// Combined config is given to aspect managers.
-type Combined struct {
-	Builder        *Adapter
-	Aspect         *Aspect
-	Action         *Action
-	TypesToTemplate          map[string]string
-	HandlersByName map[string] config.Handler
-	Constructors   []*Constructor
-}
+// TODO: the two types should be different.
+type InstanceToReportFnDispatcher func(handler config.Handler, instanceMakers []*InstanceMakerInfo, reqBag *attribute.MutableBag) interface{}
+type InstanceToCheckFnDispatcher func(handler config.Handler, instanceMakers []*InstanceMakerInfo, reqBag *attribute.MutableBag) interface{}
 
-func (c *Combined) String() (ret string) {
-	if c.Builder != nil {
-		ret += "builder: " + c.Builder.String() + " "
-	}
-	if c.Aspect != nil {
-		ret += "aspect: " + c.Aspect.String()
-	}
-	return
+type InstanceMakerInfo struct {
+	TypeName         string
+	TemplateName     string
+	Params           interface{}
 }

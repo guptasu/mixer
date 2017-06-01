@@ -12,28 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package istio_mixer_v1_config
+// !!!!!!!!!!!!!!!!!!!!! WARNING !!!!!!!!!!!!!!!!!!!!!!!!
+// THIS IS AUTO GENERATED FILE - SIMULATED - HAND WRITTEN
+
+package adapterManager
 
 import (
-	"istio.io/mixer/pkg/adapter/config"
+	"istio.io/mixer/pkg/templates/mymetric/generated"
 )
 
-// Combined config is given to aspect managers.
-type Combined struct {
-	Builder        *Adapter
-	Aspect         *Aspect
-	Action         *Action
-	TypesToTemplate          map[string]string
-	HandlersByName map[string] config.Handler
-	Constructors   []*Constructor
+/////////// ALL THE BELOW CODE IS GENERATED FROM TEMPLATES //////////////////
+
+func (r *registry2) RegisterMyMetricProcessor(b mymetric.MyMetricProcessor) {
+	r.insertHandler(b)
 }
 
-func (c *Combined) String() (ret string) {
-	if c.Builder != nil {
-		ret += "builder: " + c.Builder.String() + " "
-	}
-	if c.Aspect != nil {
-		ret += "aspect: " + c.Aspect.String()
-	}
-	return
-}
