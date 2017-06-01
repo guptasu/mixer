@@ -41,6 +41,7 @@ func (Adapter) ProcessMetric(instances []metric.Instance) {
 func (builder) Name() string                 { return "grpcAdapter" }
 func (builder) Description() string          { return "an adapter that does nothing" }
 func (builder) Close() error                 { return nil }
+func (builder) ValidateConfig(msg proto.Message) error                 { return nil }
 func (builder) DefaultConfig() proto.Message { return &types.Empty{} }
 
 /////////// ALL THE BELOW CODE IS GENERATED FROM TEMPLATES //////////////////

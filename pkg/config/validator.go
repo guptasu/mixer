@@ -542,9 +542,9 @@ func convertHandlerParams(f HandlerFinder, name string, params interface{}, stri
 	if err := decode(params, ac, strict); err != nil {
 		return nil, ce.Appendf(name, "failed to decode adapter params: %v", err)
 	}
-	//if err := avl.ValidateConfig(ac); err != nil {
-	//	return nil, ce.Appendf(name, "adapter validation failed: %v", err)
-	//}
+	if err := avl.ValidateConfig(ac); err != nil {
+		return nil, ce.Appendf(name, "adapter validation failed: %v", err)
+	}
 	return ac, nil
 }
 

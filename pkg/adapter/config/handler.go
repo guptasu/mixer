@@ -14,4 +14,5 @@ type Handler interface {
 	// Description returns a user-friendly description of the aspects produced by this builder.
 	Description() string
 	DefaultConfig() proto.Message
+	ValidateConfig(proto.Message) error
 }

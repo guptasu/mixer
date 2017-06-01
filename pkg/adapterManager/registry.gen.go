@@ -59,11 +59,6 @@ func (r *registry2) FindHandler(name string) (b adpCnfg.Handler, found bool) {
 	}
 }
 
-func (r *registry2) RegisterMyMetricProcessor(b mymetric.MyMetricProcessor) {
-	r.insertHandler(b)
-}
-
-
 func (r *registry2) insertHandler(b adpCnfg.Handler) {
 	bi := r.handlersByName[b.Name()]
 	if bi == nil {
@@ -82,3 +77,10 @@ func (r *registry2) insertHandler(b adpCnfg.Handler) {
 		glog.Infof("Registered %s", b.Name())
 	}
 }
+
+/////////// ALL THE BELOW CODE IS GENERATED FROM TEMPLATES //////////////////
+
+func (r *registry2) RegisterMyMetricProcessor(b mymetric.MyMetricProcessor) {
+	r.insertHandler(b)
+}
+
