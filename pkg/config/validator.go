@@ -344,6 +344,11 @@ func (p *validator) validateHandlers(key string, cfg string) (ce *adapter.Config
 			ce = ce.Appendf("Adapter: "+hh.Adapter, "failed to convert aspect params to proto: %v", err)
 			continue
 		}
+		// ignore bool arg since it has to succeed as the last
+		// step succeeded.
+		handler,_ := p.handlerFinder(hh.Adapter)
+		handler.Configure(acfg)
+
 		hh.Params = acfg
 		//// check which kinds aa.Impl provides
 		//// Then register it for all of them.

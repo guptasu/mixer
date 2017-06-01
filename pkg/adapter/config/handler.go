@@ -15,4 +15,5 @@ type Handler interface {
 	Description() string
 	DefaultConfig() proto.Message
 	ValidateConfig(proto.Message) error
+	Configure(proto.Message) error
 }

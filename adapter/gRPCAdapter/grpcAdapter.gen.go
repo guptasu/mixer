@@ -38,15 +38,28 @@ func (Adapter) ProcessMetric(instances []metric.Instance) {
 	fmt.Println("ConfigureMetricCalled with", instances)
 }
 
-func (builder) Name() string                 { return "grpcAdapter" }
-func (builder) Description() string          { return "an adapter that does nothing" }
-func (builder) Close() error                 { return nil }
-func (builder) ValidateConfig(msg proto.Message) error                 { return nil }
+func (builder) Name() string        { return "grpcAdapter" }
+func (builder) Description() string { return "an adapter that does nothing" }
+func (builder) Close() error        { return nil }
+
+func (builder) ValidateConfig(msg proto.Message) error {
+	fmt.Println("Handler level ValidateConfig called")
+	return nil
+}
+
+func (builder) Configure(msg proto.Message) error {
+	fmt.Println("Handler level Configure called passing adapter config as proto.Message")
+	return nil
+}
 func (builder) DefaultConfig() proto.Message { return &types.Empty{} }
 
 /////////// ALL THE BELOW CODE IS GENERATED FROM TEMPLATES //////////////////
-func (builder) ConfigureMyMetric(typeParams map[string]foo_bar_mymetric.Type) {}
-func (builder) ProcessMyMetric(instances []foo_bar_mymetric.Instance)   {}
+func (builder) ConfigureMyMetric(typeParams map[string]foo_bar_mymetric.Type) {
+	fmt.Println("ConfigureMyMetric called")
+}
+func (builder) ProcessMyMetric(instances []foo_bar_mymetric.Instance) {
+	fmt.Println("ProcessMyMetric called")
+}
 
 // Register registers the no-op adapter as every aspect.
 func Register(r adapter.Registrar2) {
