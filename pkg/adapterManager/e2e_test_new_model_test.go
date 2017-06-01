@@ -36,17 +36,26 @@ import (
 const (
 	minimalGlobalCnfg_2 = `
 subject: namespace:ns
+revision: "2022"
 adapters:
   - name: no-op
     kind: metrics
     impl: no-op
 
 manifests:
-  - name: kubernetes2
+  - name: istio-proxy
+    revision: "1"
     attributes:
-      source.ip:
+      source.name:
+        value_type: STRING
+      target.name:
+        value_type: STRING
+      response.code:
         value_type: INT64
-
+      api.name:
+        value_type: STRING
+      api.method:
+        value_type: STRING
 
 `
 
