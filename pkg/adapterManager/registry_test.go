@@ -41,7 +41,7 @@ func (denyBuilder) NewDenialsAspect(env adapter.Env, cfg adapter.Config) (adapte
 }
 
 func TestRegisterDenyChecker(t *testing.T) {
-	reg := newRegistry(nil, nil)
+	reg := newRegistry(nil)
 	builder := denyBuilder{testBuilder{name: "foo"}}
 
 	reg.RegisterDenialsBuilder(builder)
@@ -64,7 +64,7 @@ func (listBuilder) NewListsAspect(env adapter.Env, cfg adapter.Config) (adapter.
 }
 
 func TestRegisterListChecker(t *testing.T) {
-	reg := newRegistry(nil, nil)
+	reg := newRegistry(nil)
 	builder := listBuilder{testBuilder{name: "foo"}}
 
 	reg.RegisterListsBuilder(builder)
@@ -86,7 +86,7 @@ func (loggerBuilder) NewApplicationLogsAspect(env adapter.Env, cfg adapter.Confi
 }
 
 func TestRegisterLogger(t *testing.T) {
-	reg := newRegistry(nil, nil)
+	reg := newRegistry(nil)
 	builder := loggerBuilder{testBuilder{name: "foo"}}
 
 	reg.RegisterApplicationLogsBuilder(builder)
@@ -108,7 +108,7 @@ func (accessLoggerBuilder) NewAccessLogsAspect(env adapter.Env, cfg adapter.Conf
 }
 
 func TestRegistry_RegisterAccessLogger(t *testing.T) {
-	reg := newRegistry(nil, nil)
+	reg := newRegistry(nil)
 	builder := accessLoggerBuilder{testBuilder{name: "foo"}}
 
 	reg.RegisterAccessLogsBuilder(builder)
@@ -135,7 +135,7 @@ func (quotaBuilder) NewAccessLogsAspect(env adapter.Env, cfg adapter.Config) (ad
 }
 
 func TestRegisterQuota(t *testing.T) {
-	reg := newRegistry(nil, nil)
+	reg := newRegistry(nil)
 	builder := quotaBuilder{testBuilder{name: "foo"}}
 
 	reg.RegisterQuotasBuilder(builder)
@@ -156,7 +156,7 @@ func (metricsBuilder) NewMetricsAspect(adapter.Env, adapter.Config, map[string]*
 }
 
 func TestRegisterMetrics(t *testing.T) {
-	reg := newRegistry(nil, nil)
+	reg := newRegistry(nil)
 	builder := metricsBuilder{testBuilder{name: "foo"}}
 
 	reg.RegisterMetricsBuilder(builder)
@@ -167,7 +167,7 @@ func TestRegisterMetrics(t *testing.T) {
 }
 
 func TestCollision(t *testing.T) {
-	reg := newRegistry(nil, nil)
+	reg := newRegistry(nil)
 	name := "some name that they both have"
 
 	a1 := listBuilder{testBuilder{name}}
@@ -194,7 +194,7 @@ func TestMultiKinds(t *testing.T) {
 		func(r adapter.Registrar) {
 			r.RegisterQuotasBuilder(builder)
 		},
-	}, nil)
+	})
 
 	impl, ok := reg.FindBuilder(builder.Name())
 	if !ok {

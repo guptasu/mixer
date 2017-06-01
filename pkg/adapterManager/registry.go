@@ -20,9 +20,7 @@ import (
 	"github.com/golang/glog"
 
 	"istio.io/mixer/pkg/adapter"
-	adpCnfg "istio.io/mixer/pkg/adapter/config"
 	"istio.io/mixer/pkg/config"
-	"istio.io/mixer/pkg/templates/mymetric/generated"
 )
 
 // BuilderInfo provides information about an individual builder.
@@ -37,31 +35,21 @@ type BuilderInfo struct {
 // BuildersByName holds a set of builders indexed by their name.
 type BuildersByName map[string]*BuilderInfo
 
-
 // registry implements pkg/adapter/Registrar.
 // registry is initialized in the constructor and is immutable thereafter.
 // All registered builders must have unique names per aspect kind.
 // It also implements builders that manager uses.
 type registry struct {
 	builders BuildersByName
-	handlersByName map[string]*adpCnfg.Handler
 }
 
 // newRegistry returns a new Builder registry.
-func newRegistry(builders []adapter.RegisterFn, builders2 []adapter.RegisterFn2) *registry {
-	r := &registry{make(BuildersByName), make(map[string]*adpCnfg.Handler)}
+func newRegistry(builders []adapter.RegisterFn) *registry {
+	r := &registry{make(BuildersByName)}
 	for idx, builder := range builders {
 		glog.V(3).Infof("Registering [%d] %#v", idx, builder)
 		builder(r)
 	}
-
-	if builders2 != nil {
-		for idx, builder := range builders2 {
-			glog.V(3).Infof("Registering [%d] %#v", idx, builder)
-			builder(r)
-		}
-	}
-
 	// ensure interfaces are satisfied.
 	// should be compiled out.
 	var _ adapter.Registrar = r
@@ -71,7 +59,7 @@ func newRegistry(builders []adapter.RegisterFn, builders2 []adapter.RegisterFn2)
 
 // BuilderMap returns the known builders, indexed by kind.
 func BuilderMap(builders []adapter.RegisterFn) BuildersByName {
-	return newRegistry(builders, nil).builders
+	return newRegistry(builders).builders
 }
 
 // FindBuilder finds builder by name.
@@ -81,14 +69,6 @@ func (r *registry) FindBuilder(name string) (b adapter.Builder, found bool) {
 		return
 	}
 	return bi.Builder, true
-}
-
-func (r *registry) FindHandler(name string) (b adpCnfg.Handler, found bool) {
-	if bi, found := r.handlersByName[name]; !found {
-		return nil, false
-	} else {
-		return *bi, true
-	}
 }
 
 func (r *registry) SupportedKinds(builder string) config.KindSet {
@@ -135,10 +115,6 @@ func (r *registry) RegisterAttributesGeneratorBuilder(b adapter.AttributesGenera
 	r.insert(config.AttributesKind, b)
 }
 
-func (r *registry) RegisterMyMetricProcessor(b mymetric.MyMetricProcessor) {
-	r.insertHandler(b)
-}
-
 func (r *registry) insert(k config.Kind, b adapter.Builder) {
 	bi := r.builders[b.Name()]
 	if bi == nil {
@@ -156,24 +132,5 @@ func (r *registry) insert(k config.Kind, b adapter.Builder) {
 
 	if glog.V(1) {
 		glog.Infof("Registered %s / %s", k, b.Name())
-	}
-}
-
-func (r *registry) insertHandler(b adpCnfg.Handler) {
-	bi := r.handlersByName[b.Name()]
-	if bi == nil {
-		bi = &b
-		r.handlersByName[b.Name()] = bi
-	} else if *bi != b {
-		// panic only if 2 different handler objects are trying to identify by the
-		// same Name.  2nd registration is ok so long as old and the new are same
-		msg := fmt.Errorf("duplicate registration for '%s' : old = %v new = %v", b.Name(), bi, b)
-		glog.Error(msg)
-		panic(msg)
-	}
-
-
-	if glog.V(1) {
-		glog.Infof("Registered %s", b.Name())
 	}
 }
