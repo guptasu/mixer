@@ -83,7 +83,9 @@ func (r *runtime) Resolve(bag attribute.Bag, set KindSet, strict bool) (dlist []
 		glog.Infof("resolving for kinds: %s", set)
 		defer func() { glog.Infof("resolved configs (err=%v): %s", err, dlist) }()
 	}
-	return resolve(
+
+	// HACK for POC
+	c, err := resolve(
 		bag,
 		set,
 		r.rule,
@@ -92,6 +94,10 @@ func (r *runtime) Resolve(bag attribute.Bag, set KindSet, strict bool) (dlist []
 		r.identityAttribute,
 		r.identityAttributeDomain,
 		strict)
+	fmt.Println("*****")
+	fmt.Println(r)
+
+	return c, err
 }
 
 // ResolveUnconditional returns the list of CombinedConfigs for the supplied
