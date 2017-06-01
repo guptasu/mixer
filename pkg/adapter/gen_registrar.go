@@ -14,7 +14,7 @@
 
 package adapter
 
-import "istio.io/mixer/pkg/templates/metric/generated"
+import "istio.io/mixer/pkg/templates/mymetric/generated"
 
 // Registrar is used by adapters to register aspect builders.
 type Registrar interface {
@@ -40,7 +40,7 @@ type Registrar interface {
 	// RegisterMetricsBuilder registers a new Metrics builder.
 	RegisterMetricsBuilder(MetricsBuilder)
 
-	RegisterMyMetricProcessor(processor mymetric.MetricProcessor)
+	RegisterMyMetricProcessor(processor mymetric.MyMetricProcessor)
 }
 
 // RegisterFn is a function Mixer invokes to trigger adapters to register

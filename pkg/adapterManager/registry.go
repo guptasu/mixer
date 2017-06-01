@@ -22,7 +22,7 @@ import (
 	"istio.io/mixer/pkg/adapter"
 	adpCnfg "istio.io/mixer/pkg/adapter/config"
 	"istio.io/mixer/pkg/config"
-	"istio.io/mixer/pkg/templates/metric/generated"
+	"istio.io/mixer/pkg/templates/mymetric/generated"
 )
 
 // BuilderInfo provides information about an individual builder.
@@ -44,12 +44,12 @@ type BuildersByName map[string]*BuilderInfo
 // It also implements builders that manager uses.
 type registry struct {
 	builders BuildersByName
-	handlersByName map[string]*adpCnfg.Handler
+	handlersByName map[string]*adpCnfg.Adapter
 }
 
 // newRegistry returns a new Builder registry.
 func newRegistry(builders []adapter.RegisterFn) *registry {
-	r := &registry{make(BuildersByName), make(map[string]*adpCnfg.Handler)}
+	r := &registry{make(BuildersByName), make(map[string]*adpCnfg.Adapter)}
 	for idx, builder := range builders {
 		glog.V(3).Infof("Registering [%d] %#v", idx, builder)
 		builder(r)
@@ -75,7 +75,7 @@ func (r *registry) FindBuilder(name string) (b adapter.Builder, found bool) {
 	return bi.Builder, true
 }
 
-func (r *registry) FindHandler(name string) (b adpCnfg.Handler, found bool) {
+func (r *registry) FindHandler(name string) (b adpCnfg.Adapter, found bool) {
 	if bi, found := r.handlersByName[name]; !found {
 		return nil, false
 	} else {
@@ -127,7 +127,7 @@ func (r *registry) RegisterAttributesGeneratorBuilder(b adapter.AttributesGenera
 	r.insert(config.AttributesKind, b)
 }
 
-func (r *registry) RegisterMyMetricProcessor(b mymetric.MetricProcessor) {
+func (r *registry) RegisterMyMetricProcessor(b mymetric.MyMetricProcessor) {
 	r.insertHandler(b)
 }
 
@@ -151,7 +151,7 @@ func (r *registry) insert(k config.Kind, b adapter.Builder) {
 	}
 }
 
-func (r *registry) insertHandler(b adpCnfg.Handler) {
+func (r *registry) insertHandler(b adpCnfg.Adapter) {
 	bi := r.handlersByName[b.Name()]
 	if bi == nil {
 		bi = &b
