@@ -114,8 +114,9 @@ func benchmarkAdapterManagerDispatch_2(t *testing.T, declarativeSrvcCnfgFilePath
 		t.Errorf("Failed to create expression evaluator: %v", err)
 	}
 	adapterMgr := NewManager([]pkgAdapter.RegisterFn{
-		gRPCAdapter.Register,
 		noop.Register,
+	}, []pkgAdapter.RegisterFn2{
+		gRPCAdapter.Register,
 	}, aspect.Inventory(), eval, gp, adapterGP)
 	store, err := config.NewCompatFSStore(declaredGlobalCnfgFilePath, declarativeSrvcCnfgFilePath)
 	if err != nil {

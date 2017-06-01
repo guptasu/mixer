@@ -48,6 +48,6 @@ func (builder) ConfigureMyMetric(typeParams map[string]foo_bar_mymetric.Type) {}
 func (builder) ProcessMyMetric(instances []foo_bar_mymetric.Instance)   {}
 
 // Register registers the no-op adapter as every aspect.
-func Register(r adapter.Registrar) {
+func Register(r adapter.Registrar2) {
 	r.RegisterMyMetricProcessor(builder{})
 }
