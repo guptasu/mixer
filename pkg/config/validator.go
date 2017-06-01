@@ -74,7 +74,7 @@ type (
 	AdapterToAspectMapper func(builder string) KindSet
 
 
-	HandlerFinder func(name string) (config.Adapter, bool)
+	HandlerFinder func(name string) (config.Handler, bool)
 )
 
 // newValidator returns a validator given component validators.
@@ -531,7 +531,7 @@ func convertAdapterParams(f BuilderValidatorFinder, name string, params interfac
 }
 
 func convertHandlerParams(f HandlerFinder, name string, params interface{}, strict bool) (ac adapter.Config, ce *adapter.ConfigErrors) {
-	var avl config.Adapter
+	var avl config.Handler
 	var found bool
 
 	if avl, found = f(name); !found {

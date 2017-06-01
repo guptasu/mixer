@@ -7,7 +7,7 @@ import (
 
 
 type MyMetricProcessor interface {
-	config.Adapter
+	config.Handler
 	ConfigureMyMetric(typeParams map[string]mymetric.Type)
 	ProcessMyMetric(metricInstances []mymetric.Instance)
 }

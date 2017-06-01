@@ -6,7 +6,7 @@ import (
 )
 
 // Interface for every Adapter to implement.
-type Adapter interface {
+type Handler interface {
 	io.Closer
 
 	// Name returns the official name of the aspects produced by this builder.

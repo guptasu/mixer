@@ -86,7 +86,7 @@ type builderFinder interface {
 	// FindBuilder finds a builder by name. == cfg.Adapter.Impl.
 	FindBuilder(name string) (adapter.Builder, bool)
 
-	FindHandler(name string) (adptCnfg.Adapter, bool)
+	FindHandler(name string) (adptCnfg.Handler, bool)
 
 	// SupportedKinds returns kinds supported by a builder.
 	SupportedKinds(builder string) config.KindSet
@@ -480,7 +480,7 @@ func (m *Manager) BuilderValidatorFinder(name string) (adapter.ConfigValidator, 
 	return m.builders.FindBuilder(name)
 }
 
-func (m *Manager) HandlerFinder(name string) (adptCnfg.Adapter, bool) {
+func (m *Manager) HandlerFinder(name string) (adptCnfg.Handler, bool) {
 	return m.builders2.FindHandler(name)
 }
 
