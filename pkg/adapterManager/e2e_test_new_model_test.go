@@ -75,8 +75,21 @@ types:
 
 	srvcCnfgConstInitialSection_2 = `
 subject: namespace:ns
-rules:
+constructors:
+  - name: MyMetricConstructor
+    type: myMetricTypeReqCount
+    params:
+      value: response.code
+      dimensions:
+        source: source.name
+        target: source.name
 
+action_rules:
+- selector: target.service == "*"
+  actions:
+  - handler: mygRPCAdapter
+    instances:
+    - MyMetricConstructor
 `
 	srvcCnfgSimpleAspect_2 = `
 `
