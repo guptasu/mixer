@@ -19,10 +19,13 @@ package gRPCAdapter
 import (
 	metric "istio.io/mixer/pkg/templates/metric/generated/config"
 	"fmt"
+	"istio.io/mixer/pkg/adapter"
+	foo_bar_mymetric "istio.io/mixer/pkg/templates/metric/generated/config"
 )
 
 type (
 	Adapter struct{}
+	builder struct{}
 )
 
 func (Adapter) ConfigureMetric(typeParams map[string]metric.Type) {
@@ -31,3 +34,15 @@ func (Adapter) ConfigureMetric(typeParams map[string]metric.Type) {
 func (Adapter) ProcessMetric(instances []metric.Instance) {
 	fmt.Println("ConfigureMetricCalled with", instances)
 }
+
+// Register registers the no-op adapter as every aspect.
+func Register(r adapter.Registrar) {
+	r.RegisterMyMetricProcessor(builder{})
+}
+
+func (builder) Name() string                                          { return "grpcAdapter" }
+func (builder) Description() string                                   { return "an adapter that does nothing" }
+
+func (builder) ConfigureMetric(typeParams map[string]foo_bar_mymetric.Type) {}
+
+func (builder) ProcessMetric(metricInstances []foo_bar_mymetric.Instance) {}
