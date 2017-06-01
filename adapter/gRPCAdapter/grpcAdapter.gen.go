@@ -19,49 +19,22 @@ package gRPCAdapter
 
 import (
 	"fmt"
-	"github.com/gogo/protobuf/proto"
-	"github.com/gogo/protobuf/types"
-	"istio.io/mixer/pkg/adapter"
+	generated_adapter_registrar "istio.io/mixer/pkg/adapter/generated"
 	foo_bar_mymetric "istio.io/mixer/pkg/templates/mymetric/generated/config"
-	metric "istio.io/mixer/pkg/templates/mymetric/generated/config"
+	"istio.io/mixer/pkg/templates/mymetric/generated"
 )
-
-type (
-	Adapter struct{}
-	builder struct{}
-)
-
-func (Adapter) ConfigureMetric(typeParams map[string]metric.Type) {
-	fmt.Println("ConfigureMetricCalled with", typeParams)
-}
-func (Adapter) ProcessMetric(instances []metric.Instance) {
-	fmt.Println("ConfigureMetricCalled with", instances)
-}
-
-func (builder) Name() string        { return "grpcAdapter" }
-func (builder) Description() string { return "an adapter that does nothing" }
-func (builder) Close() error        { return nil }
-
-func (builder) ValidateConfig(msg proto.Message) error {
-	fmt.Println("Handler level ValidateConfig called")
-	return nil
-}
-
-func (builder) Configure(msg proto.Message) error {
-	fmt.Println("Handler level Configure called passing adapter config as proto.Message")
-	return nil
-}
-func (builder) DefaultConfig() proto.Message { return &types.Empty{} }
 
 /////////// ALL THE BELOW CODE IS GENERATED FROM TEMPLATES //////////////////
 func (builder) ConfigureMyMetric(typeParams map[string]foo_bar_mymetric.Type) {
 	fmt.Println("ConfigureMyMetric called with", typeParams)
 }
-func (builder) ProcessMyMetric(instances []foo_bar_mymetric.Instance) {
+
+
+func (builder) ProcessMyMetric(instances []mymetric.Instance) {
 	fmt.Println("ProcessMyMetric called with", instances)
 }
 
 // Register registers the no-op adapter as every aspect.
-func Register(r adapter.Registrar2) {
+func Register(r generated_adapter_registrar.Registrar2) {
 	r.RegisterMyMetricProcessor(builder{})
 }

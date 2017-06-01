@@ -23,7 +23,7 @@ import (
 	"time"
 
 	google_rpc "github.com/googleapis/googleapis/google/rpc"
-
+	generated_adapter_registrar "istio.io/mixer/pkg/adapter/generated"
 	pkgAdapter "istio.io/mixer/pkg/adapter"
 	"istio.io/mixer/pkg/aspect"
 	"istio.io/mixer/pkg/attribute"
@@ -138,7 +138,7 @@ func benchmarkAdapterManagerDispatch_2(t *testing.T, declarativeSrvcCnfgFilePath
 	}
 	adapterMgr := NewManager([]pkgAdapter.RegisterFn{
 		noop.Register,
-	}, []pkgAdapter.RegisterFn2{
+	}, []generated_adapter_registrar.RegisterFn2{
 		gRPCAdapter.Register,
 	}, aspect.Inventory(), eval, gp, adapterGP)
 	store, err := config.NewCompatFSStore(declaredGlobalCnfgFilePath, declarativeSrvcCnfgFilePath)

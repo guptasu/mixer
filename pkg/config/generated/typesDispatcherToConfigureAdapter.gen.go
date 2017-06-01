@@ -19,45 +19,48 @@ package config
 
 import "istio.io/mixer/pkg/adapter/config"
 import (
-	pb "istio.io/mixer/pkg/config/proto"
 	"istio.io/mixer/pkg/templates/mymetric/generated"
 	"istio.io/mixer/pkg/templates/mymetric/generated/config"
+	"github.com/golang/protobuf/proto"
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"github.com/gogo/protobuf/jsonpb"
 )
 
-type typeConfigDispatcher struct {
-	templateToTypes map[string]map[string]interface{}
+type TypeFinder interface {
+	GetTypesForTemplate(templateName string) map[string]interface{}
 }
 
-func (t *typeConfigDispatcher) appendTypes(types []*pb.Type) error {
-	for _, typ := range types {
-		if _, ok := t.templateToTypes[typ.Template]; !ok {
-			t.templateToTypes[typ.Template] = make(map[string]interface{})
-		}
-		t.templateToTypes[typ.Template][typ.Name] = typ.Params
-	}
-	// TODO guptasu: validate the types too. ensure they can be casted to appropriate types.
-	return nil
-}
 
-func CreateTypeConfigDispatcher() (*typeConfigDispatcher, error) {
-	templateToTypes := make(map[string]map[string]interface{})
-	return &typeConfigDispatcher{templateToTypes: templateToTypes}, nil
-}
-
-func (t *typeConfigDispatcher) configureTypes(handler config.Handler) error {
+func ConfigureTypes(handler config.Handler, t TypeFinder) error {
 	var x interface{} = handler
 	if casted, ok := x.(mymetric.MyMetricProcessor); ok {
 		defaultTyp := &foo_bar_mymetric.Type{}
 		result := make(map[string]foo_bar_mymetric.Type)
-		for k,v := range t.templateToTypes["foo.bar.mymetric.MyMetric"] {
-			err := decode(v, defaultTyp, false)
+		for typeName, typeParam := range t.GetTypesForTemplate("foo.bar.mymetric.MyMetric") {
+			err := decode(typeParam, defaultTyp, false)
 			if err != nil {
 				panic(err)
 			}
-			result[k] = *defaultTyp
+			result[typeName] = *defaultTyp
 		}
 		casted.ConfigureMyMetric(result)
 	}
 
 	return nil
 }
+
+func decode(src interface{}, dst proto.Message, strict bool) error {
+	ba, err := json.Marshal(src)
+	if err != nil {
+		return fmt.Errorf("failed to marshal config into json: %v", err)
+	}
+	um := jsonpb.Unmarshaler{AllowUnknownFields: !strict}
+	if err := um.Unmarshal(bytes.NewReader(ba), dst); err != nil {
+		b2, _ := json.Marshal(dst)
+		return fmt.Errorf("failed to unmarshal config <%s> into proto: %v %s", string(ba), err, string(b2))
+	}
+	return nil
+}
+

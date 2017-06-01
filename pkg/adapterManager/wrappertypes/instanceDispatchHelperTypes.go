@@ -12,18 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// !!!!!!!!!!!!!!!!!!!!! WARNING !!!!!!!!!!!!!!!!!!!!!!!!
-// THIS IS AUTO GENERATED FILE - SIMULATED - HAND WRITTEN
+package wrappertypes
 
-package adapterManager
+import "istio.io/mixer/pkg/adapter/config"
 
-import (
-	"istio.io/mixer/pkg/templates/mymetric/generated"
-)
+// TODO: the two types should be different.
+type InstanceToReportFnDispatcher func(handler config.Handler, instanceMakers []*InstanceMakerInfo) interface{}
+type InstanceToCheckFnDispatcher func(handler config.Handler, instanceMakers []*InstanceMakerInfo) interface{}
 
-/////////// ALL THE BELOW CODE IS GENERATED FROM TEMPLATES //////////////////
-
-func (r *registry2) RegisterMyMetricProcessor(b mymetric.MyMetricProcessor) {
-	r.insertHandler(b)
+type InstanceMakerInfo struct {
+	TypeName         string
+	TemplateName     string
+	Params           interface{}
 }
-

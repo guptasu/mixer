@@ -26,7 +26,7 @@ import (
 
 	"github.com/golang/glog"
 	rpc "github.com/googleapis/googleapis/google/rpc"
-
+	generated_adapter_registrar "istio.io/mixer/pkg/adapter/generated"
 	"istio.io/mixer/pkg/adapter"
 	adptCnfg "istio.io/mixer/pkg/adapter/config"
 	"istio.io/mixer/pkg/aspect"
@@ -96,7 +96,7 @@ type builderFinder2 interface {
 
 
 // NewManager creates a new adapterManager.
-func NewManager(builders []adapter.RegisterFn, builders2 []adapter.RegisterFn2, inventory aspect.ManagerInventory,
+func NewManager(builders []adapter.RegisterFn, builders2 []generated_adapter_registrar.RegisterFn2, inventory aspect.ManagerInventory,
 	exp expr.Evaluator, gp *pool.GoroutinePool, adapterGP *pool.GoroutinePool) *Manager {
 	mm := Aspects(inventory)
 	return newManager(newRegistry(builders), newRegistry2(builders2), mm, exp, inventory, gp, adapterGP)

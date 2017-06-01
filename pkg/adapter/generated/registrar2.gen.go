@@ -15,7 +15,7 @@
 // !!!!!!!!!!!!!!!!!!!!! WARNING !!!!!!!!!!!!!!!!!!!!!!!!
 // THIS IS AUTO GENERATED FILE - SIMULATED - HAND WRITTEN
 
-package adapter
+package generated
 
 import "istio.io/mixer/pkg/templates/mymetric/generated"
 

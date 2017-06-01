@@ -72,6 +72,8 @@ message BucketsDefinition {
 }
 
 /////////////////////// ADDED on top of the content of user written MyNewMetric.proto /////////////////////
+/////////////////////// THIS IS ONLY MEANT TO BE USED FOR PASSING DATA TO GRPC BACKEND ////////////////////
+// Within Mixer we will be using the generated go struct for this........ PTAL at ../MyNewMetric.go///////
 message Instance {
     string type_name = 1;
     google.protobuf.Value value = 2;
