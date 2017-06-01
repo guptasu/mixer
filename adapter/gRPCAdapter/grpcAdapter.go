@@ -21,6 +21,8 @@ import (
 	"fmt"
 	"istio.io/mixer/pkg/adapter"
 	foo_bar_mymetric "istio.io/mixer/pkg/templates/metric/generated/config"
+	"github.com/gogo/protobuf/types"
+	"github.com/gogo/protobuf/proto"
 )
 
 type (
@@ -46,3 +48,5 @@ func (builder) Description() string                                   { return "
 func (builder) ConfigureMetric(typeParams map[string]foo_bar_mymetric.Type) {}
 
 func (builder) ProcessMetric(metricInstances []foo_bar_mymetric.Instance) {}
+func (builder) Close() error                                          { return nil }
+func (builder) DefaultConfig() proto.Message                                          { return &types.Empty{} }

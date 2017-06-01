@@ -85,7 +85,7 @@ type Manager struct {
 // ServiceConfig specifies the location of Service config.
 func NewManager(eval expr.Evaluator, aspectFinder AspectValidatorFinder, builderFinder BuilderValidatorFinder,
 	findAspects AdapterToAspectMapper, store KeyValueStore, loopDelay time.Duration, identityAttribute string,
-	identityAttributeDomain string) *Manager {
+	identityAttributeDomain string, handlerFinder HandlerFinder) *Manager {
 	m := &Manager{
 		eval:                    eval,
 		aspectFinder:            aspectFinder,
@@ -96,7 +96,7 @@ func NewManager(eval expr.Evaluator, aspectFinder AspectValidatorFinder, builder
 		identityAttribute:       identityAttribute,
 		identityAttributeDomain: identityAttributeDomain,
 		validate: func(cfg map[string]string) (*Validated, descriptor.Finder, *adapter.ConfigErrors) {
-			v := newValidator(aspectFinder, builderFinder, findAspects, true, eval)
+			v := newValidator(aspectFinder, builderFinder, findAspects, true, eval, handlerFinder)
 			rt, ce := v.validate(cfg)
 			return rt, v.descriptorFinder, ce
 		},

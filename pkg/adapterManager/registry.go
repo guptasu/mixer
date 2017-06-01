@@ -20,6 +20,7 @@ import (
 	"github.com/golang/glog"
 
 	"istio.io/mixer/pkg/adapter"
+	adpCnfg "istio.io/mixer/pkg/adapter/config"
 	"istio.io/mixer/pkg/config"
 	"istio.io/mixer/pkg/templates/metric/generated"
 )
@@ -43,12 +44,12 @@ type BuildersByName map[string]*BuilderInfo
 // It also implements builders that manager uses.
 type registry struct {
 	builders BuildersByName
-	handlersByName map[string]*mymetric.Handler
+	handlersByName map[string]*adpCnfg.Handler
 }
 
 // newRegistry returns a new Builder registry.
 func newRegistry(builders []adapter.RegisterFn) *registry {
-	r := &registry{make(BuildersByName), make(map[string]*mymetric.Handler)}
+	r := &registry{make(BuildersByName), make(map[string]*adpCnfg.Handler)}
 	for idx, builder := range builders {
 		glog.V(3).Infof("Registering [%d] %#v", idx, builder)
 		builder(r)
@@ -72,6 +73,14 @@ func (r *registry) FindBuilder(name string) (b adapter.Builder, found bool) {
 		return
 	}
 	return bi.Builder, true
+}
+
+func (r *registry) FindHandler(name string) (b adpCnfg.Handler, found bool) {
+	if bi, found := r.handlersByName[name]; !found {
+		return nil, false
+	} else {
+		return *bi, true
+	}
 }
 
 func (r *registry) SupportedKinds(builder string) config.KindSet {
@@ -142,7 +151,7 @@ func (r *registry) insert(k config.Kind, b adapter.Builder) {
 	}
 }
 
-func (r *registry) insertHandler(b mymetric.Handler) {
+func (r *registry) insertHandler(b adpCnfg.Handler) {
 	bi := r.handlersByName[b.Name()]
 	if bi == nil {
 		bi = &b

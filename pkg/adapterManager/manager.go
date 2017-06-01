@@ -28,6 +28,7 @@ import (
 	rpc "github.com/googleapis/googleapis/google/rpc"
 
 	"istio.io/mixer/pkg/adapter"
+	adptCnfg "istio.io/mixer/pkg/adapter/config"
 	"istio.io/mixer/pkg/aspect"
 	"istio.io/mixer/pkg/attribute"
 	"istio.io/mixer/pkg/config"
@@ -83,6 +84,8 @@ type Manager struct {
 type builderFinder interface {
 	// FindBuilder finds a builder by name. == cfg.Adapter.Impl.
 	FindBuilder(name string) (adapter.Builder, bool)
+
+	FindHandler(name string) (adptCnfg.Handler, bool)
 
 	// SupportedKinds returns kinds supported by a builder.
 	SupportedKinds(builder string) config.KindSet
@@ -473,6 +476,10 @@ func (m *Manager) AspectValidatorFinder(kind config.Kind) (config.AspectValidato
 // BuilderValidatorFinder returns a BuilderValidatorFinder for builders.
 func (m *Manager) BuilderValidatorFinder(name string) (adapter.ConfigValidator, bool) {
 	return m.builders.FindBuilder(name)
+}
+
+func (m *Manager) HandlerFinder(name string) (adptCnfg.Handler, bool) {
+	return m.builders.FindHandler(name)
 }
 
 // SupportedKinds returns the set of aspect kinds supported by the builder

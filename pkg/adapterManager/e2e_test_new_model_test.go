@@ -24,13 +24,14 @@ import (
 
 	google_rpc "github.com/googleapis/googleapis/google/rpc"
 
-	"istio.io/mixer/adapter/noop"
 	pkgAdapter "istio.io/mixer/pkg/adapter"
 	"istio.io/mixer/pkg/aspect"
 	"istio.io/mixer/pkg/attribute"
 	"istio.io/mixer/pkg/config"
 	"istio.io/mixer/pkg/expr"
 	"istio.io/mixer/pkg/pool"
+	"istio.io/mixer/adapter/gRPCAdapter"
+	"istio.io/mixer/adapter/noop"
 )
 
 const (
@@ -57,6 +58,9 @@ manifests:
       api.method:
         value_type: STRING
 
+handlers:
+  - name: mygRPCAdapter
+    adapter: grpcAdapter
 `
 
 	srvcCnfgConstInitialSection_2 = `
@@ -110,6 +114,7 @@ func benchmarkAdapterManagerDispatch_2(t *testing.T, declarativeSrvcCnfgFilePath
 		t.Errorf("Failed to create expression evaluator: %v", err)
 	}
 	adapterMgr := NewManager([]pkgAdapter.RegisterFn{
+		gRPCAdapter.Register,
 		noop.Register,
 	}, aspect.Inventory(), eval, gp, adapterGP)
 	store, err := config.NewCompatFSStore(declaredGlobalCnfgFilePath, declarativeSrvcCnfgFilePath)
@@ -121,7 +126,7 @@ func benchmarkAdapterManagerDispatch_2(t *testing.T, declarativeSrvcCnfgFilePath
 	cnfgMgr := config.NewManager(eval, adapterMgr.AspectValidatorFinder, adapterMgr.BuilderValidatorFinder,
 		adapterMgr.SupportedKinds, store,
 		loopDelay,
-		identityAttribute, identityDomainAttribute)
+		identityAttribute, identityDomainAttribute, adapterMgr.HandlerFinder)
 	cnfgMgr.Register(adapterMgr)
 	cnfgMgr.Start()
 

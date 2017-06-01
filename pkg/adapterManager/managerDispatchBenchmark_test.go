@@ -189,7 +189,8 @@ func benchmarkAdapterManagerDispatch(b *testing.B, declarativeSrvcCnfgFilePath s
 	cnfgMgr := config.NewManager(eval, adapterMgr.AspectValidatorFinder, adapterMgr.BuilderValidatorFinder,
 		adapterMgr.SupportedKinds, store,
 		loopDelay,
-		identityAttribute, identityDomainAttribute)
+		identityAttribute, identityDomainAttribute, adapterMgr.HandlerFinder)
+
 	cnfgMgr.Register(adapterMgr)
 	cnfgMgr.Start()
 
