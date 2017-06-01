@@ -91,11 +91,9 @@ action_rules:
     instances:
     - MyMetricConstructor
 `
-	srvcCnfgSimpleAspect_2 = `
-`
 )
 
-func createYamlConfigs_2(srvcCnfgAspect string, configRepeatCount int) (declarativeSrvcCnfg *os.File, declaredGlobalCnfg *os.File) {
+func createYamlConfigs_2() (declarativeSrvcCnfg *os.File, declaredGlobalCnfg *os.File) {
 	srvcCnfgFile, _ := ioutil.TempFile("", "managerDispatchBenchmarkTest")
 	globalCnfgFile, _ := ioutil.TempFile("", "managerDispatchBenchmarkTest")
 
@@ -104,9 +102,7 @@ func createYamlConfigs_2(srvcCnfgAspect string, configRepeatCount int) (declarat
 
 	var srvcCnfgBuffer bytes.Buffer
 	srvcCnfgBuffer.WriteString(srvcCnfgConstInitialSection_2)
-	for i := 0; i < configRepeatCount; i++ {
-		srvcCnfgBuffer.WriteString(srvcCnfgAspect)
-	}
+
 	_, _ = srvcCnfgFile.Write([]byte(srvcCnfgBuffer.String()))
 	_ = srvcCnfgFile.Close()
 
@@ -115,7 +111,7 @@ func createYamlConfigs_2(srvcCnfgAspect string, configRepeatCount int) (declarat
 
 var rpcStatus_2 google_rpc.Status
 
-func benchmarkAdapterManagerDispatch_2(t *testing.T, declarativeSrvcCnfgFilePath string, declaredGlobalCnfgFilePath string) {
+func testAdapterManagerDispatch_2(t *testing.T, declarativeSrvcCnfgFilePath string, declaredGlobalCnfgFilePath string) {
 	apiPoolSize := 1024
 	adapterPoolSize := 1024
 	identityAttribute := "target.service"
@@ -174,9 +170,9 @@ func benchmarkAdapterManagerDispatch_2(t *testing.T, declarativeSrvcCnfgFilePath
 	}
 }
 
-func TestOneSimpleAspect_2(t *testing.T) {
-	sc, gsc := createYamlConfigs_2(srvcCnfgSimpleAspect_2, 1)
-	benchmarkAdapterManagerDispatch_2(t, sc.Name(), gsc.Name())
+func TestNewModel(t *testing.T) {
+	sc, gsc := createYamlConfigs_2()
+	testAdapterManagerDispatch_2(t, sc.Name(), gsc.Name())
 	_ = os.Remove(sc.Name())
 	_ = os.Remove(gsc.Name())
 }
