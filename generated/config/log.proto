@@ -1,0 +1,25 @@
+// Take log_template, substitute ValueType->String to allow user to give us exprs.
+// Remove well-known descripton fields
+
+syntax = "proto3";
+
+package istio.mixer.adapter.log;
+
+message LogConstructor {
+  string name = 1;
+
+  // The name of the template: istio.mixer.adapter.log.LogEntryTemplate.
+  // I think we might be able to get away with not having this field
+  string template = 2;
+
+  enum PayloadFormat {
+      PAYLOAD_FORMAT_UNSPECIFIED = 0;
+      TEXT = 1;
+      JSON = 2;
+  }
+  PayloadFormat payload_format = 4;
+
+  string log_template = 5;
+
+  map<string, string> dimensions = 6;
+}
