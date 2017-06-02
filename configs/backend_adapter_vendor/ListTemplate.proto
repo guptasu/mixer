@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+//import "../mixer/TemplateVariety.proto";
+import "mixer/configs/mixer/TemplateExtensions.proto";
+
+package istio.mixer.v1.config.template;
+
+message ListTemplate {
+  option (istio.mixer.v1.config.template.template_variety) = TEMPLATE_VARIETY_CHECK;
+  option (istio.mixer.v1.config.template.template_name) = "ListTemplate";
+
+  // blacklist determines if this behaves like a blacklist
+  // default is whitelist
+  bool blacklist = 2 [(istio.mixer.v1.config.template.expressed_in_constructor) = true];
+
+  // check_expression is the expression evaluated at runtime to derive the value that is checked against the list
+  string check_expression = 3 [(istio.mixer.v1.config.template.expressed_in_constructor) = true];
+}
+
+// An alternate way to expressing same information as above via nested messages
+message AlternateListTemplate {
+  option (istio.mixer.v1.config.template.template_variety) = TEMPLATE_VARIETY_CHECK;
+  option (istio.mixer.v1.config.template.template_name) = "ListTemplate";
+  message TypeTemplate {
+    // EMPTY, since nothing type needs to specify
+  }
+  message InstanceTemplate {
+    bool blacklist = 2;
+    string check_expression = 3;
+  }
+}

@@ -1,0 +1,4 @@
+types:
+- name: GenericListCheckerType
+  template: ListTemplate
+
