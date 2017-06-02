@@ -31,6 +31,7 @@ func NewCompatFSStore(globalConfigFile string, serviceConfigFile string) (KeyVal
 	dm := map[string]string{
 		keyGlobalServiceConfig: serviceConfigFile,
 		keyDescriptors:         globalConfigFile,
+		keyHandlers:		globalConfigFile,
 	}
 	var data []byte
 	var dir string

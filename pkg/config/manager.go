@@ -28,6 +28,7 @@ import (
 	"istio.io/mixer/pkg/config/descriptor"
 	pb "istio.io/mixer/pkg/config/proto"
 	"istio.io/mixer/pkg/expr"
+	"fmt"
 )
 
 // Resolver resolves configuration to a list of combined configs.
@@ -84,7 +85,7 @@ type Manager struct {
 // ServiceConfig specifies the location of Service config.
 func NewManager(eval expr.Evaluator, aspectFinder AspectValidatorFinder, builderFinder BuilderValidatorFinder,
 	findAspects AdapterToAspectMapper, store KeyValueStore, loopDelay time.Duration, identityAttribute string,
-	identityAttributeDomain string) *Manager {
+	identityAttributeDomain string, handlerFinder HandlerFinder) *Manager {
 	m := &Manager{
 		eval:                    eval,
 		aspectFinder:            aspectFinder,
@@ -95,7 +96,7 @@ func NewManager(eval expr.Evaluator, aspectFinder AspectValidatorFinder, builder
 		identityAttribute:       identityAttribute,
 		identityAttributeDomain: identityAttributeDomain,
 		validate: func(cfg map[string]string) (*Validated, descriptor.Finder, *adapter.ConfigErrors) {
-			v := newValidator(aspectFinder, builderFinder, findAspects, true, eval)
+			v := newValidator(aspectFinder, builderFinder, findAspects, true, eval, handlerFinder)
 			rt, ce := v.validate(cfg)
 			return rt, v.descriptorFinder, ce
 		},
@@ -166,6 +167,7 @@ func (c *Manager) fetch() (*runtime, descriptor.Finder, error) {
 
 	vd, finder, cerr = c.validate(data)
 	if cerr != nil {
+		fmt.Println(cerr)
 		glog.Warningf("Validation failed: %v", cerr)
 		return nil, nil, cerr
 	}
