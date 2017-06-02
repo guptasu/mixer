@@ -1,0 +1,66 @@
+syntax = "proto3";
+
+package metric;
+
+enum ValueType {
+    VALUE_TYPE_UNSPECIFIED = 0;
+    STRING = 1;
+    INT64 = 2;
+    DOUBLE = 3;
+    BOOL = 4;
+    TIMESTAMP = 5;
+    IP_ADDRESS = 6;
+    EMAIL_ADDRESS = 7;
+    URI = 8;
+    DNS_NAME = 9;
+    DURATION = 10;
+    STRING_MAP = 11;
+}
+
+enum Kind {
+    METRIC_KIND_UNSPECIFIED = 0;
+    GAUGE = 1;
+    COUNTER = 2;
+    DISTRIBUTION = 3;
+}
+
+message LinearBuckets {
+    int32 num_finite_buckets = 1;
+    double width = 2;
+    double offset = 3;
+}
+
+message ExponentialBuckets {
+    int32 num_finite_buckets = 1;
+    double growth_factor = 2;
+    double scale = 3;
+}
+
+message ExplicitBuckets {
+    repeated double bounds = 1;
+}
+
+message BucketsDefinition {
+    oneof definition {
+        LinearBuckets linear_buckets = 1;
+        ExponentialBuckets exponential_buckets = 2;
+        ExplicitBuckets explicit_buckets = 3;
+    }
+}
+
+message Template {
+    string name = 1;
+    ValueType value = 2;
+    map<string, ValueType> dimensions = 3;
+
+    // Below: fields only needed by template and type declarations
+    // These fields will not be populated or used by Instances
+
+    // @type_only (or some such annotation)
+    string description = 4;
+    // @type_only (or some such annotation)
+    Kind kind = 5;
+    // @type_only (or some such annotation)
+    // Optional. only needed for kind=DISTRIBUTION; ignored otherwise.
+    BucketsDefinition buckets = 6;
+}

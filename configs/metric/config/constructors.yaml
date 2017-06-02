@@ -1,0 +1,31 @@
+contructors:
+- name: global/constructors/request_count
+  type: global/types/istio_counter
+  value: 1
+  dimensions:
+    source: source.labels["app"]
+    target: target.service
+    service: target.labels["app"]
+    method: request.path
+    version: target.labels["version"]
+    response_code: response.code | 200
+- name: global/constructors/response_size
+  type: global/types/istio_size_distribution
+  value: response.size
+  dimensions:
+    source: source.labels["app"]
+    target: target.service
+    service: target.labels["app"]
+    method: request.path
+    version: target.labels["version"]
+    response_code: response.code | 200
+- name: global/constructors/response_duration
+  type: global/types/istio_time_distribution
+  value: response.latency | response.duration | "0ms"
+  dimensions:
+    source: source.labels["app"]
+    target: target.service
+    service: target.labels["app"]
+    method: request.path
+    version: target.labels["version"]
+    response_code: response.code | 200

@@ -1,0 +1,83 @@
+# Alternate proposal for how the type/handlers/actions could be put together.
+#
+# This is mainly intended for exploration of the space and not to be a guide on
+# how-to or to be considered fully-formed.
+#
+# Here, there are no explicit constructors. They are in-lined where the instances
+# are desired. They have no names and cannot be used across actions, etc.
+#
+# Further, the type definitions have been stripped of the value and
+# dimension definitions. This is a more extreme step (perhaps too extreme). This
+# would require validation that no two instances_from block reference the same
+# type but with different value or dimensions definitions (value types could be
+# inferred from the attribute expressions).
+#
+# Other options include:
+# - assuming default type of dimension is string and having a streamlined way of
+#   specifying that in the type, (example: `dimensions: [ source, target, service, version, method, response_code]`).
+# - *only* supporting STRING dimensions (loss of flexibility  and expressiveness)
+#
+config:
+##
+# Types
+##
+- types:
+  - name: "global/types/istio_counter"
+    description: "Counter metric with Istio standard dimensions"
+    kind: COUNTER
+  - name: global/types/istio_time_distribution
+    description: "Distribution metric with Istio standard dimensions and buckets appropriately-sized for monitoring latency"
+    kind: DISTRIBUTION
+    buckets:
+      explicit_buckets:
+        bounds: [0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10]
+  - name: global/types/istio_size_distribution
+    description: "Distribution metric with Istio standard dimensions and buckets appropriately-sized for monitoring sizes of requests/responses"
+    kind: DISTRIBUTION
+    buckets:
+      exponentialBuckets:
+        numFiniteBuckets: 8
+        scale: 1
+        growthFactor: 10
+##
+# Handlers
+##
+- handlers:
+  - name: "prometheus.io/istio/handler"
+    adapter: "prometheus"
+    mixerPort: 42422
+    metricsPath: "/metrics"
+##
+# Actions
+##
+- actions:
+  - selector: *
+    handler: prometheus.io/istio/handler
+    instances_from:
+    - type: global/types/istio_counter
+      value: 1
+      dimensions:
+        source: source.labels["app"]
+        target: target.service
+        service: target.labels["app"]
+        method: request.path
+        version: target.labels["version"]
+        response_code: response.code | 200
+    - type: global/types/istio_size_distribution
+      value: response.size
+      dimensions:
+        source: source.labels["app"]
+        target: target.service
+        service: target.labels["app"]
+        method: request.path
+        version: target.labels["version"]
+        response_code: response.code | 200
+    - type: global/types/istio_time_distribution
+      value: response.latency | response.duration | "0ms"
+      dimensions:
+        source: source.labels["app"]
+        target: target.service
+        service: target.labels["app"]
+        method: request.path
+        version: target.labels["version"]
+        response_code: response.code | 200

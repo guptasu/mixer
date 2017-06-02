@@ -1,0 +1,42 @@
+types:
+- name: "global/types/istio_counter"
+  description: "Counter metric with Istio standard dimensions"
+  kind: COUNTER
+  value: INT64
+  dimensions:
+    source: STRING
+    target: STRING
+    service: STRING
+    method: STRING
+    version: STRING
+    response_code: INT64
+- name: global/types/istio_time_distribution
+  description: "Distribution metric with Istio standard dimensions and buckets appropriately-sized for monitoring latency"
+  kind: DISTRIBUTION
+  value: DURATION
+  buckets:
+    explicit_buckets:
+      bounds: [0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10]
+  dimensions:
+    source: STRING
+    target: STRING
+    service: STRING
+    method: STRING
+    version: STRING
+    response_code: INT64
+- name: global/types/istio_size_distribution
+  description: "Distribution metric with Istio standard dimensions and buckets appropriately-sized for monitoring sizes of requests/responses"
+  kind: DISTRIBUTION
+  value: INT64
+  buckets:
+    exponentialBuckets:
+      numFiniteBuckets: 8
+      scale: 1
+      growthFactor: 10
+  dimensions:
+    source: STRING
+    target: STRING
+    service: STRING
+    method: STRING
+    version: STRING
+    response_code: INT64
