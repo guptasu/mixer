@@ -1,8 +1,0 @@
-syntax = "proto3";
-
-package prometheus;
-
-message Config {
-    string mixer_port = 1;
-    string metrics_path = 2;
-}

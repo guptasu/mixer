@@ -1,5 +1,0 @@
-handlers:
-- name: versionList
-  adapter: genericListChecker
-  params:
-    listEntries: ["v1", "v2"]

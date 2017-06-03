@@ -1,5 +1,0 @@
-actions:
-- handler: versionList
-  instances:
-  - MyListCheckerConstructor
-
