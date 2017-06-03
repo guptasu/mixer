@@ -176,3 +176,4 @@ actions:
   handler: loggerLocal
   instances:
   - ApacheCommonLog-text-inst
+

@@ -12,3 +12,4 @@ type ListProcessor interface {
   CheckList(templateName string, instances map[string]*Instance /*typeName to Instance (generated from Constructor) mapping*/) (bool, error)
 }
 
+

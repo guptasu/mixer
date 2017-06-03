@@ -12,3 +12,4 @@ type MetricProcessor interface {
   ReportMetric(templateName string, instances map[string]*Instance /*typeName to Instance (generated from Constructor) mapping*/) (error)
 }
 
+

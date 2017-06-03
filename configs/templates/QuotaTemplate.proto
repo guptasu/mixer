@@ -24,3 +24,4 @@ message Constructor{
   // for a quota of this type.
   map<string, istio.mixer.v1.config.template.Expr> dimensions = 2;
 }
+

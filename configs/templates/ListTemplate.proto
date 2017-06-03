@@ -16,3 +16,4 @@ message Constructor {
   bool blacklist = 1;
   istio.mixer.v1.config.template.Expr check_expression = 2;
 }
+

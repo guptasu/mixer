@@ -54,3 +54,4 @@ message Constructor {
     // type described by the kind for each label.
     map<string, istio.mixer.v1.config.template.Expr> dimensions = 1;
 }
+
