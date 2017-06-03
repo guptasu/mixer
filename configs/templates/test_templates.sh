@@ -1,3 +1,4 @@
+
 pushd $GOPATH/src/istio.io
 
 ## RUN PROTOC ON ALL THE TEMPLATES
