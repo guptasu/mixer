@@ -16,7 +16,8 @@ func TestMetricTemplate(t *testing.T) {
 
 func test(t *testing.T, inputTemplateProto string, expected string) {
 
-	outDir := path.Join("testdata/generated", t.Name())
+	tmpOutDirContainer := "testdata/generated"
+	outDir :=  path.Join(tmpOutDirContainer, t.Name())
 	err := os.RemoveAll(outDir)
 	os.MkdirAll(outDir, os.ModePerm)
 
@@ -37,8 +38,7 @@ func test(t *testing.T, inputTemplateProto string, expected string) {
 		t.FailNow()
 	} else {
 		// if the test succeeded, clean up
-		err := os.RemoveAll(outDir)
-		os.Remove(outDir)
+		err := os.RemoveAll(tmpOutDirContainer)
 		if err != nil {
 			panic (err)
 		}
