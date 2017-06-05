@@ -38,7 +38,7 @@ type Instance struct {
   Dimensions map[string]interface{}
 }
 
-type MetricProcessor interface {
+type {{.Name}}Processor interface {
   ConfigureMetric(templateName string, types map[string]*istio_mixer_adapter_metric.Type /*typeName to Type mapping*/) error
   ReportMetric(templateName string, instances map[string]*Instance /*typeName to Instance (generated from Constructor) mapping*/) (error)
 }
@@ -79,9 +79,4 @@ func getFileDescSetPb(path string) (*descriptor.FileDescriptorSet, error) {
 	err = proto.Unmarshal(byts, fds)
 
 	return fds, err
-}
-
-func generateModel(fileDescriptorSetPb *descriptor.FileDescriptorSet) (interface{}, error) {
-	// TODO. Create a model for using the text tempaltes.
-	return nil, nil
 }
