@@ -22,8 +22,7 @@ func test(t *testing.T, inputTemplateProto string, expected string) {
 
 	outFDS := path.Join(outDir, "outFDS.pb")
 	defer os.Remove(outFDS)
-
-	err = generteFDSFile(inputTemplateProto, outFDS)
+	err = generteFDSFileHacky(inputTemplateProto, outFDS)
 	if err != nil {
 		t.Logf("Unable to generate file descriptor set %v", err)
 	}
@@ -39,16 +38,18 @@ func test(t *testing.T, inputTemplateProto string, expected string) {
 	} else {
 		// if the test succeeded, clean up
 		err := os.RemoveAll(outDir)
+		os.Remove(outDir)
 		if err != nil {
 			panic (err)
 		}
 	}
 }
 
-func generteFDSFile(protoFile string, outputFDSFile string) error {
+// TODO: This is blocking the test to be enabled from Bazel.
+func generteFDSFileHacky(protoFile string, outputFDSFile string) error {
 
 	// HACK HACK. Depending on dir structure is super fragile.
-	// Not sure how to generate File Descriptor set in a better way.
+	// Explore how to generate File Descriptor set in a better way.
 	protocCmd := []string{
 		path.Join("mixer/tools/codegen/adapterInterfaceGen", protoFile),
 		"-o",
