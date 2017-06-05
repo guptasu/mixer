@@ -11,7 +11,8 @@ handlers:
 
 - name: redisQuotaLocal
   adapter: redisQuota
-  redisURL: redis://localhost:9789/2
+  params:
+    redisURL: redis://localhost:9789/2
 
 - name: loggerLocal
   adapter: stdioLogger
