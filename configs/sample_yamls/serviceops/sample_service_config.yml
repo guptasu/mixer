@@ -4,16 +4,14 @@
 types:
 # QUOTA
 - name: ratelimit_by_service_by_consumer
-  template: istio.mixer.adapter.quota
-  params:
+  quota_params:
     dimensions:
       service: STRING
       consumer: STRING
     maxAmount: 500
     expiration: 1s
 - name: ratelimit_by_service_by_datacenter
-  template: istio.mixer.config.quota.Template
-  params:
+  quota_params:
     dimensions:
       service: STRING
       datacenter: STRING
@@ -22,13 +20,11 @@ types:
 
 # LIST
 - name: versionListChecker
-  template: foo.bar.mylistchecker
-  params: # EMPTY
+  mylistchecker_params: # EMPTY
 
 # METRIC
 - name: istio_time_distribution
-  template: istio.mixer.adapter.metric
-  params:
+  metric_params:
     description: "Distribution metric with Istio standard dimensions and buckets appropriately-sized for monitoring latency"
     kind: DISTRIBUTION
     value: DURATION
@@ -43,8 +39,7 @@ types:
       version: STRING
       response_code: INT64
 - name: istio_size_distribution
-  template: istio.mixer.adapter.metric
-  params:
+  metric_params:
     description: "Distribution metric with Istio standard dimensions and buckets appropriately-sized for monitoring sizes of requests/responses"
     kind: DISTRIBUTION
     value: INT64
@@ -63,8 +58,7 @@ types:
 
 # LOG
 - name: ApacheCommonLog-text
-  template: istio.mixer.adapter.log # qualified proto name
-  params:
+  log_params:
     description: Apache common log template
     payloadFormat: TEXT
     logTemplate: '{{or (.originIp) "-"}} - {{or (.sourceUser) "-"}} [{{or (.timestamp.Format "02/Jan/2006:15:04:05 -0700") "-"}}] "{{or (.method) "-"}} {{or (.url) "-"}} {{or (.protocol) "-"}}" {{or (.responseCode) "-"}} {{or (.responseSize) "-"}}'
@@ -85,13 +79,13 @@ contructors:
 # QUOTA
 - name: rl_by_service_by_consumer
   type: ratelimit_by_service_by_consumer
-  params:
+  quota_params:
     dimensions:
       service: target.labels["app"]
       consumer: source.labels["app"]
 - name: rl_by_service_by_datacenter
   type: ratelimit_by_service_by_datacenter
-  params:
+  quota_params:
     dimensions:
       service: target.labels["app"]
       datacenter: "us-west-5b"
@@ -99,14 +93,14 @@ contructors:
 # LIST
 - name: sample_version_list_chkr
   type: versionListChecker
-  params:
+  mylistchecker_params:
     blacklist: true
     checkExpression: source.ip
 
 # METRIC
 - name: response_size
   type: istio_size_distribution
-  params:
+  metric_params:
     value: response.size
     dimensions:
       source: source.labels["app"]
@@ -117,7 +111,7 @@ contructors:
       response_code: response.code | 200
 - name: response_duration
   type: istio_time_distribution
-  params:
+  metric_params:
     value: response.latency | response.duration | "0ms"
     dimensions:
       source: source.labels["app"]
@@ -130,7 +124,7 @@ contructors:
 # LOG
 - name: ApacheCommonLog-text-inst
   type: ApacheCommonLog-text
-  params:
+  log_params:
     # @ZACK, is this still the case ?
     #logTemplate: # TODO: this is broken: we need a list of expressions to populate the template,
     #             # but we don't know we need to generate that in our proto definition. Not sure what
