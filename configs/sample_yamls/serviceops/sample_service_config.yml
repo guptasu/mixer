@@ -1,0 +1,172 @@
+#
+########################## types ########################
+#
+types:
+# QUOTA
+- name: ratelimit_by_service_by_consumer
+  quota_params:
+    dimensions:
+      service: STRING
+      consumer: STRING
+    maxAmount: 500
+    expiration: 1s
+- name: ratelimit_by_service_by_datacenter
+  quota_params:
+    dimensions:
+      service: STRING
+      datacenter: STRING
+    maxAmount: 10000
+    expiration: 1s
+
+# LIST
+- name: versionListChecker
+  mylistchecker_params: # EMPTY
+
+# METRIC
+- name: istio_time_distribution
+  metric_params:
+    description: "Distribution metric with Istio standard dimensions and buckets appropriately-sized for monitoring latency"
+    kind: DISTRIBUTION
+    value: DURATION
+    buckets:
+      explicit_buckets:
+        bounds: [0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10]
+    dimensions:
+      source: STRING
+      target: STRING
+      service: STRING
+      method: STRING
+      version: STRING
+      response_code: INT64
+- name: istio_size_distribution
+  metric_params:
+    description: "Distribution metric with Istio standard dimensions and buckets appropriately-sized for monitoring sizes of requests/responses"
+    kind: DISTRIBUTION
+    value: INT64
+    buckets:
+      exponentialBuckets:
+        numFiniteBuckets: 8
+        scale: 1
+        growthFactor: 10
+    dimensions:
+      source: STRING
+      target: STRING
+      service: STRING
+      method: STRING
+      version: STRING
+      response_code: INT64
+
+# LOG
+- name: ApacheCommonLog-text
+  log_params:
+    description: Apache common log template
+    payloadFormat: TEXT
+    logTemplate: '{{or (.originIp) "-"}} - {{or (.sourceUser) "-"}} [{{or (.timestamp.Format "02/Jan/2006:15:04:05 -0700") "-"}}] "{{or (.method) "-"}} {{or (.url) "-"}} {{or (.protocol) "-"}}" {{or (.responseCode) "-"}} {{or (.responseSize) "-"}}'
+    dimensions:
+      originIp: IP_ADDRESS
+      sourceUser: STRING
+      timestamp: TIMESTAMP
+      method: STRING
+      url: STRING
+      protocol: STRING
+      responseCode: INT64
+      responseSize: INT64
+
+#
+########################## contructors ########################
+#
+contructors:
+# QUOTA
+- name: rl_by_service_by_consumer
+  type: ratelimit_by_service_by_consumer
+  quota_params:
+    dimensions:
+      service: target.labels["app"]
+      consumer: source.labels["app"]
+- name: rl_by_service_by_datacenter
+  type: ratelimit_by_service_by_datacenter
+  quota_params:
+    dimensions:
+      service: target.labels["app"]
+      datacenter: "us-west-5b"
+
+# LIST
+- name: sample_version_list_chkr
+  type: versionListChecker
+  mylistchecker_params:
+    blacklist: true
+    checkExpression: source.ip
+
+# METRIC
+- name: response_size
+  type: istio_size_distribution
+  metric_params:
+    value: response.size
+    dimensions:
+      source: source.labels["app"]
+      target: target.service
+      service: target.labels["app"]
+      method: request.path
+      version: target.labels["version"]
+      response_code: response.code | 200
+- name: response_duration
+  type: istio_time_distribution
+  metric_params:
+    value: response.latency | response.duration | "0ms"
+    dimensions:
+      source: source.labels["app"]
+      target: target.service
+      service: target.labels["app"]
+      method: request.path
+      version: target.labels["version"]
+      response_code: response.code | 200
+
+# LOG
+- name: ApacheCommonLog-text-inst
+  type: ApacheCommonLog-text
+  log_params:
+    # @ZACK, is this still the case ?
+    #logTemplate: # TODO: this is broken: we need a list of expressions to populate the template,
+    #             # but we don't know we need to generate that in our proto definition. Not sure what
+    #             # we need to do here.
+    dimensions:
+      originIp: "origin.ip"
+      sourceUser: "source.user"
+      timestamp: "request.time"
+      method: "request.method"
+      url: "request.url"
+      protocol: "request.scheme"
+      responseSize: "response.size"
+      responseCode: "response.code"
+
+#
+########################## actions ########################
+#
+actions:
+- selector: *
+  handler: redisQuotaLocal
+  instances:
+  - rl_by_service_by_consumer
+
+  # only apply per datacenter limits if from a different
+  # datacenter
+- selector: source.labels["datacenter"] != target.labels["datacenter"]
+  handler: redisQuotaLocal
+  instances:
+  - rl_by_service_by_datacenter
+
+- selector: *
+  handler: versionList
+  instances:
+  - MyListCheckerConstructor
+
+- selector: *
+  handler: prometheusLocal
+  instances:
+  - response_duration
+  - response_size
+
+- selector: *
+  handler: loggerLocal
+  instances:
+  - ApacheCommonLog-text-inst
