@@ -34,8 +34,9 @@ package {{.PackageName}}
 import "istio.io/mixer/configs/templates/metric"
 
 type Instance struct {
-  Value      interface{}
-  Dimensions map[string]interface{}
+  {{range .ConstructorFields}}
+  {{.Name}} {{.Type.Name}}
+  {{end}}
 }
 
 type {{.Name}}Processor interface {
