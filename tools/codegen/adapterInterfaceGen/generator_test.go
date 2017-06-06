@@ -32,7 +32,10 @@ func test(t *testing.T, inputTemplateProto string, expected string) {
 	generator := Generator{outFilePath: outFilePath}
 	generator.generate(outFDS)
 
-	err = exec.Command("diff", outFilePath, expected).Run()
+	diffCmd := exec.Command("diff", outFilePath, expected, "--ignore-all-space")
+	diffCmd.Stdout = os.Stdout
+	diffCmd.Stderr = os.Stderr
+	err = diffCmd.Run()
 	if err != nil {
 		t.Logf("Diff failed: %+v. Expected output is located at %s", err, outFilePath)
 		t.FailNow()

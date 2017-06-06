@@ -6,6 +6,8 @@ import (
 	"github.com/golang/protobuf/proto"
 	tmplExtns "istio.io/mixer/tools/codegen/template_extension"
 	multierror "github.com/hashicorp/go-multierror"
+	"unicode"
+	"strings"
 )
 
 type Model struct {
@@ -14,6 +16,7 @@ type Model struct {
 	PackageName string
 	VarietyName string
 	TypeFullName string
+	Imports []string
 }
 
 func validate(fds *descriptor.FileDescriptorSet) (Model, error) {
@@ -21,13 +24,14 @@ func validate(fds *descriptor.FileDescriptorSet) (Model, error) {
 
 	var templateDescriptorProto *descriptor.FileDescriptorProto = nil
 	model := &Model{}
+	model.Imports = make([]string,0)
 	for _, fdp := range fds.File {
 		if !proto.HasExtension(fdp.GetOptions(), tmplExtns.E_TemplateName) && !proto.HasExtension(fdp.GetOptions(), tmplExtns.E_TemplateVariety) {
 			continue
 		} else if proto.HasExtension(fdp.GetOptions(), tmplExtns.E_TemplateName) && proto.HasExtension(fdp.GetOptions(), tmplExtns.E_TemplateVariety) {
 			if templateDescriptorProto == nil {
 				templateDescriptorProto = fdp
-				model.PackageName = *fdp.Package
+				model.PackageName = PackageName(*fdp.Package)
 				tmplName, _ := proto.GetExtension(fdp.GetOptions(), tmplExtns.E_TemplateName)
 				if name,ok := tmplName.(*string); !ok {
 					result = multierror.Append(result, fmt.Errorf("%s should be of type string", tmplExtns.E_TemplateName.Name))
@@ -69,4 +73,18 @@ func validate(fds *descriptor.FileDescriptorSet) (Model, error) {
 func generateModel(fds *descriptor.FileDescriptorSet) (Model, error) {
 	// TODO. Create a model for using the text tempaltes.
 	return validate(fds)
+}
+
+// badToUnderscore is the mapping function used to generate Go names from package names,
+// which can be dotted in the input .proto file.  It replaces non-identifier characters such as
+// dot or dash with underscore.
+func badToUnderscore(r rune) rune {
+	if unicode.IsLetter(r) || unicode.IsDigit(r) || r == '_' {
+		return r
+	}
+	return '_'
+}
+
+func PackageName(pkg string) string {
+	return strings.Map(badToUnderscore, pkg)
 }
