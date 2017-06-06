@@ -39,8 +39,13 @@ type Instance struct {
 }
 
 type {{.Name}}Processor interface {
-  ConfigureMetric(templateName string, types map[string]*istio_mixer_adapter_metric.Type /*typeName to Type mapping*/) error
-  ReportMetric(templateName string, instances map[string]*Instance /*typeName to Instance (generated from Constructor) mapping*/) (error)
+  Configure{{.Name}}(types map[string]*{{.TypeFullName}} /*typeName to Type mapping*/) error
+  {{if .Check}}
+  {{.VarietyName}}{{.Name}}(templateName string, instances map[string]*Instance /*typeName to Instance (generated from Constructor) mapping*/) (bool, error)
+  {{else}}
+  {{.VarietyName}}{{.Name}}(templateName string, instances map[string]*Instance /*typeName to Instance (generated from Constructor) mapping*/) (error)
+  {{end}}
+
 }
 `)
 

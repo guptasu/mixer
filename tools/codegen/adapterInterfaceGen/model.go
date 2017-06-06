@@ -12,6 +12,8 @@ type Model struct {
 	Name string
 	Check bool
 	PackageName string
+	VarietyName string
+	TypeFullName string
 }
 
 func validate(fds *descriptor.FileDescriptorSet) (Model, error) {
@@ -20,8 +22,6 @@ func validate(fds *descriptor.FileDescriptorSet) (Model, error) {
 	var templateDescriptorProto *descriptor.FileDescriptorProto = nil
 	model := &Model{}
 	for _, fdp := range fds.File {
-		fmt.Println(proto.HasExtension(fdp.GetOptions(), tmplExtns.E_TemplateName))
-		fmt.Println(proto.HasExtension(fdp.GetOptions(), tmplExtns.E_TemplateVariety))
 		if !proto.HasExtension(fdp.GetOptions(), tmplExtns.E_TemplateName) && !proto.HasExtension(fdp.GetOptions(), tmplExtns.E_TemplateVariety) {
 			continue
 		} else if proto.HasExtension(fdp.GetOptions(), tmplExtns.E_TemplateName) && proto.HasExtension(fdp.GetOptions(), tmplExtns.E_TemplateVariety) {
@@ -36,7 +36,13 @@ func validate(fds *descriptor.FileDescriptorSet) (Model, error) {
 				}
 
 				tmplVariety, _ := proto.GetExtension(fdp.GetOptions(), tmplExtns.E_TemplateVariety)
-				model.Check = tmplVariety == tmplExtns.TemplateVariety_TEMPLATE_VARIETY_CHECK
+				if tmplVariety == tmplExtns.TemplateVariety_TEMPLATE_VARIETY_CHECK {
+					model.Check = true
+					model.VarietyName = "Check"
+				} else {
+					model.Check = false
+					model.VarietyName = "Report"
+				}
 
 			} else {
 				result = multierror.Append(result, fmt.Errorf("Proto files %s and %s, both have" +
@@ -56,7 +62,7 @@ func validate(fds *descriptor.FileDescriptorSet) (Model, error) {
 		return *model, result.ErrorOrNil()
 	}
 
-
+	model.TypeFullName = "XXXXMyType"
 	return *model, result.ErrorOrNil()
 }
 

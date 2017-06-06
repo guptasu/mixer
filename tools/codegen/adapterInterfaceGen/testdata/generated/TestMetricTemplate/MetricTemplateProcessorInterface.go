@@ -28,8 +28,8 @@ type Instance struct {
 
 type MetricProcessor interface {
   ConfigureMetric(types map[string]*XXXXMyType /*typeName to Type mapping*/) error
-
-  CheckMetric(templateName string, instances map[string]*Instance /*typeName to Instance (generated from Constructor) mapping*/) (bool, error)
-
+  
+  ReportMetric(templateName string, instances map[string]*Instance /*typeName to Instance (generated from Constructor) mapping*/) (error)
+  
 
 }
