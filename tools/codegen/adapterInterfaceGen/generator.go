@@ -45,7 +45,7 @@ type Instance struct {
 }
 
 type {{.Name}}Processor interface {
-  Configure{{.Name}}(types map[string]*{{.TypeFullName}}) error
+  Configure{{.Name}}(types map[string]*Type) error
   {{if .Check -}}
     {{- .VarietyName}}{{.Name}}(instances map[string]*Instance) (bool, error)
   {{else -}}

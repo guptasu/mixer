@@ -20,18 +20,20 @@ func test(t *testing.T, inputTemplateProto string, expected string) {
 	tmpOutDirContainer := "testdata/generated"
 	outDir :=  path.Join(tmpOutDirContainer, t.Name())
 	absOutDir,_ := filepath.Abs(outDir)
-	err := os.RemoveAll(outDir)
+	//err := os.RemoveAll(outDir)
 	os.MkdirAll(outDir, os.ModePerm)
 
 	outFDS := path.Join(outDir, "outFDS.pb")
 	defer os.Remove(outFDS)
-	err = generteFDSFileHacky(inputTemplateProto, outFDS)
+	err := generteFDSFileHacky(inputTemplateProto, outFDS)
 	if err != nil {
 		t.Logf("Unable to generate file descriptor set %v", err)
 	}
 
 	outFilePath := path.Join(outDir, "MetricTemplateProcessorInterface.go")
-	generator := Generator{outFilePath: outFilePath, importMapping:map[string]string {"mixer/v1/config/descriptor/value_type.proto":"istio.io/api/mixer/v1/config/descriptor","mixer/tools/codegen/template_extension/TemplateExtensions.proto":"istio.io/mixer/tools/codegen/template_extension"}}
+	generator := Generator{outFilePath: outFilePath, importMapping:map[string]string {
+		"mixer/v1/config/descriptor/value_type.proto":"istio.io/api/mixer/v1/config/descriptor",
+		"mixer/tools/codegen/template_extension/TemplateExtensions.proto":"istio.io/mixer/tools/codegen/template_extension"}}
 	generator.generate(outFDS)
 
 	// validate if the generated code builds
