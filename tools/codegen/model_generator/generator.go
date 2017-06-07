@@ -146,6 +146,8 @@ func (g *ModelGenerator) TypeName(obj Object) string {
 }
 
 func (g *ModelGenerator) DefaultPackageName(obj Object) string {
+	// TODO if the protoc is not executed with --include_imports, this
+	// is guaranteed to throw NPE.
 	pkg := obj.PackageName()
 	if pkg == g.packageName {
 		return ""
