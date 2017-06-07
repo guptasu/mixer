@@ -2,39 +2,40 @@ package model_generator
 
 import (
 	"fmt"
-	"github.com/golang/protobuf/protoc-gen-go/descriptor"
-	"strings"
-	"unicode"
 	"path"
 	"strconv"
+	"strings"
+	"unicode"
+
+	"github.com/golang/protobuf/protoc-gen-go/descriptor"
 )
 
-type ModelGenerator struct {
-	typeNameToObject map[string]Object          // Key is a fully-qualified name in input syntax.
+type FileDescriptorSetParser struct {
+	typeNameToObject  map[string]Object // Key is a fully-qualified name in input syntax.
 	Param             map[string]string // Command-line parameters.
 	PackageImportPath string            // Go import path of the package we're generating code for
 	ImportMap         map[string]string // Mapping from .proto file name to import path
 
 	Pkg map[string]string // The names under which we import support packages
 
-	packageName      string                     // What we're calling ourselves.
-	allFiles         []*FileDescriptor          // All files in the tree
-	allFilesByName   map[string]*FileDescriptor // All files by filename.
-	usedPackages     map[string]bool            // Names of packages used in current file.
+	packageName    string                     // What we're calling ourselves.
+	allFiles       []*FileDescriptor          // All files in the tree
+	allFilesByName map[string]*FileDescriptor // All files by filename.
+	usedPackages   map[string]bool            // Names of packages used in current file.
 
-	file             *FileDescriptor
+	file *FileDescriptor
 }
 
 type common struct {
 	file *descriptor.FileDescriptorProto // File this object comes from.
 }
 
-func (g *ModelGenerator) fileByName(filename string) *FileDescriptor {
+func (g *FileDescriptorSetParser) fileByName(filename string) *FileDescriptor {
 	return g.allFilesByName[filename]
 }
 
-func (g *ModelGenerator) generateImports() []string {
-	imports := make([]string,0)
+func (g *FileDescriptorSetParser) generateImports() []string {
+	imports := make([]string, 0)
 	for _, s := range g.file.Dependency {
 		fd := g.fileByName(s)
 		// Do not import our own package.
@@ -55,13 +56,12 @@ func (g *ModelGenerator) generateImports() []string {
 		if _, ok := g.usedPackages[pname]; !ok {
 			pname = "_"
 		}
-		imports = append(imports, pname + " " + strconv.Quote(importPath))
+		imports = append(imports, pname+" "+strconv.Quote(importPath))
 	}
 	return imports
 }
 
-
-func (g *ModelGenerator) GoType(message *descriptor.DescriptorProto, field *descriptor.FieldDescriptorProto) (typ string) {
+func (g *FileDescriptorSetParser) GoType(message *descriptor.DescriptorProto, field *descriptor.FieldDescriptorProto) (typ string) {
 	switch *field.Type {
 	case descriptor.FieldDescriptorProto_TYPE_DOUBLE:
 		typ = "float64"
@@ -88,13 +88,13 @@ func (g *ModelGenerator) GoType(message *descriptor.DescriptorProto, field *desc
 		//typ = "*"+g.TypeName(desc), "group"
 		// TODO : What needs to be done in this case? Is this allowed for templates
 	case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
-		 desc := g.ObjectNamed(field.GetTypeName())
-		 typ = "*"+ g.TypeName(desc)
+		desc := g.ObjectNamed(field.GetTypeName())
+		typ = "*" + g.TypeName(desc)
 
 		if d, ok := desc.(*Descriptor); ok && d.GetOptions().GetMapEntry() {
 			keyField, valField := d.Field[0], d.Field[1]
-			keyType:= g.GoType(d.DescriptorProto, keyField)
-			valType:= g.GoType(d.DescriptorProto, valField)
+			keyType := g.GoType(d.DescriptorProto, keyField)
+			valType := g.GoType(d.DescriptorProto, valField)
 
 			keyType = strings.TrimPrefix(keyType, "*")
 			switch *valField.Type {
@@ -131,8 +131,8 @@ func (g *ModelGenerator) GoType(message *descriptor.DescriptorProto, field *desc
 	}
 	if isRepeated(field) {
 		typ = "[]" + typ
-	//} else if message != nil && message.proto3() {
-	//	return
+		//} else if message != nil && message.proto3() {
+		//	return
 	} else if field.OneofIndex != nil && message != nil {
 		return
 	} else if needsStar(*field.Type) {
@@ -141,11 +141,11 @@ func (g *ModelGenerator) GoType(message *descriptor.DescriptorProto, field *desc
 	return
 }
 
-func (g *ModelGenerator) TypeName(obj Object) string {
+func (g *FileDescriptorSetParser) TypeName(obj Object) string {
 	return g.DefaultPackageName(obj) + CamelCaseSlice(obj.TypeName())
 }
 
-func (g *ModelGenerator) DefaultPackageName(obj Object) string {
+func (g *FileDescriptorSetParser) DefaultPackageName(obj Object) string {
 	// TODO if the protoc is not executed with --include_imports, this
 	// is guaranteed to throw NPE.
 	pkg := obj.PackageName()
@@ -168,7 +168,7 @@ func (c *common) PackageName() string {
 
 // ObjectNamed, given a fully-qualified input type name as it appears in the input data,
 // returns the descriptor for the message or enum with that name.
-func (g *ModelGenerator) ObjectNamed(typeName string) Object {
+func (g *FileDescriptorSetParser) ObjectNamed(typeName string) Object {
 	o, ok := g.typeNameToObject[typeName]
 	if !ok {
 		// TODO : g.Fail("can't find object with type", typeName)
@@ -177,7 +177,7 @@ func (g *ModelGenerator) ObjectNamed(typeName string) Object {
 	return o
 }
 
-func (g *ModelGenerator) BuildTypeNameMap() {
+func (g *FileDescriptorSetParser) BuildTypeNameMap() {
 	g.typeNameToObject = make(map[string]Object)
 	for _, f := range g.allFiles {
 		// The names in this loop are defined by the proto world, not us, so the
@@ -198,9 +198,7 @@ func (g *ModelGenerator) BuildTypeNameMap() {
 	}
 }
 
-
 func dottedSlice(elem []string) string { return strings.Join(elem, ".") }
-
 
 func isRepeated(field *descriptor.FieldDescriptorProto) bool {
 	return field.Label != nil && *field.Label == descriptor.FieldDescriptorProto_LABEL_REPEATED

@@ -1,22 +1,22 @@
 package model_generator
 
 import (
-	"github.com/golang/protobuf/protoc-gen-go/descriptor"
 	"path"
 	"strings"
+
+	"github.com/golang/protobuf/protoc-gen-go/descriptor"
 )
 
 type FileDescriptor struct {
 	*descriptor.FileDescriptorProto
-	desc []*Descriptor          // All the messages defined in this file.
-	enum []*EnumDescriptor      // All the enums defined in this file.
+	desc []*Descriptor     // All the messages defined in this file.
+	enum []*EnumDescriptor // All the enums defined in this file.
 
 	proto3 bool // whether to generate proto3 code for this file
+
 }
 
-
-
-func (g *ModelGenerator) WrapTypes(fds *descriptor.FileDescriptorSet) {
+func (g *FileDescriptorSetParser) WrapTypes(fds *descriptor.FileDescriptorSet) {
 	g.allFiles = make([]*FileDescriptor, 0, len(fds.File))
 	g.allFilesByName = make(map[string]*FileDescriptor, len(g.allFiles))
 	for _, f := range fds.File {
@@ -25,7 +25,7 @@ func (g *ModelGenerator) WrapTypes(fds *descriptor.FileDescriptorSet) {
 	}
 }
 
-func (g *ModelGenerator) FileOf(fd *descriptor.FileDescriptorProto) *FileDescriptor {
+func (g *FileDescriptorSetParser) FileOf(fd *descriptor.FileDescriptorProto) *FileDescriptor {
 	for _, file := range g.allFiles {
 		if file.FileDescriptorProto == fd {
 			return file
@@ -35,7 +35,7 @@ func (g *ModelGenerator) FileOf(fd *descriptor.FileDescriptorProto) *FileDescrip
 	return nil
 }
 
-func (g *ModelGenerator) WrapFileDescriptor(f *descriptor.FileDescriptorProto) {
+func (g *FileDescriptorSetParser) WrapFileDescriptor(f *descriptor.FileDescriptorProto) {
 	if _, ok := g.allFilesByName[f.GetName()]; !ok {
 		// We must wrap the descriptors before we wrap the enums
 		descs := wrapDescriptors(f)

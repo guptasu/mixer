@@ -40,7 +40,7 @@ type TypeInfo struct {
 
 const FullNameOfExprMessage = "*istio_mixer_v1_config_template.Expr"
 
-func (g *ModelGenerator) ConstructModel(fds *descriptor.FileDescriptorSet) (Model, error) {
+func (g *FileDescriptorSetParser) ConstructModel(fds *descriptor.FileDescriptorSet) (Model, error) {
 	result := &multierror.Error{}
 	model := &Model{}
 	model.Imports = make([]string, 0)
@@ -77,7 +77,7 @@ func addTopLevelFields(model *Model, fdp *descriptor.FileDescriptorProto, errors
 	}
 }
 
-func (g *ModelGenerator) getTypeNameForType(model *Model, fdp *descriptor.FileDescriptorProto, errors *multierror.Error) {
+func (g *FileDescriptorSetParser) getTypeNameForType(model *Model, fdp *descriptor.FileDescriptorProto, errors *multierror.Error) {
 	var typeDesc *descriptor.DescriptorProto = nil
 	for _, desc := range fdp.MessageType {
 		if *desc.Name == "Type" {
@@ -93,7 +93,7 @@ func (g *ModelGenerator) getTypeNameForType(model *Model, fdp *descriptor.FileDe
 }
 
 // Build field information about the Constructor message.
-func (g *ModelGenerator) addFieldsOfConstructor(model *Model, fdp *descriptor.FileDescriptorProto, errors *multierror.Error) {
+func (g *FileDescriptorSetParser) addFieldsOfConstructor(model *Model, fdp *descriptor.FileDescriptorProto, errors *multierror.Error) {
 	model.ConstructorFields = make([]FieldInfo, 0)
 	var cstrDesc *descriptor.DescriptorProto = nil
 	for _, desc := range fdp.MessageType {

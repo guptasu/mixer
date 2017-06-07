@@ -14,7 +14,7 @@ type Descriptor struct {
 	group    bool
 }
 
-func (g *ModelGenerator) buildNestedDescriptors(descs []*Descriptor) {
+func (g *FileDescriptorSetParser) buildNestedDescriptors(descs []*Descriptor) {
 	for _, desc := range descs {
 		if len(desc.NestedType) != 0 {
 			for _, nest := range descs {

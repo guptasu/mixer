@@ -61,10 +61,10 @@ func (g *Generator) Generate(fdsFile string) error {
 		return err
 	}
 
-	modelGenerator := &model_generator.ModelGenerator{ImportMap: g.importMapping}
-	modelGenerator.WrapTypes(fds)
-	modelGenerator.BuildTypeNameMap()
-	model, err := modelGenerator.ConstructModel(fds)
+	parser := &model_generator.FileDescriptorSetParser{ImportMap: g.importMapping}
+	parser.WrapTypes(fds)
+	parser.BuildTypeNameMap()
+	model, err := parser.ConstructModel(fds)
 	if err != nil {
 		return err
 	}

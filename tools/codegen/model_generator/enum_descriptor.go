@@ -53,7 +53,7 @@ func (e *EnumDescriptor) TypeName() (s []string) {
 }
 
 
-func (g *ModelGenerator) buildNestedEnums(descs []*Descriptor, enums []*EnumDescriptor) {
+func (g *FileDescriptorSetParser) buildNestedEnums(descs []*Descriptor, enums []*EnumDescriptor) {
 	for _, desc := range descs {
 		if len(desc.EnumType) != 0 {
 			for _, enum := range enums {
