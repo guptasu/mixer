@@ -15,27 +15,48 @@ func TestMetricTemplate(t *testing.T) {
 		"testdata/MetricTemplateProcessorInterface.go.baseline")
 }
 
+func TestQuotaTemplate(t *testing.T) {
+	test(t,
+		"testdata/QuotaTemplate.proto",
+		"testdata/QuotaTemplateProcessorInterface.go.baseline")
+}
+
+func TestLogTemplate(t *testing.T) {
+	test(t,
+		"testdata/LogTemplate.proto",
+		"testdata/LogTemplateProcessorInterface.go.baseline")
+}
+
+func TestListTemplate(t *testing.T) {
+	test(t,
+		"testdata/ListTemplate.proto",
+		"testdata/ListTemplateProcessorInterface.go.baseline")
+}
+
 func test(t *testing.T, inputTemplateProto string, expected string) {
 
 	tmpOutDirContainer := "testdata/generated"
 	outDir :=  path.Join(tmpOutDirContainer, t.Name())
-	absOutDir,_ := filepath.Abs(outDir)
-	//err := os.RemoveAll(outDir)
+	_,_ = filepath.Abs(outDir)
+	err := os.RemoveAll(outDir)
 	os.MkdirAll(outDir, os.ModePerm)
 
 	outFDS := path.Join(outDir, "outFDS.pb")
 	defer os.Remove(outFDS)
-	err := generteFDSFileHacky(inputTemplateProto, outFDS)
+	err = generteFDSFileHacky(inputTemplateProto, outFDS)
 	if err != nil {
 		t.Logf("Unable to generate file descriptor set %v", err)
 	}
 
-	outFilePath := path.Join(outDir, "MetricTemplateProcessorInterface.go")
+	outFilePath := path.Join(outDir, "Processor.go")
 	generator := Generator{outFilePath: outFilePath, importMapping:map[string]string {
 		"mixer/v1/config/descriptor/value_type.proto":"istio.io/api/mixer/v1/config/descriptor",
-		"mixer/tools/codegen/template_extension/TemplateExtensions.proto":"istio.io/mixer/tools/codegen/template_extension"}}
+		"mixer/tools/codegen/template_extension/TemplateExtensions.proto":"istio.io/mixer/tools/codegen/template_extension",
+		"google/protobuf/duration.proto":"github.com/golang/protobuf/ptypes/duration",
+	}}
 	generator.generate(outFDS)
 
+	/*
 	// validate if the generated code builds
 	// First copy all the
 	protocCmd := []string{
@@ -51,6 +72,7 @@ func test(t *testing.T, inputTemplateProto string, expected string) {
 		t.FailNow()
 		return
 	}
+	*/
 
 	diffCmd := exec.Command("diff", outFilePath, expected, "--ignore-all-space")
 	diffCmd.Stdout = os.Stdout
@@ -64,7 +86,7 @@ func test(t *testing.T, inputTemplateProto string, expected string) {
 
 
 	// if the test succeeded, clean up
-	// os.RemoveAll(tmpOutDirContainer)
+	os.RemoveAll(outDir)
 }
 
 // TODO: This is blocking the test to be enabled from Bazel.

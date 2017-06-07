@@ -6,7 +6,7 @@ import (
 	"os"
 	"text/template"
 	"github.com/golang/protobuf/protoc-gen-go/descriptor"
-	"istio.io/mixer/tools/codegen/procInterfaceGen/model_generator"
+	"istio.io/mixer/tools/codegen/model_generator"
 )
 
 // TODO : Add this to a file resource instead of a string here.
