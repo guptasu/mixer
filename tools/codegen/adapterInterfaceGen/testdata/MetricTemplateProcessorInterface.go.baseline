@@ -19,15 +19,25 @@
 
 package istio_mixer_adapter_metric
 
-import "istio.io/mixer/configs/templates/metric"
+imports (
+
+_ "mixer/v1/config/descriptor"
+
+_ "mixer/tools/codegen/template_extension"
+
+)
+
 
 type Instance struct {
-  Value      interface{}
+  
+  Value interface{}
+  
   Dimensions map[string]interface{}
+  
 }
 
 type MetricProcessor interface {
   ConfigureMetric(types map[string]*istio_mixer_adapter_metric.Type) error
-  ReportMetric(instances map[string]*Instance) (error)
-
+  ReportMetric(instances map[string]*Instance) error
+  
 }

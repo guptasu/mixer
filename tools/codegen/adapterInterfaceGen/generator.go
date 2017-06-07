@@ -31,7 +31,12 @@ var processorInterfaceGenTemplate,_ = template.New("processorInterfaceGenTemplat
 
 package {{.PackageName}}
 
-import "istio.io/mixer/configs/templates/metric"
+import (
+{{range .Imports}}
+{{.}}
+{{end}}
+)
+
 
 type Instance struct {
   {{range .ConstructorFields}}
@@ -40,17 +45,18 @@ type Instance struct {
 }
 
 type {{.Name}}Processor interface {
-  Configure{{.Name}}(types map[string]*{{.PackageName}}.Type) error
+  Configure{{.Name}}(types map[string]*{{.TypeFullName}}) error
   {{if .Check -}}
     {{- .VarietyName}}{{.Name}}(instances map[string]*Instance) (bool, error)
   {{else -}}
-    {{- .VarietyName}}{{.Name}}(instances map[string]*Instance) (error)
+    {{- .VarietyName}}{{.Name}}(instances map[string]*Instance) error
   {{end}}
 }
 `)
 
 type Generator struct {
-	outFilePath string
+	outFilePath   string
+	importMapping map[string]string
 }
 
 func (g *Generator) generate(fileDescriptorProtobufFile string) error {
@@ -64,7 +70,10 @@ func (g *Generator) generate(fileDescriptorProtobufFile string) error {
 		return err
 	}
 
-	model, err := generateModel(fileDescriptorSetPb)
+	modelGenerator := &ModelGenerator{ImportMap:g.importMapping}
+	modelGenerator.WrapTypes(fileDescriptorSetPb)
+	modelGenerator.BuildTypeNameMap()
+	model, err := modelGenerator.validate(fileDescriptorSetPb)
 	if err != nil {
 		return err
 	}
