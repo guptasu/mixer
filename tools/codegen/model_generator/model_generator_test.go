@@ -23,23 +23,43 @@ import (
 	"path/filepath"
 	"testing"
 
+	"strings"
+
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/protoc-gen-go/descriptor"
 )
 
 func TestNoPackageName(t *testing.T) {
-	test(t,
+	testError(t,
 		"testdata/NoPackageName.proto",
-		"testdata/NoPackageName.baseline")
+		"package name missing")
 }
 
-func test(t *testing.T, inputTemplateProto string, expected string) {
+func TestMissingTemplateNameExt(t *testing.T) {
+	testError(t,
+		"testdata/MissingTemplateNameExt.proto",
+		"has only one of the following two options")
+}
 
-	tmpOutDirContainer := "testdata/generated"
-	outDir := path.Join(tmpOutDirContainer, t.Name())
+func TestMissingTemplateVarietyExt(t *testing.T) {
+	testError(t,
+		"testdata/MissingTemplateVarietyExt.proto",
+		"has only one of the following two options")
+}
+
+func TestMissingBothRequriedExt(t *testing.T) {
+	testError(t,
+		"testdata/MissingBothRequiredExt.proto",
+		"one proto file that has both extensions")
+}
+
+func testError(t *testing.T, inputTemplateProto string, expectedError string) {
+
+	outDir := path.Join("testdata", t.Name())
 	_, _ = filepath.Abs(outDir)
 	err := os.RemoveAll(outDir)
 	os.MkdirAll(outDir, os.ModePerm)
+	defer os.RemoveAll(outDir)
 
 	outFDS := path.Join(outDir, "outFDS.pb")
 	defer os.Remove(outFDS)
@@ -56,28 +76,12 @@ func test(t *testing.T, inputTemplateProto string, expected string) {
 		t.Fail()
 	}
 
-	//outFilePath := path.Join(outDir, "Processor.go")
+	parser, err := CreateFileDescriptorSetParser(fds, map[string]string{})
+	_, err = CreateModel(parser)
 
-	parser, err := CreateFileDescriptorSetParser(fds, map[string]string{
-		"mixer/v1/config/descriptor/value_type.proto":                     "istio.io/api/mixer/v1/config/descriptor",
-		"mixer/tools/codegen/template_extension/TemplateExtensions.proto": "istio.io/mixer/tools/codegen/template_extension",
-		"google/protobuf/duration.proto":                                  "github.com/golang/protobuf/ptypes/duration",
-	})
-
-	model, err := CreateModel(parser)
-	fmt.Println(model, err)
-	//diffCmd := exec.Command("diff", outFilePath, expected, "--ignore-all-space")
-	//diffCmd.Stdout = os.Stdout
-	//diffCmd.Stderr = os.Stderr
-	//err = diffCmd.Run()
-	//if err != nil {
-	//	t.Logf("Diff failed: %+v. Expected output is located at %s", err, outFilePath)
-	//	t.FailNow()
-	//	return
-	//}
-	//
-	//// if the test succeeded, clean up
-	//os.RemoveAll(outDir)
+	if !strings.Contains(err.Error(), expectedError) {
+		t.Fatalf("CreateModel(%s) = %v, \n wanted err that contains string `%v`", inputTemplateProto, err, fmt.Errorf(expectedError))
+	}
 }
 
 func getFileDescSet(path string) (*descriptor.FileDescriptorSet, error) {

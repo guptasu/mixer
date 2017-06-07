@@ -50,9 +50,24 @@ func CreateModel(parser *FileDescriptorSetParser) (Model, error) {
 	}
 
 	model.addTopLevelFields(templateProto, result)
+	if len(result.Errors) != 0 {
+		return *model, result.ErrorOrNil()
+	}
+
 	model.addFieldsOfConstructor(parser, templateProto, result)
+	if len(result.Errors) != 0 {
+		return *model, result.ErrorOrNil()
+	}
+
 	model.addImports(parser, templateProto)
+	if len(result.Errors) != 0 {
+		return *model, result.ErrorOrNil()
+	}
+
 	model.getTypeNameForType(parser, templateProto, result)
+	if len(result.Errors) != 0 {
+		return *model, result.ErrorOrNil()
+	}
 
 	return *model, result.ErrorOrNil()
 }
@@ -61,16 +76,8 @@ func CreateModel(parser *FileDescriptorSetParser) (Model, error) {
 func getTmplFileDesc(fds []*FileDescriptor, errors *multierror.Error) *FileDescriptor {
 	var templateDescriptorProto *FileDescriptor = nil
 
-	erroneousFiles := []string{
-		"mixer/v1/config/descriptor/value_type.proto",
-		"mixer/tools/codegen/template_extension/TemplateExtensions.proto",
-	}
-
 	for _, fdp := range fds {
-		// TODO : hack.. Remove the erroneousFiles.
-		// For some reason the proto.HasExtension code is panicing for files that are specified in the list.
-		// Debugger is not being helpful.
-		if contains(erroneousFiles, *fdp.Name) {
+		if fdp.GetOptions() == nil {
 			continue
 		}
 		if !proto.HasExtension(fdp.GetOptions(), tmplExtns.E_TemplateName) && !proto.HasExtension(fdp.GetOptions(), tmplExtns.E_TemplateVariety) {
@@ -81,31 +88,29 @@ func getTmplFileDesc(fds []*FileDescriptor, errors *multierror.Error) *FileDescr
 			} else {
 				errors = multierror.Append(errors, fmt.Errorf("Proto files %s and %s, both have"+
 					" the options %s and %s. Only one proto file is allowed with those options",
-					fdp.Name, templateDescriptorProto.Name,
+					*fdp.Name, templateDescriptorProto.Name,
 					tmplExtns.E_TemplateVariety.Name, tmplExtns.E_TemplateName.Name))
 
 			}
 		} else {
 			errors = multierror.Append(errors, fmt.Errorf("Proto files %s has only one of the "+
 				"following two options %s and %s. Both options are required.",
-				fdp.Name, tmplExtns.E_TemplateVariety.Name, tmplExtns.E_TemplateName.Name))
+				*fdp.Name, tmplExtns.E_TemplateVariety.Name, tmplExtns.E_TemplateName.Name))
 		}
 	}
 	if templateDescriptorProto == nil {
-		errors = multierror.Append(errors, fmt.Errorf("There has to be at least one proto file that has both extensions %s and %s",
+		errors = multierror.Append(errors, fmt.Errorf("There has to be one proto file that has both extensions %s and %s",
 			tmplExtns.E_TemplateVariety.Name, tmplExtns.E_TemplateVariety.Name))
 	}
 	return templateDescriptorProto
 }
 
 func (m *Model) addTopLevelFields(fdp *FileDescriptor, errors *multierror.Error) {
-	h := fdp.Package
-	pkgName := strings.TrimSpace(*h)
-	if pkgName == "" {
-		errors = multierror.Append(errors, fmt.Errorf("package name on file %s is required", *fdp.Name))
+	if fdp.Package == nil {
+		errors = multierror.Append(errors, fmt.Errorf("package name missing on file %s", *fdp.Name))
 		return
 	}
-	m.PackageName = goPackageName(*fdp.Package)
+	m.PackageName = goPackageName(strings.TrimSpace(*fdp.Package))
 	tmplName, err := proto.GetExtension(fdp.GetOptions(), tmplExtns.E_TemplateName)
 	if err != nil {
 		errors = multierror.Append(errors, fmt.Errorf("file option %s is required", tmplExtns.E_TemplateName.Name))
@@ -140,7 +145,7 @@ func (m *Model) getTypeNameForType(parser *FileDescriptorSetParser, fdp *FileDes
 		}
 	}
 	if typeDesc == nil {
-		errors = multierror.Append(errors, fmt.Errorf("%s should have a message 'Type'", fdp.Name))
+		errors = multierror.Append(errors, fmt.Errorf("%s should have a message 'Type'", *fdp.Name))
 	}
 
 	m.TypeFullName = parser.TypeName(typeDesc)
@@ -157,7 +162,7 @@ func (m *Model) addFieldsOfConstructor(parser *FileDescriptorSetParser, fdp *Fil
 		}
 	}
 	if cstrDesc == nil {
-		errors = multierror.Append(errors, fmt.Errorf("%s should have a message 'Constructor'", fdp.Name))
+		errors = multierror.Append(errors, fmt.Errorf("%s should have a message 'Constructor'", *fdp.Name))
 	}
 
 	for _, fieldDesc := range cstrDesc.Field {
