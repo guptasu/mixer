@@ -14,25 +14,6 @@ type Descriptor struct {
 	group    bool
 }
 
-
-// Return a slice of all the Descriptors defined within this file
-func wrapDescriptors(file *descriptor.FileDescriptorProto) []*Descriptor {
-	sl := make([]*Descriptor, 0, len(file.MessageType)+10)
-	for i, desc := range file.MessageType {
-		sl = wrapThisDescriptor(sl, desc, nil, file, i)
-	}
-	return sl
-}
-
-func wrapThisDescriptor(sl []*Descriptor, desc *descriptor.DescriptorProto, parent *Descriptor, file *descriptor.FileDescriptorProto, index int) []*Descriptor {
-	sl = append(sl, newDescriptor(desc, parent, file, index))
-	me := sl[len(sl)-1]
-	for i, nested := range desc.NestedType {
-		sl = wrapThisDescriptor(sl, nested, me, file, i)
-	}
-	return sl
-}
-
 func (g *ModelGenerator) buildNestedDescriptors(descs []*Descriptor) {
 	for _, desc := range descs {
 		if len(desc.NestedType) != 0 {
@@ -63,6 +44,24 @@ func (d *Descriptor) TypeName() []string {
 	}
 	d.typename = s
 	return s
+}
+
+// Return a slice of all the Descriptors defined within this file
+func wrapDescriptors(file *descriptor.FileDescriptorProto) []*Descriptor {
+	sl := make([]*Descriptor, 0, len(file.MessageType)+10)
+	for i, desc := range file.MessageType {
+		sl = wrapThisDescriptor(sl, desc, nil, file, i)
+	}
+	return sl
+}
+
+func wrapThisDescriptor(sl []*Descriptor, desc *descriptor.DescriptorProto, parent *Descriptor, file *descriptor.FileDescriptorProto, index int) []*Descriptor {
+	sl = append(sl, newDescriptor(desc, parent, file, index))
+	me := sl[len(sl)-1]
+	for i, nested := range desc.NestedType {
+		sl = wrapThisDescriptor(sl, nested, me, file, i)
+	}
+	return sl
 }
 
 func newDescriptor(desc *descriptor.DescriptorProto, parent *Descriptor, file *descriptor.FileDescriptorProto, index int) *Descriptor {

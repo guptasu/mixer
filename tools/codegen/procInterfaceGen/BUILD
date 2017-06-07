@@ -9,6 +9,7 @@ go_library(
     srcs = [
         "generator.go"
     ],
+    data = ["//tools/codegen/procInterfaceGen:ProcInterface2.tmpl"],
     deps = [
         "@com_github_googleapis_googleapis//:google/rpc",
         "@com_github_hashicorp_go_multierror//:go_default_library",
