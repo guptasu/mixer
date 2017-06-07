@@ -19,8 +19,8 @@ import (
 	"os"
 	"os/exec"
 	"path"
-	"testing"
 	"path/filepath"
+	"testing"
 )
 
 func TestMetricTemplate(t *testing.T) {
@@ -50,8 +50,8 @@ func TestListTemplate(t *testing.T) {
 func test(t *testing.T, inputTemplateProto string, expected string) {
 
 	tmpOutDirContainer := "testdata/generated"
-	outDir :=  path.Join(tmpOutDirContainer, t.Name())
-	_,_ = filepath.Abs(outDir)
+	outDir := path.Join(tmpOutDirContainer, t.Name())
+	_, _ = filepath.Abs(outDir)
 	err := os.RemoveAll(outDir)
 	os.MkdirAll(outDir, os.ModePerm)
 
@@ -63,29 +63,29 @@ func test(t *testing.T, inputTemplateProto string, expected string) {
 	}
 
 	outFilePath := path.Join(outDir, "Processor.go")
-	generator := Generator{outFilePath: outFilePath, importMapping:map[string]string {
-		"mixer/v1/config/descriptor/value_type.proto":"istio.io/api/mixer/v1/config/descriptor",
-		"mixer/tools/codegen/template_extension/TemplateExtensions.proto":"istio.io/mixer/tools/codegen/template_extension",
-		"google/protobuf/duration.proto":"github.com/golang/protobuf/ptypes/duration",
+	generator := Generator{outFilePath: outFilePath, importMapping: map[string]string{
+		"mixer/v1/config/descriptor/value_type.proto":                     "istio.io/api/mixer/v1/config/descriptor",
+		"mixer/tools/codegen/template_extension/TemplateExtensions.proto": "istio.io/mixer/tools/codegen/template_extension",
+		"google/protobuf/duration.proto":                                  "github.com/golang/protobuf/ptypes/duration",
 	}}
 	generator.Generate(outFDS)
 
 	/*
-	// validate if the generated code builds
-	// First copy all the
-	protocCmd := []string{
-		"build",
-	}
-	cmd := exec.Command("go", protocCmd...)
-	cmd.Dir = absOutDir
-	cmd.Stderr = os.Stderr // For debugging
-	err = cmd.Run()
+		// validate if the generated code builds
+		// First copy all the
+		protocCmd := []string{
+			"build",
+		}
+		cmd := exec.Command("go", protocCmd...)
+		cmd.Dir = absOutDir
+		cmd.Stderr = os.Stderr // For debugging
+		err = cmd.Run()
 
-	if err != nil {
-		//t.Logf("go build failed in dir %s: %+v.", absOutDir, err)
-		t.FailNow()
-		return
-	}
+		if err != nil {
+			//t.Logf("go build failed in dir %s: %+v.", absOutDir, err)
+			t.FailNow()
+			return
+		}
 	*/
 
 	diffCmd := exec.Command("diff", outFilePath, expected, "--ignore-all-space")
@@ -98,7 +98,6 @@ func test(t *testing.T, inputTemplateProto string, expected string) {
 		return
 	}
 
-
 	// if the test succeeded, clean up
 	os.RemoveAll(outDir)
 }
@@ -109,9 +108,9 @@ func generteFDSFileHacky(protoFile string, outputFDSFile string) error {
 	// HACK HACK. Depending on dir structure is super fragile.
 	// Explore how to generate File Descriptor set in a better way.
 	protocCmd := []string{
-		path.Join("mixer/tools/codegen/procInterfaceGen", protoFile),
+		path.Join("mixer/tools/codegen/proc_interface_gen", protoFile),
 		"-o",
-		fmt.Sprintf("%s", path.Join("mixer/tools/codegen/procInterfaceGen", outputFDSFile)),
+		fmt.Sprintf("%s", path.Join("mixer/tools/codegen/proc_interface_gen", outputFDSFile)),
 		"-I=.",
 		"-I=api",
 		"--include_imports",

@@ -2,8 +2,6 @@ package model_generator
 
 import (
 	"fmt"
-	"path"
-	"strconv"
 	"strings"
 	"unicode"
 
@@ -23,42 +21,20 @@ type FileDescriptorSetParser struct {
 	allFilesByName map[string]*FileDescriptor // All files by filename.
 	usedPackages   map[string]bool            // Names of packages used in current file.
 
-	file *FileDescriptor
 }
 
 type common struct {
 	file *descriptor.FileDescriptorProto // File this object comes from.
 }
 
+func CreateFileDescriptorSetParser(fds *descriptor.FileDescriptorSet, importMap map[string]string) (*FileDescriptorSetParser, error) {
+	parser := &FileDescriptorSetParser{ImportMap: importMap}
+	parser.WrapTypes(fds)
+	parser.BuildTypeNameMap()
+	return parser, nil
+}
 func (g *FileDescriptorSetParser) fileByName(filename string) *FileDescriptor {
 	return g.allFilesByName[filename]
-}
-
-func (g *FileDescriptorSetParser) generateImports() []string {
-	imports := make([]string, 0)
-	for _, s := range g.file.Dependency {
-		fd := g.fileByName(s)
-		// Do not import our own package.
-		if fd.PackageName() == g.packageName {
-			continue
-		}
-		filename := fd.goFileName()
-		// By default, import path is the dirname of the Go filename.
-		importPath := path.Dir(filename)
-		if substitution, ok := g.ImportMap[s]; ok {
-			importPath = substitution
-		}
-
-		// We need to import all the dependencies, even if we don't reference them,
-		// because other code and tools depend on having the full transitive closure
-		// of protocol buffer types in the binary.
-		pname := fd.PackageName()
-		if _, ok := g.usedPackages[pname]; !ok {
-			pname = "_"
-		}
-		imports = append(imports, pname+" "+strconv.Quote(importPath))
-	}
-	return imports
 }
 
 func (g *FileDescriptorSetParser) GoType(message *descriptor.DescriptorProto, field *descriptor.FieldDescriptorProto) (typ string) {
@@ -163,7 +139,7 @@ type Object interface {
 
 func (c *common) PackageName() string {
 	f := c.file
-	return PackageName(*f.Package)
+	return goPackageName(*f.Package)
 }
 
 // ObjectNamed, given a fully-qualified input type name as it appears in the input data,
@@ -290,6 +266,6 @@ func badToUnderscore(r rune) rune {
 	return '_'
 }
 
-func PackageName(pkg string) string {
+func goPackageName(pkg string) string {
 	return strings.Map(badToUnderscore, pkg)
 }

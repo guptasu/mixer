@@ -35,8 +35,8 @@ type Generator struct {
 
 func (g *Generator) Generate(fdsFile string) error {
 	// This path works for bazel. TODO  Help pls !!
-	tmplPathForBazel, _ := filepath.Abs("../../../../../../../../tools/codegen/procInterfaceGen/ProcInterface.tmpl")
-	tmplPathForLocalIntellij, _ := filepath.Abs("../../../tools/codegen/procInterfaceGen/ProcInterface.tmpl")
+	tmplPathForBazel, _ := filepath.Abs("../../../../../../../../tools/codegen/proc_interface_gen/ProcInterface.tmpl")
+	tmplPathForLocalIntellij, _ := filepath.Abs("../../../tools/codegen/proc_interface_gen/ProcInterface.tmpl")
 	a, err := ioutil.ReadFile(tmplPathForBazel)
 	if err != nil {
 		a, err = ioutil.ReadFile(tmplPathForLocalIntellij)
@@ -60,11 +60,12 @@ func (g *Generator) Generate(fdsFile string) error {
 	if err != nil {
 		return err
 	}
+	parser, err := model_generator.CreateFileDescriptorSetParser(fds, g.importMapping)
+	if err != nil {
+		return err
+	}
 
-	parser := &model_generator.FileDescriptorSetParser{ImportMap: g.importMapping}
-	parser.WrapTypes(fds)
-	parser.BuildTypeNameMap()
-	model, err := parser.ConstructModel(fds)
+	model, err := model_generator.CreateModel(parser)
 	if err != nil {
 		return err
 	}

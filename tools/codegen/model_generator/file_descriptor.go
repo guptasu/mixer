@@ -13,7 +13,6 @@ type FileDescriptor struct {
 	enum []*EnumDescriptor // All the enums defined in this file.
 
 	proto3 bool // whether to generate proto3 code for this file
-
 }
 
 func (g *FileDescriptorSetParser) WrapTypes(fds *descriptor.FileDescriptorSet) {
@@ -48,9 +47,9 @@ func (g *FileDescriptorSetParser) WrapFileDescriptor(f *descriptor.FileDescripto
 			enum:                enums,
 			proto3:              fileIsProto3(f),
 		}
+
 		g.allFiles = append(g.allFiles, fd)
 		g.allFilesByName[f.GetName()] = fd
-		//for _, deps := f.de
 	}
 }
 
@@ -98,4 +97,4 @@ func (d *FileDescriptor) goPackageOption() (impPath, pkg string, ok bool) {
 	return
 }
 
-func (d *FileDescriptor) PackageName() string { return PackageName(*d.FileDescriptorProto.Name) }
+func (d *FileDescriptor) PackageName() string { return goPackageName(*d.FileDescriptorProto.Name) }

@@ -2,10 +2,11 @@ package model_generator
 
 import (
 	"fmt"
+	"path"
+	"strconv"
 	"strings"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/golang/protobuf/protoc-gen-go/descriptor"
 	multierror "github.com/hashicorp/go-multierror"
 	tmplExtns "istio.io/mixer/tools/codegen/template_extension"
 )
@@ -23,6 +24,7 @@ type Model struct {
 	// imports
 	Imports []string
 
+	// Constructor fields
 	ConstructorFields []FieldInfo
 }
 
@@ -32,106 +34,47 @@ type FieldInfo struct {
 }
 
 type TypeInfo struct {
-	Name   string
-	IsExpr bool
-
-	IsMap bool
+	Name string
 }
 
 const FullNameOfExprMessage = "*istio_mixer_v1_config_template.Expr"
 
-func (g *FileDescriptorSetParser) ConstructModel(fds *descriptor.FileDescriptorSet) (Model, error) {
-	result := &multierror.Error{}
+// Creates a Model object
+func CreateModel(parser *FileDescriptorSetParser) (Model, error) {
 	model := &Model{}
-	model.Imports = make([]string, 0)
+	result := &multierror.Error{}
 
-	templateProto := getFileDescriptorWithTemplate(fds, result)
-	g.file = g.FileOf(templateProto)
+	templateProto := getTmplFileDesc(parser.allFiles, result)
 	if len(result.Errors) != 0 {
 		return *model, result.ErrorOrNil()
 	}
 
-	addTopLevelFields(model, templateProto, result)
-	g.addFieldsOfConstructor(model, templateProto, result)
-	model.Imports = g.generateImports()
-	g.getTypeNameForType(model, templateProto, result)
+	model.addTopLevelFields(templateProto, result)
+	model.addFieldsOfConstructor(parser, templateProto, result)
+	model.addImports(parser, templateProto)
+	model.getTypeNameForType(parser, templateProto, result)
+
 	return *model, result.ErrorOrNil()
 }
 
-func addTopLevelFields(model *Model, fdp *descriptor.FileDescriptorProto, errors *multierror.Error) {
-	model.PackageName = PackageName(*fdp.Package)
-	tmplName, _ := proto.GetExtension(fdp.GetOptions(), tmplExtns.E_TemplateName)
-	if name, ok := tmplName.(*string); !ok {
-		errors = multierror.Append(errors, fmt.Errorf("%s should be of type string", tmplExtns.E_TemplateName.Name))
-	} else {
-		model.Name = *name
-	}
-
-	tmplVariety, _ := proto.GetExtension(fdp.GetOptions(), tmplExtns.E_TemplateVariety)
-	if tmplVariety == tmplExtns.TemplateVariety_TEMPLATE_VARIETY_CHECK {
-		model.Check = true
-		model.VarietyName = "Check"
-	} else {
-		model.Check = false
-		model.VarietyName = "Report"
-	}
-}
-
-func (g *FileDescriptorSetParser) getTypeNameForType(model *Model, fdp *descriptor.FileDescriptorProto, errors *multierror.Error) {
-	var typeDesc *descriptor.DescriptorProto = nil
-	for _, desc := range fdp.MessageType {
-		if *desc.Name == "Type" {
-			typeDesc = desc
-			break
-		}
-	}
-	if typeDesc == nil {
-		errors = multierror.Append(errors, fmt.Errorf("%s should have a message 'Type'", fdp.Name))
-	}
-
-	model.TypeFullName = g.TypeName(newDescriptor(typeDesc, nil, fdp, 0))
-}
-
-// Build field information about the Constructor message.
-func (g *FileDescriptorSetParser) addFieldsOfConstructor(model *Model, fdp *descriptor.FileDescriptorProto, errors *multierror.Error) {
-	model.ConstructorFields = make([]FieldInfo, 0)
-	var cstrDesc *descriptor.DescriptorProto = nil
-	for _, desc := range fdp.MessageType {
-		if *desc.Name == "Constructor" {
-			cstrDesc = desc
-			break
-		}
-	}
-	if cstrDesc == nil {
-		errors = multierror.Append(errors, fmt.Errorf("%s should have a message 'Constructor'", fdp.Name))
-	}
-
-	for _, fieldDesc := range cstrDesc.Field {
-
-		fieldName := CamelCase(*fieldDesc.Name)
-		typename := g.GoType(cstrDesc, fieldDesc)
-		typename = strings.Replace(typename, FullNameOfExprMessage, "interface{}", 1)
-
-		model.ConstructorFields = append(model.ConstructorFields, FieldInfo{Name: fieldName, Type: TypeInfo{Name: typename}})
-	}
-}
-
 // Find the file that has the options TemplateVariety and TemplateName. There should only be one such file.
-func getFileDescriptorWithTemplate(fds *descriptor.FileDescriptorSet, errors *multierror.Error) *descriptor.FileDescriptorProto {
-	var templateDescriptorProto *descriptor.FileDescriptorProto = nil
+func getTmplFileDesc(fds []*FileDescriptor, errors *multierror.Error) *FileDescriptor {
+	var templateDescriptorProto *FileDescriptor = nil
 
 	erroneousFiles := []string{
 		"mixer/v1/config/descriptor/value_type.proto",
 		"mixer/tools/codegen/template_extension/TemplateExtensions.proto",
 	}
 
-	for _, fdp := range fds.File {
+	for _, fdp := range fds {
 		// TODO : hack.. Remove the erroneousFiles.
 		// For some reason the proto.HasExtension code is panicing for files that are specified in the list.
 		// Debugger is not being helpful.
 		if contains(erroneousFiles, *fdp.Name) {
 			continue
 		}
+		fmt.Println("1", proto.HasExtension(fdp.GetOptions(), tmplExtns.E_TemplateName))
+		fmt.Println("2", proto.HasExtension(fdp.GetOptions(), tmplExtns.E_TemplateVariety))
 		if !proto.HasExtension(fdp.GetOptions(), tmplExtns.E_TemplateName) && !proto.HasExtension(fdp.GetOptions(), tmplExtns.E_TemplateVariety) {
 			continue
 		} else if proto.HasExtension(fdp.GetOptions(), tmplExtns.E_TemplateName) && proto.HasExtension(fdp.GetOptions(), tmplExtns.E_TemplateVariety) {
@@ -150,5 +93,105 @@ func getFileDescriptorWithTemplate(fds *descriptor.FileDescriptorSet, errors *mu
 				fdp.Name, tmplExtns.E_TemplateVariety.Name, tmplExtns.E_TemplateName.Name))
 		}
 	}
+	if templateDescriptorProto == nil {
+		errors = multierror.Append(errors, fmt.Errorf("There has to be at least one proto file that has both extensions %s and %s",
+			tmplExtns.E_TemplateVariety.Name, tmplExtns.E_TemplateVariety.Name))
+	}
 	return templateDescriptorProto
+}
+
+func (m *Model) addTopLevelFields(fdp *FileDescriptor, errors *multierror.Error) {
+	h := fdp.Package
+	pkgName := strings.TrimSpace(*h)
+	if pkgName == "" {
+		errors = multierror.Append(errors, fmt.Errorf("package name on file %s is required", *fdp.Name))
+		return
+	}
+	m.PackageName = goPackageName(*fdp.Package)
+	tmplName, err := proto.GetExtension(fdp.GetOptions(), tmplExtns.E_TemplateName)
+	if err != nil {
+		errors = multierror.Append(errors, fmt.Errorf("file option %s is required", tmplExtns.E_TemplateName.Name))
+		return
+	}
+	if name, ok := tmplName.(*string); !ok {
+		errors = multierror.Append(errors, fmt.Errorf("%s should be of type string", tmplExtns.E_TemplateName.Name))
+	} else {
+		m.Name = *name
+	}
+
+	tmplVariety, err := proto.GetExtension(fdp.GetOptions(), tmplExtns.E_TemplateVariety)
+	if err != nil {
+		errors = multierror.Append(errors, fmt.Errorf("file option %s is required", tmplExtns.E_TemplateVariety.Name))
+		return
+	}
+	if tmplVariety == tmplExtns.TemplateVariety_TEMPLATE_VARIETY_CHECK {
+		m.Check = true
+		m.VarietyName = "Check"
+	} else {
+		m.Check = false
+		m.VarietyName = "Report"
+	}
+}
+
+func (m *Model) getTypeNameForType(parser *FileDescriptorSetParser, fdp *FileDescriptor, errors *multierror.Error) {
+	var typeDesc *Descriptor = nil
+	for _, desc := range fdp.desc {
+		if *desc.Name == "Type" {
+			typeDesc = desc
+			break
+		}
+	}
+	if typeDesc == nil {
+		errors = multierror.Append(errors, fmt.Errorf("%s should have a message 'Type'", fdp.Name))
+	}
+
+	m.TypeFullName = parser.TypeName(typeDesc)
+}
+
+// Build field information about the Constructor message.
+func (m *Model) addFieldsOfConstructor(parser *FileDescriptorSetParser, fdp *FileDescriptor, errors *multierror.Error) {
+	m.ConstructorFields = make([]FieldInfo, 0)
+	var cstrDesc *Descriptor = nil
+	for _, desc := range fdp.desc {
+		if *desc.Name == "Constructor" {
+			cstrDesc = desc
+			break
+		}
+	}
+	if cstrDesc == nil {
+		errors = multierror.Append(errors, fmt.Errorf("%s should have a message 'Constructor'", fdp.Name))
+	}
+
+	for _, fieldDesc := range cstrDesc.Field {
+
+		fieldName := CamelCase(*fieldDesc.Name)
+		typename := parser.GoType(cstrDesc.DescriptorProto, fieldDesc)
+		// TODO : Can there be more than one expressions in a type for a field in Constructor ?
+		typename = strings.Replace(typename, FullNameOfExprMessage, "interface{}", 1)
+
+		m.ConstructorFields = append(m.ConstructorFields, FieldInfo{Name: fieldName, Type: TypeInfo{Name: typename}})
+	}
+}
+
+func (m *Model) addImports(g *FileDescriptorSetParser, fileDescriptor *FileDescriptor) {
+	m.Imports = make([]string, 0)
+	for _, s := range fileDescriptor.Dependency {
+		fd := g.fileByName(s)
+		// Do not import our own package.
+		if fd.PackageName() == g.packageName {
+			continue
+		}
+		filename := fd.goFileName()
+		// By default, import path is the dirname of the Go filename.
+		importPath := path.Dir(filename)
+		if substitution, ok := g.ImportMap[s]; ok {
+			importPath = substitution
+		}
+
+		pname := fd.PackageName()
+		if _, ok := g.usedPackages[pname]; !ok {
+			pname = "_"
+		}
+		m.Imports = append(m.Imports, pname+" "+strconv.Quote(importPath))
+	}
 }
