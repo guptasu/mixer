@@ -73,9 +73,9 @@ func generteFDSFileHacky(protoFile string, outputFDSFile string) error {
 	// HACK HACK. Depending on dir structure is super fragile.
 	// Explore how to generate File Descriptor set in a better way.
 	protocCmd := []string{
-		path.Join("mixer/tools/codegen/adapterInterfaceGen", protoFile),
+		path.Join("mixer/tools/codegen/procInterfaceGen", protoFile),
 		"-o",
-		fmt.Sprintf("%s", path.Join("mixer/tools/codegen/adapterInterfaceGen", outputFDSFile)),
+		fmt.Sprintf("%s", path.Join("mixer/tools/codegen/procInterfaceGen", outputFDSFile)),
 		"-I=.",
 		"-I=api",
 		"--include_imports",

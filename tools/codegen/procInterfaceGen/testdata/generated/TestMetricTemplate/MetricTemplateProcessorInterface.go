@@ -37,7 +37,7 @@ type Instance struct {
 }
 
 type MetricProcessor interface {
-  ConfigureMetric(types map[string]*istio_mixer_adapter_metric.Type) error
+  ConfigureMetric(types map[string]*Type) error
   ReportMetric(instances map[string]*Instance) error
   
 }
