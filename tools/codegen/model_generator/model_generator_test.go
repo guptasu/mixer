@@ -23,8 +23,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/gogo/protobuf/proto"
-
+	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/protoc-gen-go/descriptor"
 )
 
@@ -59,7 +58,12 @@ func test(t *testing.T, inputTemplateProto string, expected string) {
 
 	//outFilePath := path.Join(outDir, "Processor.go")
 
-	parser, err := CreateFileDescriptorSetParser(fds, make(map[string]string))
+	parser, err := CreateFileDescriptorSetParser(fds, map[string]string{
+		"mixer/v1/config/descriptor/value_type.proto":                     "istio.io/api/mixer/v1/config/descriptor",
+		"mixer/tools/codegen/template_extension/TemplateExtensions.proto": "istio.io/mixer/tools/codegen/template_extension",
+		"google/protobuf/duration.proto":                                  "github.com/golang/protobuf/ptypes/duration",
+	})
+
 	model, err := CreateModel(parser)
 	fmt.Println(model, err)
 	//diffCmd := exec.Command("diff", outFilePath, expected, "--ignore-all-space")

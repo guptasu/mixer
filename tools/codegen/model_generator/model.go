@@ -73,8 +73,6 @@ func getTmplFileDesc(fds []*FileDescriptor, errors *multierror.Error) *FileDescr
 		if contains(erroneousFiles, *fdp.Name) {
 			continue
 		}
-		fmt.Println("1", proto.HasExtension(fdp.GetOptions(), tmplExtns.E_TemplateName))
-		fmt.Println("2", proto.HasExtension(fdp.GetOptions(), tmplExtns.E_TemplateVariety))
 		if !proto.HasExtension(fdp.GetOptions(), tmplExtns.E_TemplateName) && !proto.HasExtension(fdp.GetOptions(), tmplExtns.E_TemplateVariety) {
 			continue
 		} else if proto.HasExtension(fdp.GetOptions(), tmplExtns.E_TemplateName) && proto.HasExtension(fdp.GetOptions(), tmplExtns.E_TemplateVariety) {
