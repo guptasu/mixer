@@ -64,7 +64,7 @@ func test(t *testing.T, inputTemplateProto string, expected string) {
 
 
 	// if the test succeeded, clean up
-	os.RemoveAll(tmpOutDirContainer)
+	// os.RemoveAll(tmpOutDirContainer)
 }
 
 // TODO: This is blocking the test to be enabled from Bazel.

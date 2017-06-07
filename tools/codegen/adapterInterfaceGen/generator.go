@@ -73,7 +73,7 @@ func (g *Generator) generate(fileDescriptorProtobufFile string) error {
 	modelGenerator := &ModelGenerator{ImportMap:g.importMapping}
 	modelGenerator.WrapTypes(fileDescriptorSetPb)
 	modelGenerator.BuildTypeNameMap()
-	model, err := modelGenerator.validate(fileDescriptorSetPb)
+	model, err := modelGenerator.constructModel(fileDescriptorSetPb)
 	if err != nil {
 		return err
 	}
