@@ -2,12 +2,14 @@ package model_generator
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/protoc-gen-go/descriptor"
 	multierror "github.com/hashicorp/go-multierror"
 	tmplExtns "istio.io/mixer/tools/codegen/template_extension"
-	"strings"
 )
+
 type Model struct {
 	// top level fields
 	Name        string
@@ -33,7 +35,7 @@ type TypeInfo struct {
 	Name   string
 	IsExpr bool
 
-	IsMap     bool
+	IsMap bool
 }
 
 const FullNameOfExprMessage = "*istio_mixer_v1_config_template.Expr"
@@ -43,7 +45,7 @@ func (g *ModelGenerator) ConstructModel(fds *descriptor.FileDescriptorSet) (Mode
 	model := &Model{}
 	model.Imports = make([]string, 0)
 
-	templateProto := getTemplateProto(fds, result)
+	templateProto := getFileDescriptorWithTemplate(fds, result)
 	g.file = g.FileOf(templateProto)
 	if len(result.Errors) != 0 {
 		return *model, result.ErrorOrNil()
@@ -55,7 +57,6 @@ func (g *ModelGenerator) ConstructModel(fds *descriptor.FileDescriptorSet) (Mode
 	g.getTypeNameForType(model, templateProto, result)
 	return *model, result.ErrorOrNil()
 }
-
 
 func addTopLevelFields(model *Model, fdp *descriptor.FileDescriptorProto, errors *multierror.Error) {
 	model.PackageName = PackageName(*fdp.Package)
@@ -91,6 +92,7 @@ func (g *ModelGenerator) getTypeNameForType(model *Model, fdp *descriptor.FileDe
 	model.TypeFullName = g.TypeName(newDescriptor(typeDesc, nil, fdp, 0))
 }
 
+// Build field information about the Constructor message.
 func (g *ModelGenerator) addFieldsOfConstructor(model *Model, fdp *descriptor.FileDescriptorProto, errors *multierror.Error) {
 	model.ConstructorFields = make([]FieldInfo, 0)
 	var cstrDesc *descriptor.DescriptorProto = nil
@@ -110,21 +112,23 @@ func (g *ModelGenerator) addFieldsOfConstructor(model *Model, fdp *descriptor.Fi
 		typename := g.GoType(cstrDesc, fieldDesc)
 		typename = strings.Replace(typename, FullNameOfExprMessage, "interface{}", 1)
 
-		model.ConstructorFields = append(model.ConstructorFields, FieldInfo{Name: fieldName, Type: TypeInfo{Name:typename}})
+		model.ConstructorFields = append(model.ConstructorFields, FieldInfo{Name: fieldName, Type: TypeInfo{Name: typename}})
 	}
 }
 
-func getTemplateProto(fds *descriptor.FileDescriptorSet, errors *multierror.Error) *descriptor.FileDescriptorProto {
+// Find the file that has the options TemplateVariety and TemplateName. There should only be one such file.
+func getFileDescriptorWithTemplate(fds *descriptor.FileDescriptorSet, errors *multierror.Error) *descriptor.FileDescriptorProto {
 	var templateDescriptorProto *descriptor.FileDescriptorProto = nil
 
-	erroneousFiles := []string {
+	erroneousFiles := []string{
 		"mixer/v1/config/descriptor/value_type.proto",
 		"mixer/tools/codegen/template_extension/TemplateExtensions.proto",
 	}
 
 	for _, fdp := range fds.File {
-		// TODO : Temporary hack..
-		// For some reason the below code is panicing for files that are specified in the list.
+		// TODO : hack.. Remove the erroneousFiles.
+		// For some reason the proto.HasExtension code is panicing for files that are specified in the list.
+		// Debugger is not being helpful.
 		if contains(erroneousFiles, *fdp.Name) {
 			continue
 		}

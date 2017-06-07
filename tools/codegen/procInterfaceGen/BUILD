@@ -9,7 +9,7 @@ go_library(
     srcs = [
         "generator.go"
     ],
-    data = ["//tools/codegen/procInterfaceGen:ProcInterface2.tmpl"],
+    data = ["//tools/codegen/procInterfaceGen:ProcInterface.tmpl"],
     deps = [
         "@com_github_googleapis_googleapis//:google/rpc",
         "@com_github_hashicorp_go_multierror//:go_default_library",
@@ -31,8 +31,7 @@ go_binary(
     ],
 )
 
-# TODO: Undo this once I fiture out how to generate file descriptor set in the test file from a given proto file.
-# Executing protoc from go code is tricky because of all the include dependencies.
+# Disabled since I need to work on making it work via bazel.
 #go_test(
 #    name = "small_tests",
 #    size = "small",
