@@ -14,6 +14,8 @@ go_library(
         "@com_github_hashicorp_go_multierror//:go_default_library",
         "@com_github_golang_protobuf//protoc-gen-go/descriptor:go_default_library",
         "@com_github_golang_protobuf//proto:go_default_library",
+        "//tools/codegen/model_generator:go_default_library",
+        "//tools/codegen/template_extension:go_default_library",
     ],
 )
 

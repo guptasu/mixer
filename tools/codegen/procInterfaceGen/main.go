@@ -13,12 +13,11 @@ func withArgs(args []string, errorf func(format string, a ...interface{})) {
 	var mappings []string
 
 	rootCmd := cobra.Command{
-		Use:   "adapterInterfaceGen [OPTIONS] <File descriptor protobuf>",
+		Use:   "procInterfaceGen <File descriptor set protobuf>",
 		Short: `
-Tool that parses a [Template](http://TODO), defined within file descriptor set, and generates go interface
-for adapters to implement.
+Tool that parses a [Template](http://TODO) and generates go interface for adapters to implement.
 
-Example: adapterInterfaceGen metricTemplateFileDescriptorSet.pb
+Example: procInterfaceGen metricTemplateFileDescriptorSet.pb -o MetricProcessor.go
 `,
 
 		Run: func(cmd *cobra.Command, args []string) {
@@ -34,7 +33,7 @@ Example: adapterInterfaceGen metricTemplateFileDescriptorSet.pb
 			}
 			importMapping := make(map[string]string)
 			for _, maps := range mappings {
-				m := strings.Split(maps, ",")
+				m := strings.Split(maps, ":")
 				importMapping[m[0]] = m[1]
 			}
 			generator := Generator{outFilePath: outFileFullPath, importMapping: importMapping}
@@ -47,8 +46,9 @@ Example: adapterInterfaceGen metricTemplateFileDescriptorSet.pb
 	rootCmd.SetArgs(args)
 	rootCmd.PersistentFlags().StringVarP(&outFilePath, "output", "o", "./generated.go", "Output " +
 		"location for generating the go file.")
-	rootCmd.PersistentFlags().StringArrayVarP(&mappings, "mapping", "m", []string{}, "Mapping of imports from proto files to go packages." +
-		" Example -m=google/protobuf/descriptor.proto=github.com/golang/protobuf/protoc-gen-go/descriptor,mixer/v1/config/descriptor/value_type.proto=istio.io/api/mixer/v1/config/descriptor")
+
+	rootCmd.PersistentFlags().StringArrayVarP(&mappings, "importmapping", "m", []string{}, "colon separated mapping of proto import to go package names." +
+		" Example -m google/protobuf/descriptor.proto:github.com/golang/protobuf/protoc-gen-go/descriptor -m mixer/v1/config/descriptor/value_type.proto:istio.io/api/mixer/v1/config/descriptor")
 
 	if err := rootCmd.Execute(); err != nil {
 		errorf("%v", err)
