@@ -1,4 +1,4 @@
-package main
+package model_generator
 
 import (
 	"github.com/golang/protobuf/protoc-gen-go/descriptor"

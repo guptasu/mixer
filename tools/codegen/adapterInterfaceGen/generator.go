@@ -6,6 +6,7 @@ import (
 	"os"
 	"text/template"
 	"github.com/golang/protobuf/protoc-gen-go/descriptor"
+	"istio.io/mixer/tools/codegen/adapterInterfaceGen/model_generator"
 )
 
 // TODO : Add this to a file resource instead of a string here.
@@ -70,10 +71,10 @@ func (g *Generator) generate(fileDescriptorProtobufFile string) error {
 		return err
 	}
 
-	modelGenerator := &ModelGenerator{ImportMap:g.importMapping}
+	modelGenerator := &model_generator.ModelGenerator{ImportMap:g.importMapping}
 	modelGenerator.WrapTypes(fileDescriptorSetPb)
 	modelGenerator.BuildTypeNameMap()
-	model, err := modelGenerator.constructModel(fileDescriptorSetPb)
+	model, err := modelGenerator.ConstructModel(fileDescriptorSetPb)
 	if err != nil {
 		return err
 	}

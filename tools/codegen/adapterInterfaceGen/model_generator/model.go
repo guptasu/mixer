@@ -1,4 +1,4 @@
-package main
+package model_generator
 
 import (
 	"fmt"
@@ -38,7 +38,7 @@ type TypeInfo struct {
 
 const FullNameOfExprMessage = "*istio_mixer_v1_config_template.Expr"
 
-func (g *ModelGenerator) constructModel(fds *descriptor.FileDescriptorSet) (Model, error) {
+func (g *ModelGenerator) ConstructModel(fds *descriptor.FileDescriptorSet) (Model, error) {
 	result := &multierror.Error{}
 	model := &Model{}
 	model.Imports = make([]string, 0)
