@@ -112,7 +112,7 @@ contructors:
 - name: response_duration
   type: istio_time_distribution
   metric_params:
-    value: response.latency | response.duration | "0ms"
+    value: response.latency | response.duration | 0ms
     dimensions:
       source: source.labels["app"]
       target: target.service
