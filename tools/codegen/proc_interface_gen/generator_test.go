@@ -79,7 +79,6 @@ func test(t *testing.T, inputTemplateProto string, expected string) {
 	//cmd.Dir = absOutDir
 	//cmd.Stderr = os.Stderr // For debugging
 	//err = cmd.Run()
-//
 	//if err != nil {
 	//	t.FailNow()
 	//	return

@@ -71,7 +71,7 @@ func TestBasicImports(t *testing.T) {
 	if err != nil {
 		t.Fatalf("CreateModel(%s) = %v, \n wanted no error", "testdata/BasicImports.proto", err)
 	}
-	fmt.Println(model)
+	fmt.Println(model.Imports)
 }
 
 func testError(t *testing.T, inputTemplateProto string, expectedError string) {
