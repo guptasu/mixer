@@ -7,10 +7,10 @@ load("@io_bazel_rules_go//go:def.bzl", "go_prefix", "go_library", "go_test", "go
 go_library(
     name = "go_default_library",
     srcs = [
-        "generator.go",
-        "enum_descriptor.go",
-        "file_descriptor.go",
-        "message_descriptor.go",
+        "parser.go",
+        "enum_parser.go",
+        "file_parser.go",
+        "message_parser.go",
         "model.go",
     ],
     deps = [

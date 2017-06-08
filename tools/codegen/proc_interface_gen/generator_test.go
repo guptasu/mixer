@@ -70,6 +70,12 @@ func test(t *testing.T, inputTemplateProto string, expected string) {
 	}}
 	generator.Generate(outFDS)
 
+	/*
+	Below commented code is for testing if the generated code compiles correctly. Currently to test that, I have to
+	run protoc separately copy the generated pb.go in the tmp output folder (doing it via a separate script),
+	then uncomment the code and run the test. Need to find a cleaner automated way.
+	*/
+
 	// validate if the generated code builds
 	// First copy all the
 	//protocCmd := []string{
