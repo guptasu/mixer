@@ -32,11 +32,11 @@ go_binary(
 )
 
 # Disabled since I need to work on making it work via bazel.
-#go_test(
-#    name = "small_tests",
-#    size = "small",
-#    srcs = [
-#        "generator_test.go",
-#    ],
-#    library = ":go_default_library",
-#)
+go_test(
+    name = "small_tests",
+    size = "small",
+    srcs = [
+        "generator_test.go",
+    ],
+    library = ":go_default_library",
+)
