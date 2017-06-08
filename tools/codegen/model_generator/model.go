@@ -48,7 +48,9 @@ func CreateModel(parser *FileDescriptorSetParser) (Model, error) {
 	if err != nil {
 		return *model, err
 	}
-
+	if !templateProto.proto3 {
+		return *model, fmt.Errorf("Only proto3 template files are allowed")
+	}
 	// set the current generated code package to the package of the
 	// templateProto. This will make sure references within the
 	// generated file into the template's pb.go file are fully qualified.
@@ -59,15 +61,23 @@ func CreateModel(parser *FileDescriptorSetParser) (Model, error) {
 		return *model, err
 	}
 
+	// ensure Constructor is present
+	cnstrDesc, err := getRequiredMsg(templateProto, "Constructor")
+	if err != nil {
+		return *model, err
+	}
+
+	// ensure Constructor is present
+	_, err = getRequiredMsg(templateProto, "Type")
+	if err != nil {
+		return *model, err
+	}
+
 	err = model.addInstanceFieldFromConstructor(parser, templateProto)
 	if err != nil {
 		return *model, err
 	}
 
-	cnstrDesc, err := getRequiredMsg(templateProto, "Constructor")
-	if err != nil {
-		return *model, err
-	}
 	// imports only referenced by the Constructor message.
 	model.addImports(parser, templateProto, cnstrDesc)
 	if err != nil {
@@ -136,7 +146,7 @@ func (m *Model) addTopLevelFields(fd *FileDescriptor) error {
 		// therefore it is impossible to get to this state.
 		return fmt.Errorf("file option %s is required", tmplExtns.E_TemplateVariety.Name)
 	}
-	if tmplVariety == tmplExtns.TemplateVariety_TEMPLATE_VARIETY_CHECK {
+	if *(tmplVariety.(*tmplExtns.TemplateVariety)) == tmplExtns.TemplateVariety_TEMPLATE_VARIETY_CHECK {
 		m.Check = true
 		m.VarietyName = "Check"
 	} else {

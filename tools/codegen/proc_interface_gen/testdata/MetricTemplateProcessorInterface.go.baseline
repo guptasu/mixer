@@ -33,7 +33,7 @@ type Instance struct {
   
   Om *OtherMessage
   
-  Vt *istio_mixer_v1_config_descriptor.ValueType
+  Vt istio_mixer_v1_config_descriptor.ValueType
   
 }
 

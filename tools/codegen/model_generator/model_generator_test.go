@@ -65,15 +65,62 @@ func TestConstructorMessage(t *testing.T) {
 		"should have a message 'Constructor'")
 }
 
-func TestBasicImports(t *testing.T) {
-	model, err := createTestModel(t,
-		"testdata/BasicImports.proto")
-	if err != nil {
-		t.Fatalf("CreateModel(%s) = %v, \n wanted no error", "testdata/BasicImports.proto", err)
+func TestBasicTopLevelFields(t *testing.T) {
+	testFilename := "testdata/BasicTopLevelFields.proto"
+	model, _ := createTestModel(t,
+		testFilename)
+	if model.PackageName != "foo_bar" {
+		t.Fatalf("CreateModel(%s).PackageName = %v, wanted %s", testFilename, model.PackageName, "foo_bar")
 	}
-	fmt.Println(model.Imports)
+	if model.Name != "List" {
+		t.Fatalf("CreateModel(%s).Name = %v, wanted %s", testFilename, model.Name, "List")
+	}
+	if model.VarietyName != "Check" {
+		t.Fatalf("CreateModel(%s).VarietyName = %v, wanted %s", testFilename, model.VarietyName, "Check")
+	}
+	if model.Check != true {
+		t.Fatalf("CreateModel(%s).Check = %v, wanted %s", testFilename, model.Check, "true")
+	}
 }
 
+func TestConstructorDirRefAndImports(t *testing.T) {
+	testFilename := "testdata/ConstructorAndImports.proto"
+	model, _ := createTestModel(t,
+		testFilename)
+
+	expectedTxt := "istio_mixer_v1_config_descriptor \"mixer/v1/config/descriptor\""
+	if !contains(model.Imports, expectedTxt) {
+		t.Fatalf("CreateModel(%s).Imports = %v, wanted to contain %s", testFilename, model.Imports, expectedTxt)
+	}
+	expectedTxt = "_ \"mixer/tools/codegen/template_extension\""
+	if !contains(model.Imports, expectedTxt) {
+		t.Fatalf("CreateModel(%s).Imports = %v, wanted to contain %s", testFilename, model.Imports, expectedTxt)
+	}
+
+	if len(model.ConstructorFields) != 5 {
+		t.Fatalf("len(CreateModel(%s).ConstructorFields) = %v, wanted %d", testFilename, len(model.ConstructorFields), 5)
+	}
+	testField(t, testFilename, model, "Blacklist", "bool")
+	testField(t, testFilename, model, "CheckExpression", "interface{}")
+	testField(t, testFilename, model, "Om", "*OtherMessage")
+	testField(t, testFilename, model, "Val", "istio_mixer_v1_config_descriptor.ValueType")
+	testField(t, testFilename, model, "Submsgfield", "*ConstructorSubmessage")
+}
+
+func testField(t *testing.T, testFilename string, model Model, fldName string,  expectedFldType string){
+	found := false
+	for _, cf := range model.ConstructorFields {
+		if cf.Name == fldName {
+			found = true
+			if cf.Type.Name != expectedFldType {
+				t.Fatalf("CreateModel(%s).ConstructorFields[%s] = %s, wanted %s", testFilename, fldName, cf.Type.Name,expectedFldType)
+			}
+		}
+	}
+	if !found {
+		t.Fatalf("CreateModel(%s).ConstructorFields = %v, wanted to contain field with name '%s'", testFilename, model.ConstructorFields, fldName)
+	}
+}
 func testError(t *testing.T, inputTemplateProto string, expectedError string) {
 
 	_, err := createTestModel(t, inputTemplateProto)

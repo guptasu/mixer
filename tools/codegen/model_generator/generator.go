@@ -105,8 +105,8 @@ func (g *FileDescriptorSetParser) GoType(message *descriptor.DescriptorProto, fi
 	}
 	if isRepeated(field) {
 		typ = "[]" + typ
-		//} else if message != nil && message.proto3() {
-		//	return
+	} else if message != nil {
+			return
 	} else if field.OneofIndex != nil && message != nil {
 		return
 	} else if needsStar(*field.Type) {
