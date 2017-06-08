@@ -131,7 +131,6 @@ func testError(t *testing.T, inputTemplateProto string, expectedError string) {
 }
 
 func createTestModel(t *testing.T, inputTemplateProto string) (Model, error) {
-
 	outDir := path.Join("testdata", t.Name())
 	_, _ = filepath.Abs(outDir)
 	err := os.RemoveAll(outDir)
