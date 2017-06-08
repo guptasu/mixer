@@ -11,15 +11,15 @@ import (
 	tmplExtns "istio.io/mixer/tools/codegen/template_extension"
 )
 
+/*
+Data model to be used to generate code for istio/mixer
+*/
 type Model struct {
 	// top level fields
 	Name        string
 	Check       bool
 	PackageName string
 	VarietyName string
-
-	// types
-	TypeFullName string
 
 	// imports
 	Imports []string
@@ -40,7 +40,7 @@ type TypeInfo struct {
 const FullNameOfExprMessage = "istio_mixer_v1_config_template.Expr"
 const FullNameOfExprMessageWithPtr = "*" + FullNameOfExprMessage
 
-// Creates a Model object
+// Creates a Model object.
 func CreateModel(parser *FileDescriptorSetParser) (Model, error) {
 	model := &Model{}
 
@@ -49,9 +49,9 @@ func CreateModel(parser *FileDescriptorSetParser) (Model, error) {
 		return *model, err
 	}
 
-	// set the current package to the package of the templateProto.
-	// This will make sure all references within the same file
-	// do not get fully qualified.
+	// set the current generated code package to the package of the
+	// templateProto. This will make sure references within the
+	// generated file into the template's pb.go file are fully qualified.
 	parser.packageName = goPackageName(templateProto.GetPackage())
 
 	err = model.addTopLevelFields(templateProto)
@@ -64,12 +64,12 @@ func CreateModel(parser *FileDescriptorSetParser) (Model, error) {
 		return *model, err
 	}
 
-	err = model.getTypeNameForType(parser, templateProto)
+	cnstrDesc, err := getRequiredMsg(templateProto, "Constructor")
 	if err != nil {
 		return *model, err
 	}
-
-	model.addImports(parser, templateProto)
+	// imports only referenced by the Constructor message.
+	model.addImports(parser, templateProto, cnstrDesc)
 	if err != nil {
 		return *model, err
 	}
@@ -81,26 +81,26 @@ func CreateModel(parser *FileDescriptorSetParser) (Model, error) {
 func getTmplFileDesc(fds []*FileDescriptor) (*FileDescriptor, error) {
 	var templateDescriptorProto *FileDescriptor = nil
 
-	for _, fdp := range fds {
-		if fdp.GetOptions() == nil {
+	for _, fd := range fds {
+		if fd.GetOptions() == nil {
 			continue
 		}
-		if !proto.HasExtension(fdp.GetOptions(), tmplExtns.E_TemplateName) && !proto.HasExtension(fdp.GetOptions(), tmplExtns.E_TemplateVariety) {
+		if !proto.HasExtension(fd.GetOptions(), tmplExtns.E_TemplateName) && !proto.HasExtension(fd.GetOptions(), tmplExtns.E_TemplateVariety) {
 			continue
-		} else if proto.HasExtension(fdp.GetOptions(), tmplExtns.E_TemplateName) && proto.HasExtension(fdp.GetOptions(), tmplExtns.E_TemplateVariety) {
+		} else if proto.HasExtension(fd.GetOptions(), tmplExtns.E_TemplateName) && proto.HasExtension(fd.GetOptions(), tmplExtns.E_TemplateVariety) {
 			if templateDescriptorProto == nil {
-				templateDescriptorProto = fdp
+				templateDescriptorProto = fd
 			} else {
 				return nil, fmt.Errorf("Proto files %s and %s, both have"+
 					" the options %s and %s. Only one proto file is allowed with those options",
-					*fdp.Name, templateDescriptorProto.Name,
+					fd.GetName(), templateDescriptorProto.Name,
 					tmplExtns.E_TemplateVariety.Name, tmplExtns.E_TemplateName.Name)
 
 			}
 		} else {
 			return nil, fmt.Errorf("Proto files %s has only one of the "+
 				"following two options %s and %s. Both options are required.",
-				*fdp.Name, tmplExtns.E_TemplateVariety.Name, tmplExtns.E_TemplateName.Name)
+				fd.GetName(), tmplExtns.E_TemplateVariety.Name, tmplExtns.E_TemplateName.Name)
 		}
 	}
 	if templateDescriptorProto == nil {
@@ -110,15 +110,17 @@ func getTmplFileDesc(fds []*FileDescriptor) (*FileDescriptor, error) {
 	return templateDescriptorProto, nil
 }
 
-func (m *Model) addTopLevelFields(fdp *FileDescriptor) error {
-	if fdp.Package == nil {
-		return fmt.Errorf("package name missing on file %s", *fdp.Name)
+// Add all the file level fields to the model.
+func (m *Model) addTopLevelFields(fd *FileDescriptor) error {
+	if fd.Package == nil {
+		return fmt.Errorf("package name missing on file %s", fd.GetName())
 	}
-	m.PackageName = goPackageName(strings.TrimSpace(*fdp.Package))
-	tmplName, err := proto.GetExtension(fdp.GetOptions(), tmplExtns.E_TemplateName)
+	m.PackageName = goPackageName(strings.TrimSpace(*fd.Package))
+
+	tmplName, err := proto.GetExtension(fd.GetOptions(), tmplExtns.E_TemplateName)
 	if err != nil {
-		// This code should only get called for FileDescriptor that has this attribute. It is impossible to get to
-		// this state.
+		// This func should only get called for FileDescriptor that has this attribute,
+		// therefore it is impossible to get to this state.
 		return fmt.Errorf("file option %s is required", tmplExtns.E_TemplateName.Name)
 	}
 	if name, ok := tmplName.(*string); !ok {
@@ -128,10 +130,10 @@ func (m *Model) addTopLevelFields(fdp *FileDescriptor) error {
 		m.Name = *name
 	}
 
-	tmplVariety, err := proto.GetExtension(fdp.GetOptions(), tmplExtns.E_TemplateVariety)
+	tmplVariety, err := proto.GetExtension(fd.GetOptions(), tmplExtns.E_TemplateVariety)
 	if err != nil {
-		// This code should only get called for FileDescriptor that has this attribute. It is impossible to get to
-		// this state.
+		// This func should only get called for FileDescriptor that has this attribute,
+		// therefore it is impossible to get to this state.
 		return fmt.Errorf("file option %s is required", tmplExtns.E_TemplateVariety.Name)
 	}
 	if tmplVariety == tmplExtns.TemplateVariety_TEMPLATE_VARIETY_CHECK {
@@ -144,38 +146,15 @@ func (m *Model) addTopLevelFields(fdp *FileDescriptor) error {
 	return nil
 }
 
-func (m *Model) getTypeNameForType(parser *FileDescriptorSetParser, fdp *FileDescriptor) error {
-	typeDesc, err := getDescriptor(fdp, "Type")
-	if err != nil {
-		return err
-	}
-	m.TypeFullName = parser.TypeName(typeDesc)
-	return nil
-}
-
-func getDescriptor(fdp *FileDescriptor, typeName string) (*Descriptor, error) {
-	var cstrDesc *Descriptor = nil
-	for _, desc := range fdp.desc {
-		if *desc.Name == typeName {
-			cstrDesc = desc
-			break
-		}
-	}
-	if cstrDesc == nil {
-		return nil, fmt.Errorf("%s should have a message '%s'", *fdp.Name, typeName)
-	}
-	return cstrDesc, nil
-}
-
 // Build field information about the Constructor message.
 func (m *Model) addInstanceFieldFromConstructor(parser *FileDescriptorSetParser, fdp *FileDescriptor) error {
 	m.ConstructorFields = make([]FieldInfo, 0)
-	cstrDesc, err := getDescriptor(fdp, "Constructor")
+	cstrDesc, err := getRequiredMsg(fdp, "Constructor")
 	if err != nil {
 		return err
 	}
 	for _, fieldDesc := range cstrDesc.Field {
-		fieldName := CamelCase(*fieldDesc.Name)
+		fieldName := CamelCase(fieldDesc.GetName())
 		typename := parser.GoType(cstrDesc.DescriptorProto, fieldDesc)
 		// TODO : Can there be more than one expressions in a type for a field in Constructor ?
 		typename = strings.Replace(typename, FullNameOfExprMessageWithPtr, "interface{}", 1)
@@ -185,45 +164,8 @@ func (m *Model) addInstanceFieldFromConstructor(parser *FileDescriptorSetParser,
 	return nil
 }
 
-func getUsedPackages(parser *FileDescriptorSetParser, desc *Descriptor) []string {
-	result := make([]string, 0)
-	for _, fieldDesc := range desc.Field {
-		getUsedPackagesThisField(parser, fieldDesc, desc.PackageName(), &result)
-	}
-
-	return result
-}
-
-func getUsedPackagesThisField(parser *FileDescriptorSetParser, fieldDesc *descriptor.FieldDescriptorProto, parentPackage string, referencedPkgs *[]string) {
-	if *fieldDesc.Type == descriptor.FieldDescriptorProto_TYPE_MESSAGE || *fieldDesc.Type == descriptor.FieldDescriptorProto_TYPE_ENUM {
-		refDesc := parser.ObjectNamed(fieldDesc.GetTypeName())
-		if d, ok := refDesc.(*Descriptor); ok {
-			if fmt.Sprintf("%s.%s", d.PackageName(), d.GetName()) == FullNameOfExprMessage {
-				return
-			}
-		}
-		if d, ok := refDesc.(*Descriptor); ok && d.GetOptions().GetMapEntry() {
-			keyField, valField := d.Field[0], d.Field[1]
-			getUsedPackagesThisField(parser, keyField, parentPackage, referencedPkgs)
-			getUsedPackagesThisField(parser, valField, parentPackage, referencedPkgs)
-		} else {
-			pname := goPackageName(parser.FileOf(refDesc.File()).GetPackage())
-			if parentPackage != pname && !contains(*referencedPkgs, pname) {
-				*referencedPkgs = append(*referencedPkgs, pname)
-			}
-		}
-	}
-}
-
-func (m *Model) addImports(parser *FileDescriptorSetParser, fileDescriptor *FileDescriptor) {
-	cstrDesc, _ := getDescriptor(fileDescriptor, "Constructor")
-	if cstrDesc == nil {
-		// should not happen because imports are supposed to be computed after all validation has occured and
-		// all the types are loaded.
-		return
-	}
-
-	usedPackages := getUsedPackages(parser, cstrDesc)
+func (m *Model) addImports(parser *FileDescriptorSetParser, fileDescriptor *FileDescriptor, typDesc *Descriptor) {
+	usedPackages := getReferencedPackagesWithinType(parser, typDesc)
 	m.Imports = make([]string, 0)
 	for _, s := range fileDescriptor.Dependency {
 		fd := parser.fileByName(s)
@@ -243,5 +185,49 @@ func (m *Model) addImports(parser *FileDescriptorSetParser, fileDescriptor *File
 			pname = "_"
 		}
 		m.Imports = append(m.Imports, pname+" "+strconv.Quote(importPath))
+	}
+}
+
+func getRequiredMsg(fdp *FileDescriptor, msgName string) (*Descriptor, error) {
+	var cstrDesc *Descriptor = nil
+	for _, desc := range fdp.desc {
+		if desc.GetName() == msgName {
+			cstrDesc = desc
+			break
+		}
+	}
+	if cstrDesc == nil {
+		return nil, fmt.Errorf("%s should have a message '%s'", fdp.GetName(), msgName)
+	}
+	return cstrDesc, nil
+}
+
+func getReferencedPackagesWithinType(parser *FileDescriptorSetParser, typDesc *Descriptor) []string {
+	result := make([]string, 0)
+	for _, fieldDesc := range typDesc.GetField() {
+		getReferencedPackagesByField(parser, fieldDesc, typDesc.PackageName(), &result)
+	}
+
+	return result
+}
+
+func getReferencedPackagesByField(parser *FileDescriptorSetParser, fieldDesc *descriptor.FieldDescriptorProto, parentPackage string, referencedPkgs *[]string) {
+	if *fieldDesc.Type == descriptor.FieldDescriptorProto_TYPE_MESSAGE || *fieldDesc.Type == descriptor.FieldDescriptorProto_TYPE_ENUM {
+		refDesc := parser.ObjectNamed(fieldDesc.GetTypeName())
+		if d, ok := refDesc.(*Descriptor); ok {
+			if fmt.Sprintf("%s.%s", d.PackageName(), d.GetName()) == FullNameOfExprMessage {
+				return
+			}
+		}
+		if d, ok := refDesc.(*Descriptor); ok && d.GetOptions().GetMapEntry() {
+			keyField, valField := d.Field[0], d.Field[1]
+			getReferencedPackagesByField(parser, keyField, parentPackage, referencedPkgs)
+			getReferencedPackagesByField(parser, valField, parentPackage, referencedPkgs)
+		} else {
+			pname := goPackageName(parser.FileOf(refDesc.File()).GetPackage())
+			if parentPackage != pname && !contains(*referencedPkgs, pname) {
+				*referencedPkgs = append(*referencedPkgs, pname)
+			}
+		}
 	}
 }
