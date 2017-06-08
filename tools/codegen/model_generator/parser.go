@@ -414,6 +414,7 @@ func (g *FileDescriptorSetParser) TypeName(obj Object) string {
 func (g *FileDescriptorSetParser) DefaultPackageName(obj Object) string {
 	// TODO if the protoc is not executed with --include_imports, this
 	// is guaranteed to throw NPE.
+	// Handle it.
 	pkg := obj.PackageName()
 	if pkg == g.packageName {
 		return ""
