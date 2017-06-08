@@ -4,11 +4,5 @@ package foo.bar;
 
 import "mixer/tools/codegen/template_extension/TemplateExtensions.proto";
 
-message Type {
-    // EMPTY, since nothing type needs to specify for the
-}
-
-message Constructor {
-    bool blacklist = 1;
-    istio.mixer.v1.config.template.Expr check_expression = 2;
-}
+message Type {}
+message Constructor {}
