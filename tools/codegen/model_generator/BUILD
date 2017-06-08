@@ -8,9 +8,6 @@ go_library(
     name = "go_default_library",
     srcs = [
         "parser.go",
-        "enum_parser.go",
-        "file_parser.go",
-        "message_parser.go",
         "model.go",
     ],
     deps = [
