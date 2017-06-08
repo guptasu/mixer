@@ -15,7 +15,6 @@
 package main
 
 import (
-	"fmt"
 	"os"
 	"os/exec"
 	"path"
@@ -57,7 +56,7 @@ func test(t *testing.T, inputTemplateProto string, expected string) {
 	defer os.Remove(outFDS)
 	err = generteFDSFileHacky(inputTemplateProto, outFDS)
 	if err != nil {
-		t.Logf("Unable to generate file descriptor set %v", err)
+		t.Errorf("Unable to generate file descriptor set %v", err)
 	}
 
 	outFilePath := path.Join(outDir, "Processor.go")
@@ -73,20 +72,22 @@ func test(t *testing.T, inputTemplateProto string, expected string) {
 	run protoc separately copy the generated pb.go in the tmp output folder (doing it via a separate script),
 	then uncomment the code and run the test. Need to find a cleaner automated way.
 	*/
-
-	// validate if the generated code builds
-	// First copy all the
-	//protocCmd := []string{
-	//	"build",
-	//}
-	//cmd := exec.Command("go", protocCmd...)
-	//cmd.Dir = absOutDir
-	//cmd.Stderr = os.Stderr // For debugging
-	//err = cmd.Run()
-	//if err != nil {
-	//	t.FailNow()
-	//	return
-	//}
+	// Generate *.pb.go file for the template and copy it into the outDir
+	err = generteGoPbFileForTmpl(inputTemplateProto, outDir)
+	if err != nil {
+		t.Errorf("Unable to generate go file for %s: %v", inputTemplateProto, err)
+	}
+	protocCmd := []string{
+		"build",
+	}
+	cmd := exec.Command("go", protocCmd...)
+	cmd.Dir = outDir
+	cmd.Stderr = os.Stderr // For debugging
+	err = cmd.Run()
+	if err != nil {
+		t.FailNow()
+		return
+	}
 
 	diffCmd := exec.Command("diff", outFilePath, expected, "--ignore-all-space")
 	diffCmd.Stdout = os.Stdout
@@ -109,7 +110,7 @@ func generteFDSFileHacky(protoFile string, outputFDSFile string) error {
 	protocCmd := []string{
 		path.Join("mixer/tools/codegen/proc_interface_gen", protoFile),
 		"-o",
-		fmt.Sprintf("%s", path.Join("mixer/tools/codegen/proc_interface_gen", outputFDSFile)),
+		path.Join("mixer/tools/codegen/proc_interface_gen", outputFDSFile),
 		"-I=.",
 		"-I=api",
 		"--include_imports",
@@ -120,4 +121,54 @@ func generteFDSFileHacky(protoFile string, outputFDSFile string) error {
 	cmd.Stderr = os.Stderr // For debugging
 	err := cmd.Run()
 	return err
+}
+
+// TODO: This is blocking the test to be enabled from Bazel.
+func generteGoPbFileForTmpl(protoFile string, outDir string) error {
+
+	// HACK HACK. Depending on dir structure is super fragile.
+	// Explore how to generate File Descriptor set in a better way.
+	protocCmd := []string{
+		path.Join("mixer/tools/codegen/proc_interface_gen", protoFile),
+		"--go_out=Mgoogle/protobuf/duration.proto=github.com/golang/protobuf/ptypes/duration,Mmixer/v1/" +
+			"config/descriptor/value_type.proto=istio.io/api/mixer/v1/config/descriptor," +
+			"Mgoogle/protobuf/descriptor.proto=github.com/golang/protobuf/protoc-gen-go/descriptor," +
+			"Mgoogle/protobuf/struct.proto=github.com/golang/protobuf/ptypes/struct," +
+			"Mmixer/tools/codegen/template_extension/TemplateExtensions.proto=istio.io/mixer/tools/codegen/template_extension:.",
+		"-I=.",
+		"-I=api",
+	}
+	cmd := exec.Command("protoc", protocCmd...)
+	dir := path.Join(os.Getenv("GOPATH"), "src/istio.io")
+	cmd.Dir = dir
+	cmd.Stderr = os.Stderr // For debugging
+	err := cmd.Run()
+
+	if err != nil {
+		return err
+	}
+
+	// Copy to the outDir
+	genGoFilePath := path.Join(path.Dir(protoFile), getBaseFileNameWithoutExt(protoFile) + ".pb.go")
+	// first do the magic replacement
+	sedCmd := exec.Command("sed", "-i", "-e", "s/ValueType_VALUE_TYPE_UNSPECIFIED/VALUE_TYPE_UNSPECIFIED/g", genGoFilePath)
+	sedCmd.Stdout = os.Stdout
+	sedCmd.Stderr = os.Stderr
+	err = sedCmd.Run()
+	if err != nil {
+		return err
+	}
+
+	mvCmd := exec.Command("mv", genGoFilePath, outDir)
+	mvCmd.Stdout = os.Stdout
+	mvCmd.Stderr = os.Stderr
+
+	return mvCmd.Run()
+
+
+}
+
+func getBaseFileNameWithoutExt(filePath string) string {
+	tmp := filepath.Base(filePath)
+	return tmp[0 : len(tmp)-len(filepath.Ext(tmp))]
 }
