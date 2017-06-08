@@ -20,6 +20,12 @@ message Type {
 message Constructor {
     istio.mixer.v1.config.template.Expr value = 2;
     map<string, istio.mixer.v1.config.template.Expr> dimensions = 3;
+
+    // message inside the Constructor
+    OtherMessage om = 4;
+
+    // message from other file inside a constructor
+    istio.mixer.v1.config.descriptor.ValueType vt = 5;
 }
 
 enum ValueType {
@@ -66,4 +72,8 @@ message BucketsDefinition {
         ExponentialBuckets exponential_buckets = 2;
         ExplicitBuckets explicit_buckets = 3;
     }
+}
+
+message OtherMessage {
+    int64 t = 1;
 }

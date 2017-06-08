@@ -29,9 +29,9 @@ import (
 	"github.com/golang/protobuf/protoc-gen-go/descriptor"
 )
 
-func TestNoPackageName(t *testing.T) {
+func TestMissingPackageName(t *testing.T) {
 	testError(t,
-		"testdata/NoPackageName.proto",
+		"testdata/MissingPackageName.proto",
 		"package name missing")
 }
 
@@ -53,7 +53,37 @@ func TestMissingBothRequriedExt(t *testing.T) {
 		"one proto file that has both extensions")
 }
 
+func TestTypeMessage(t *testing.T) {
+	testError(t,
+		"testdata/MissingTypeMessage.proto",
+		"should have a message 'Type'")
+}
+
+func TestConstructorMessage(t *testing.T) {
+	testError(t,
+		"testdata/MissingConstructorMessage.proto",
+		"should have a message 'Constructor'")
+}
+
+func TestBasicImports(t *testing.T) {
+	model, err := createTestModel(t,
+		"testdata/BasicImports.proto")
+	if err != nil {
+		t.Fatalf("CreateModel(%s) = %v, \n wanted no error", "testdata/BasicImports.proto", err)
+	}
+	fmt.Println(model)
+}
+
 func testError(t *testing.T, inputTemplateProto string, expectedError string) {
+
+	_, err := createTestModel(t, inputTemplateProto)
+
+	if !strings.Contains(err.Error(), expectedError) {
+		t.Fatalf("CreateModel(%s) = %v, \n wanted err that contains string `%v`", inputTemplateProto, err, fmt.Errorf(expectedError))
+	}
+}
+
+func createTestModel(t *testing.T, inputTemplateProto string) (Model, error) {
 
 	outDir := path.Join("testdata", t.Name())
 	_, _ = filepath.Abs(outDir)
@@ -65,23 +95,17 @@ func testError(t *testing.T, inputTemplateProto string, expectedError string) {
 	defer os.Remove(outFDS)
 	err = generteFDSFileHacky(inputTemplateProto, outFDS)
 	if err != nil {
-		t.Logf("Unable to generate file descriptor set %v", err)
-		t.Fail()
-		return
+		t.Fatalf("Unable to generate file descriptor set %v", err)
 	}
 
 	fds, err := getFileDescSet(outFDS)
 	if err != nil {
-		t.Logf("Unable to parse file descriptor set file %v", err)
-		t.Fail()
+		t.Fatalf("Unable to parse file descriptor set file %v", err)
+
 	}
 
 	parser, err := CreateFileDescriptorSetParser(fds, map[string]string{})
-	_, err = CreateModel(parser)
-
-	if !strings.Contains(err.Error(), expectedError) {
-		t.Fatalf("CreateModel(%s) = %v, \n wanted err that contains string `%v`", inputTemplateProto, err, fmt.Errorf(expectedError))
-	}
+	return CreateModel(parser)
 }
 
 func getFileDescSet(path string) (*descriptor.FileDescriptorSet, error) {

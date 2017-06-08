@@ -70,31 +70,27 @@ func test(t *testing.T, inputTemplateProto string, expected string) {
 	}}
 	generator.Generate(outFDS)
 
-	/*
-		// validate if the generated code builds
-		// First copy all the
-		protocCmd := []string{
-			"build",
-		}
-		cmd := exec.Command("go", protocCmd...)
-		cmd.Dir = absOutDir
-		cmd.Stderr = os.Stderr // For debugging
-		err = cmd.Run()
-
-		if err != nil {
-			//t.Logf("go build failed in dir %s: %+v.", absOutDir, err)
-			t.FailNow()
-			return
-		}
-	*/
+	// validate if the generated code builds
+	// First copy all the
+	//protocCmd := []string{
+	//	"build",
+	//}
+	//cmd := exec.Command("go", protocCmd...)
+	//cmd.Dir = absOutDir
+	//cmd.Stderr = os.Stderr // For debugging
+	//err = cmd.Run()
+//
+	//if err != nil {
+	//	t.FailNow()
+	//	return
+	//}
 
 	diffCmd := exec.Command("diff", outFilePath, expected, "--ignore-all-space")
 	diffCmd.Stdout = os.Stdout
 	diffCmd.Stderr = os.Stderr
 	err = diffCmd.Run()
 	if err != nil {
-		t.Logf("Diff failed: %+v. Expected output is located at %s", err, outFilePath)
-		t.FailNow()
+		t.Fatalf("Diff failed: %+v. Expected output is located at %s", err, outFilePath)
 		return
 	}
 

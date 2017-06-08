@@ -86,13 +86,11 @@ func (g *FileDescriptorSetParser) GoType(message *descriptor.DescriptorProto, fi
 			typ = fmt.Sprintf("map[%s]%s", keyType, valType)
 			return
 		}
-		//typ = field.GetTypeName()
 	case descriptor.FieldDescriptorProto_TYPE_BYTES:
 		typ = "[]byte"
 	case descriptor.FieldDescriptorProto_TYPE_ENUM:
-		//desc := g.ObjectNamed(field.GetTypeName())
-		//typ = g.TypeName(desc)
-		typ = field.GetTypeName()
+		desc := g.ObjectNamed(field.GetTypeName())
+		typ = g.TypeName(desc)
 	case descriptor.FieldDescriptorProto_TYPE_SFIXED32:
 		typ = "int32"
 	case descriptor.FieldDescriptorProto_TYPE_SFIXED64:
@@ -134,7 +132,7 @@ func (g *FileDescriptorSetParser) DefaultPackageName(obj Object) string {
 type Object interface {
 	PackageName() string // The name we use in our output (a_b_c), possibly renamed for uniqueness.
 	TypeName() []string
-	//File() *descriptor.FileDescriptorProto
+	File() *descriptor.FileDescriptorProto
 }
 
 func (c *common) PackageName() string {
@@ -269,3 +267,5 @@ func badToUnderscore(r rune) rune {
 func goPackageName(pkg string) string {
 	return strings.Map(badToUnderscore, pkg)
 }
+
+func (c *common) File() *descriptor.FileDescriptorProto { return c.file }

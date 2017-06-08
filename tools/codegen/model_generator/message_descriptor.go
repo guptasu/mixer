@@ -1,17 +1,20 @@
 package model_generator
 
 import (
-	"github.com/golang/protobuf/protoc-gen-go/descriptor"
 	"strings"
+
+	"github.com/golang/protobuf/protoc-gen-go/descriptor"
 )
+
 type Descriptor struct {
 	common
 	*descriptor.DescriptorProto
-	parent   *Descriptor            // The containing message, if any.
-	nested   []*Descriptor          // Inner messages, if any.
-	enums    []*EnumDescriptor      // Inner enums, if any.
-	typename []string               // Cached typename vector.
-	group    bool
+	parent      *Descriptor       // The containing message, if any.
+	nested      []*Descriptor     // Inner messages, if any.
+	enums       []*EnumDescriptor // Inner enums, if any.
+	typename    []string          // Cached typename vector.
+	group       bool
+	refPackages []string
 }
 
 func (g *FileDescriptorSetParser) buildNestedDescriptors(descs []*Descriptor) {
@@ -69,7 +72,6 @@ func newDescriptor(desc *descriptor.DescriptorProto, parent *Descriptor, file *d
 		common:          common{file},
 		DescriptorProto: desc,
 		parent:          parent,
-
 	}
 
 	// The only way to distinguish a group from a message is whether
