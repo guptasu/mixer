@@ -21,8 +21,6 @@ import (
 
 	"fmt"
 
-	"path/filepath"
-
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/protoc-gen-go/descriptor"
 	"istio.io/mixer/tools/codegen/model_generator"
@@ -35,18 +33,14 @@ type Generator struct {
 
 func (g *Generator) Generate(fdsFile string) error {
 	// This path works for bazel. TODO  Help pls !!
-	tmplPathForBazel, _ := filepath.Abs("../../../../../../../../tools/codegen/proc_interface_gen/ProcInterface.tmpl")
-	tmplPathForLocalIntellij, _ := filepath.Abs("../../../tools/codegen/proc_interface_gen/ProcInterface.tmpl")
-	a, err := ioutil.ReadFile(tmplPathForBazel)
+
+	tmplPath := "template/ProcInterface.tmpl"
+	t, err := ioutil.ReadFile(tmplPath)
 	if err != nil {
-		a, err = ioutil.ReadFile(tmplPathForLocalIntellij)
+		panic(fmt.Errorf("cannot load template from path %s", tmplPath))
 	}
 
-	if err != nil {
-		panic(fmt.Errorf("cannot load template from path %s or %s", tmplPathForBazel, tmplPathForLocalIntellij))
-	}
-
-	tmpl, err := template.New("processorInterfaceGenTemplate").Parse(string(a))
+	tmpl, err := template.New("ProcInterface").Parse(string(t))
 	if err != nil {
 		panic(err)
 	}

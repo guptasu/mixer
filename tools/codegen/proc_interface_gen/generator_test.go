@@ -48,9 +48,7 @@ func TestListTemplate(t *testing.T) {
 }
 
 func test(t *testing.T, inputTemplateProto string, expected string) {
-
-	tmpOutDirContainer := "testdata/generated"
-	outDir := path.Join(tmpOutDirContainer, t.Name())
+	outDir := path.Join("testdata", t.Name())
 	_, _ = filepath.Abs(outDir)
 	err := os.RemoveAll(outDir)
 	os.MkdirAll(outDir, os.ModePerm)
