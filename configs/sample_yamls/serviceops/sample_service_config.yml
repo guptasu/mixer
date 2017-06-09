@@ -77,13 +77,13 @@ types:
 #
 contructors:
 # QUOTA
-- name: rl_by_service_by_consumer
+- instance_name: rl_by_service_by_consumer
   type: ratelimit_by_service_by_consumer
   quota_params:
     dimensions:
       service: target.labels["app"]
       consumer: source.labels["app"]
-- name: rl_by_service_by_datacenter
+- instance_name: rl_by_service_by_datacenter
   type: ratelimit_by_service_by_datacenter
   quota_params:
     dimensions:
@@ -91,14 +91,14 @@ contructors:
       datacenter: "us-west-5b"
 
 # LIST
-- name: sample_version_list_chkr
+- instance_name: sample_version_list_chkr
   type: versionListChecker
   mylistchecker_params:
     blacklist: true
     checkExpression: source.ip
 
 # METRIC
-- name: response_size
+- instance_name: response_size
   type: istio_size_distribution
   metric_params:
     value: response.size
@@ -109,7 +109,7 @@ contructors:
       method: request.path
       version: target.labels["version"]
       response_code: response.code | 200
-- name: response_duration
+- instance_name: response_duration
   type: istio_time_distribution
   metric_params:
     value: response.latency | response.duration | 0ms
@@ -122,7 +122,7 @@ contructors:
       response_code: response.code | 200
 
 # LOG
-- name: ApacheCommonLog-text-inst
+- instance_name: ApacheCommonLog-text-inst
   type: ApacheCommonLog-text
   log_params:
     # @ZACK, is this still the case ?
