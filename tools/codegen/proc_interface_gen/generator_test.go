@@ -22,28 +22,34 @@ import (
 	"testing"
 )
 
-func TestMetricTemplate(t *testing.T) {
+func TestMetric(t *testing.T) {
 	test(t,
 		"testdata/MetricTemplate.proto",
 		"testdata/MetricTemplateProcessorInterface.go.baseline")
 }
 
-func TestQuotaTemplate(t *testing.T) {
+func TestQuota(t *testing.T) {
 	test(t,
 		"testdata/QuotaTemplate.proto",
 		"testdata/QuotaTemplateProcessorInterface.go.baseline")
 }
 
-func TestLogTemplate(t *testing.T) {
+func TestLog(t *testing.T) {
 	test(t,
 		"testdata/LogTemplate.proto",
 		"testdata/LogTemplateProcessorInterface.go.baseline")
 }
 
-func TestListTemplate(t *testing.T) {
+func TestList(t *testing.T) {
 	test(t,
 		"testdata/ListTemplate.proto",
 		"testdata/ListTemplateProcessorInterface.go.baseline")
+}
+
+func TestNestedMessage(t *testing.T) {
+	test(t,
+		"testdata/NestedMessage.proto",
+		"testdata/NestedMessageProcessor.go.baseline")
 }
 
 func test(t *testing.T, inputTemplateProto string, expected string) {
@@ -138,6 +144,7 @@ func generteGoPbFileForTmpl(protoFile string, outDir string) error {
 		"-I=.",
 		"-I=api",
 	}
+
 	cmd := exec.Command("protoc", protocCmd...)
 	dir := path.Join(os.Getenv("GOPATH"), "src/istio.io")
 	cmd.Dir = dir
@@ -164,8 +171,6 @@ func generteGoPbFileForTmpl(protoFile string, outDir string) error {
 	mvCmd.Stderr = os.Stderr
 
 	return mvCmd.Run()
-
-
 }
 
 func getBaseFileNameWithoutExt(filePath string) string {
