@@ -18,7 +18,7 @@ import (
 	"testing"
 	"time"
 )
-
+sdasd
 func TestString(t *testing.T) {
 	val := Value{MetricValue: 1}
 	if _, err := val.String(); err == nil {
