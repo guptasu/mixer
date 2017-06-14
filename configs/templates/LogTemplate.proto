@@ -1,5 +1,3 @@
-// COPY OF https://github.com/istio/api/blob/master/mixer/v1/config/descriptor/log_entry_descriptor.proto
-
 syntax = "proto3";
 
 package istio.mixer.adapter.log;

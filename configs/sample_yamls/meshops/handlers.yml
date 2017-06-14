@@ -1,21 +1,17 @@
 handlers:
 - name: versionList
-  adapter: genericListChecker
   genericListChecker_params:
     listEntries: ["v1", "v2"]
 
 - name: prometheusLocal
-  adapter: prometheus
   prometheus_params:
     mixerPort: 42422
 
 - name: redisQuotaLocal
-  adapter: redisQuota
   redisQuota_params:
     redisURL: redis://localhost:9789/2
 
 - name: loggerLocal
-  adapter: stdioLogger
   stdioLogger_params:
     log_stream: STDOUT
 

@@ -9,7 +9,7 @@ option (istio.mixer.v1.config.template.template_name) = "List";
 
 
 message Type {
-  // EMPTY, since nothing type needs to specify for the
+  // EMPTY, since this template does not need any Type specific information.
 }
 
 message Constructor {
