@@ -187,8 +187,9 @@ func (m *Model) addInstanceFieldFromConstructor(parser *FileDescriptorSetParser,
 		// 'Name' within the Instance object would represent the name of the Constructor:instance_name
 		// specified in the operator Yaml file.
 		if fieldName == "Name" {
-			// TODO add line number for the field.
-			m.addError(cnstrDesc.file.GetName(), templateProto.getLineNumber(getPathForField(cnstrDesc, i)), "Constructor message must not contain the reserved filed name '%s'", fieldDesc.GetName())
+			m.addError(cnstrDesc.file.GetName(),
+				templateProto.getLineNumber(getPathForField(cnstrDesc, i)),
+				"Constructor message must not contain the reserved filed name '%s'", fieldDesc.GetName())
 			continue
 		}
 		typename := parser.GoType(cnstrDesc.DescriptorProto, fieldDesc)
