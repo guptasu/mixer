@@ -6,7 +6,7 @@ import "mixer/v1/config/descriptor/value_type.proto";
 import "mixer/configs/mixer/TemplateExtensions.proto";
 
 option (istio.mixer.v1.config.template.template_variety) = TEMPLATE_VARIETY_REPORT;
-option (istio.mixer.v1.config.template.template_name) = "Log";
+option (istio.mixer.v1.config.template.template_name) = "Metric";
 
 /*
 Data from Template proto
