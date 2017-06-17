@@ -1,12 +1,24 @@
 syntax = "proto3";
 
 package foo.bar.mylistchecker;
-
+import "mixer/v1/config/descriptor/value_type.proto";
 import "mixer/configs/mixer/TemplateExtensions.proto";
 
 option (istio.mixer.v1.config.template.template_variety) = TEMPLATE_VARIETY_CHECK;
 option (istio.mixer.v1.config.template.template_name) = "List";
 
+
+/*
+Data from Template proto
 message Constructor {
   string check_expression = 2;
+}
+*/
+
+message Type {
+  istio.mixer.v1.config.descriptor.ValueType check_expression = 1;
+}
+
+message ConstructorParam {
+  string check_expression = 1;
 }

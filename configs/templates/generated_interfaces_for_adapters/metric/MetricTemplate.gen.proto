@@ -6,9 +6,23 @@ import "mixer/v1/config/descriptor/value_type.proto";
 import "mixer/configs/mixer/TemplateExtensions.proto";
 
 option (istio.mixer.v1.config.template.template_variety) = TEMPLATE_VARIETY_REPORT;
-option (istio.mixer.v1.config.template.template_name) = "Metric";
+option (istio.mixer.v1.config.template.template_name) = "Log";
 
+/*
+Data from Template proto
 message Constructor {
     istio.mixer.v1.config.descriptor.ValueType value = 2;
     map<string, istio.mixer.v1.config.descriptor.ValueType> dimensions = 3;
 }
+*/
+
+message Type {
+    istio.mixer.v1.config.descriptor.ValueType value = 2;
+    map<string, istio.mixer.v1.config.descriptor.ValueType> dimensions = 3;
+}
+
+message ConstructorParam {
+    string value = 2;
+    map<string, string> dimensions = 3;
+}
+
