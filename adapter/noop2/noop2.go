@@ -16,8 +16,10 @@ package noop2
 
 import (
 	"fmt"
-	"github.com/gogo/protobuf/proto"
+
 	"github.com/gogo/protobuf/types"
+	"github.com/golang/protobuf/proto"
+
 	adapter "istio.io/mixer/pkg/adapter"
 	metric "istio.io/mixer/pkg/templates/metric"
 )
@@ -27,9 +29,11 @@ type (
 	builder struct{}
 )
 
-func (builder) Name() string        { return "newnoop" }
-func (builder) Description() string { return "An adapter that does nothing, just echos the calls made from mixer" }
-func (builder) Close() error        { return nil }
+func (builder) Name() string { return "newnoop" }
+func (builder) Description() string {
+	return "An adapter that does nothing, just echos the calls made from mixer"
+}
+func (builder) Close() error { return nil }
 
 func (builder) ValidateConfig(msg proto.Message) error {
 	fmt.Println("ValidateConfig called with input", msg)
