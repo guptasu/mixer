@@ -1,0 +1,21 @@
+package(default_visibility = ["//visibility:public"])
+
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "MetricProcessor.gen.go",
+        "MetricTemplate.pb.go",
+        "MetricTemplate.gen.pb.go",
+    ],
+    deps = [
+        "//pkg/status:go_default_library",
+        "@com_github_gogo_protobuf//types:go_default_library",
+        "@com_github_googleapis_googleapis//:google/rpc",
+        "@com_github_golang_protobuf//proto:go_default_library",
+        "@com_github_istio_api//:mixer/v1/config/descriptor",
+        "//pkg/templates/mixer:go_default_library",
+    ],
+)
+
