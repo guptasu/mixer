@@ -9,9 +9,13 @@ go_library(
         "logger.go",
         "manager.go",
         "registry.go",
+        "registry2.go",
+        "registry2.gen.go",
     ],
     deps = [
         "//pkg/adapter:go_default_library",
+        "//pkg/adapter/config:go_default_library",
+        "//pkg/templates/metric:go_default_library",
         "//pkg/aspect:go_default_library",
         "//pkg/attribute:go_default_library",
         "//pkg/config:go_default_library",
