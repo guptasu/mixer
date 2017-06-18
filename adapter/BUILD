@@ -21,3 +21,14 @@ go_library(
         "//pkg/adapter:go_default_library",
     ],
 )
+
+go_library(
+    name = "go_default_library2",
+    srcs = [
+        "inventory2.gen.go",
+    ],
+    deps = [
+        "//adapter/noop2:go_default_library",
+        "//pkg/adapter:go_default_library",
+    ],
+)
