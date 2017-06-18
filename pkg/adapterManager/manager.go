@@ -23,14 +23,13 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
-
+	adptCnfg "istio.io/mixer/pkg/adapter/config"
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/glog"
 	rpc "github.com/googleapis/googleapis/google/rpc"
 	opentracing "github.com/opentracing/opentracing-go"
 	"github.com/opentracing/opentracing-go/log"
 	"github.com/prometheus/client_golang/prometheus"
-
 	"istio.io/mixer/pkg/adapter"
 	"istio.io/mixer/pkg/aspect"
 	"istio.io/mixer/pkg/attribute"
@@ -76,6 +75,10 @@ func init() {
 	prometheus.MustRegister(dispatchDuration)
 }
 
+type handlerFinder interface {
+	FindHandler(name string) (adptCnfg.Handler, bool)
+}
+
 // AspectDispatcher executes aspects associated with individual API methods
 type AspectDispatcher interface {
 
@@ -100,6 +103,7 @@ type Manager struct {
 	managers          [config.NumKinds]aspect.Manager
 	mapper            expr.Evaluator
 	builders          builderFinder
+	handlers          handlerFinder
 	checkKindSet      config.KindSet
 	reportKindSet     config.KindSet
 	quotaKindSet      config.KindSet
@@ -127,17 +131,18 @@ type builderFinder interface {
 }
 
 // NewManager creates a new adapterManager.
-func NewManager(builders []adapter.RegisterFn, inventory aspect.ManagerInventory,
+func NewManager(builders []adapter.RegisterFn, handlersToReg []adapter.RegisterFn2, inventory aspect.ManagerInventory,
 	exp expr.Evaluator, gp *pool.GoroutinePool, adapterGP *pool.GoroutinePool) *Manager {
 	mm := Aspects(inventory)
-	return newManager(newRegistry(builders), mm, exp, inventory, gp, adapterGP)
+	return newManager(newRegistry(builders), newRegistry2(handlersToReg), mm, exp, inventory, gp, adapterGP)
 }
 
-func newManager(r builderFinder, m [config.NumKinds]aspect.Manager, exp expr.Evaluator,
+func newManager(r builderFinder, r2 handlerFinder, m [config.NumKinds]aspect.Manager, exp expr.Evaluator,
 	inventory aspect.ManagerInventory, gp *pool.GoroutinePool, adapterGP *pool.GoroutinePool) *Manager {
 
 	mg := &Manager{
 		builders:      r,
+		handlers:      r2,
 		managers:      m,
 		mapper:        exp,
 		executorCache: make(map[cacheKey]aspect.Executor),
@@ -188,6 +193,10 @@ func (m *Manager) dispatchReport(ctx context.Context, configs []*cpb.Combined, r
 			rw := executor.(aspect.ReportExecutor)
 			return rw.Execute(requestBag, evaluator)
 		})
+}
+
+func (m *Manager) HandlerFinder(name string) (adptCnfg.Handler, bool) {
+	return m.handlers.FindHandler(name)
 }
 
 // Report dispatches to the set of aspects associated with the Report API method

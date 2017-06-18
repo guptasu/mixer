@@ -25,3 +25,4 @@ func Inventory2() []adapter.RegisterFn2 {
 		noop2.Register,
 	}
 }
+

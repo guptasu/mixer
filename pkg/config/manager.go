@@ -29,6 +29,7 @@ import (
 	pb "istio.io/mixer/pkg/config/proto"
 	"istio.io/mixer/pkg/config/store"
 	"istio.io/mixer/pkg/expr"
+	"fmt"
 )
 
 // Resolver resolves configuration to a list of combined configs.
@@ -167,6 +168,7 @@ func (c *Manager) fetch() (*runtime, descriptor.Finder, error) {
 
 	vd, finder, cerr = c.validate(data)
 	if cerr != nil {
+		fmt.Printf("Validation failed: %v", cerr)
 		glog.Warningf("Validation failed: %v", cerr)
 		return nil, nil, cerr
 	}

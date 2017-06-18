@@ -182,7 +182,7 @@ new_git_or_local_repository(
     path = "../api",
     remote = "https://github.com/istio/api.git",
     # Change this to True to use ../api directory
-    use_local = False,
+    use_local = True,
 )
 
 new_http_archive(
