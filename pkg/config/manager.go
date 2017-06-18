@@ -84,7 +84,7 @@ type Manager struct {
 // as command line input parameters.
 // GlobalConfig specifies the location of Global Config.
 // ServiceConfig specifies the location of Service config.
-func NewManager(eval expr.Evaluator, aspectFinder AspectValidatorFinder, builderFinder BuilderValidatorFinder,
+func NewManager(eval expr.Evaluator, aspectFinder AspectValidatorFinder, builderFinder BuilderValidatorFinder, handlerFinder HandlerFinder,
 	findAspects AdapterToAspectMapper, store store.KeyValueStore, loopDelay time.Duration, identityAttribute string,
 	identityAttributeDomain string) *Manager {
 	m := &Manager{
@@ -97,7 +97,7 @@ func NewManager(eval expr.Evaluator, aspectFinder AspectValidatorFinder, builder
 		identityAttribute:       identityAttribute,
 		identityAttributeDomain: identityAttributeDomain,
 		validate: func(cfg map[string]string) (*Validated, descriptor.Finder, *adapter.ConfigErrors) {
-			v := newValidator(aspectFinder, builderFinder, findAspects, true, eval)
+			v := newValidator(aspectFinder, builderFinder, handlerFinder,findAspects, true, eval)
 			rt, ce := v.validate(cfg)
 			return rt, v.descriptorFinder, ce
 		},

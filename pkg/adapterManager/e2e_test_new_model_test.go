@@ -138,7 +138,7 @@ func testAdapterManagerDispatch_2(t *testing.T, declarativeSrvcCnfgFilePath stri
 
 
 	cnfgMgr := config.NewManager(eval, adapterMgr.AspectValidatorFinder, adapterMgr.BuilderValidatorFinder,
-		adapterMgr.SupportedKinds, store,
+		adapterMgr.HandlerFinder, adapterMgr.SupportedKinds, store,
 		loopDelay,
 		identityAttribute, identityDomainAttribute)
 	cnfgMgr.Register(adapterMgr)

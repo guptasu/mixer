@@ -140,7 +140,7 @@ func TestConfigValidatorError(t *testing.T) {
 
 			var ce *adapter.ConfigErrors
 			mgr := newVfinder(tt.ada, tt.asp)
-			p := newValidator(mgr.FindAspectValidator, mgr.FindAdapterValidator, mgr.AdapterToAspectMapperFunc, tt.strict, evaluator)
+			p := newValidator(mgr.FindAspectValidator, mgr.FindAdapterValidator, nil, mgr.AdapterToAspectMapperFunc, tt.strict, evaluator)
 			if tt.cfg == sSvcConfig {
 				ce = p.validateServiceConfig(globalRulesKey, fmt.Sprintf(tt.cfg, tt.selector), false)
 			} else {
@@ -227,7 +227,7 @@ func TestFullConfigValidator(tt *testing.T) {
 		tt.Run(fmt.Sprintf("[%d]", idx), func(t *testing.T) {
 			mgr := newVfinder(ctx.ada, ctx.asp)
 			fe.err = ctx.exprErr
-			p := newValidator(mgr.FindAspectValidator, mgr.FindAdapterValidator, mgr.AdapterToAspectMapperFunc, ctx.strict, fe)
+			p := newValidator(mgr.FindAspectValidator, mgr.FindAdapterValidator, nil, mgr.AdapterToAspectMapperFunc, ctx.strict, fe)
 			// ConstGlobalConfig only defines 1 adapter: denyChecker
 			_, ce := p.validate(newFakeMap(ConstGlobalConfig, ctx.cfg))
 			cok := ce == nil
@@ -256,7 +256,7 @@ var globalRulesKey = rulesKey{Scope: global, Subject: global}
 func TestConfigParseError(t *testing.T) {
 	mgr := &fakeVFinder{}
 	evaluator := newFakeExpr()
-	p := newValidator(mgr.FindAspectValidator, mgr.FindAdapterValidator, mgr.AdapterToAspectMapperFunc, false, evaluator)
+	p := newValidator(mgr.FindAspectValidator, mgr.FindAdapterValidator, nil, mgr.AdapterToAspectMapperFunc, false, evaluator)
 	ce := p.validateServiceConfig(globalRulesKey, "<config>  </config>", false)
 
 	if ce == nil || !strings.Contains(ce.Error(), "error unmarshaling") {

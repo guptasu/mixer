@@ -29,7 +29,7 @@ type (
 	builder struct{}
 )
 
-func (builder) Name() string { return "newnoop" }
+func (builder) Name() string { return "noop2" }
 func (builder) Description() string {
 	return "An adapter that does nothing, just echos the calls made from mixer"
 }

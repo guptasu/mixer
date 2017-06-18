@@ -6,6 +6,7 @@ go_library(
     name = "go_default_library",
     srcs = [
         "inventory.go",
+        "inventory2.gen.go",
     ],
     deps = [
         "//adapter/denyChecker:go_default_library",
@@ -19,16 +20,6 @@ go_library(
         "//adapter/statsd:go_default_library",
         "//adapter/stdioLogger:go_default_library",
         "//pkg/adapter:go_default_library",
-    ],
-)
-
-go_library(
-    name = "go_default_library2",
-    srcs = [
-        "inventory2.gen.go",
-    ],
-    deps = [
         "//adapter/noop2:go_default_library",
-        "//pkg/adapter:go_default_library",
     ],
 )
