@@ -21,7 +21,7 @@ import (
 	"github.com/golang/protobuf/proto"
 
 	adapter "istio.io/mixer/pkg/adapter"
-	metric "istio.io/mixer/pkg/templates/metric"
+	sample_report "istio.io/mixer/pkg/templates/sample/report"
 )
 
 type (
@@ -47,16 +47,16 @@ func (builder) Configure(msg proto.Message) error {
 
 func (builder) DefaultConfig() proto.Message { return &types.Empty{} }
 
-func (builder) ConfigureMetric(typeParams map[string]*metric.Type) error {
-	fmt.Println("ConfigureMetric in noop Adapter called with", typeParams)
+func (builder) ConfigureSample(typeParams map[string]*sample_report.Type) error {
+	fmt.Println("ConfigureSample in noop Adapter called with", typeParams)
 	return nil
 }
 
-func (builder) ReportMetric(instances []*metric.Instance) error {
-	fmt.Println("ReportMetric in noop Adapter called with", instances)
+func (builder) ReportSample(instances []*sample_report.Instance) error {
+	fmt.Println("ReportSample in noop Adapter called with", instances)
 	return nil
 }
 
 func Register(r adapter.Registrar2) {
-	r.RegisterMetricProcessor(builder{})
+	r.RegisterSampleProcessor(builder{})
 }

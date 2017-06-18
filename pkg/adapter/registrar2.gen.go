@@ -17,10 +17,10 @@
 
 package adapter
 
-import metric "istio.io/mixer/pkg/templates/metric"
+import sample_report "istio.io/mixer/pkg/templates/sample/report"
 
 type Registrar2 interface {
-	RegisterMetricProcessor(processor metric.MetricProcessor)
+	RegisterSampleProcessor(processor sample_report.SampleProcessor)
 }
 
 type RegisterFn2 func(Registrar2)

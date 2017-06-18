@@ -15,7 +15,7 @@ go_library(
     deps = [
         "//pkg/adapter:go_default_library",
         "//pkg/adapter/config:go_default_library",
-        "//pkg/templates/metric:go_default_library",
+        "//pkg/templates/sample/report:go_default_library",
         "//pkg/aspect:go_default_library",
         "//pkg/attribute:go_default_library",
         "//pkg/config:go_default_library",

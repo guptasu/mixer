@@ -18,9 +18,9 @@
 package adapterManager
 
 import (
-	metric "istio.io/mixer/pkg/templates/metric"
+	sample_report "istio.io/mixer/pkg/templates/sample/report"
 )
 
-func (r *registry2) RegisterMetricProcessor(b metric.MetricProcessor) {
+func (r *registry2) RegisterSampleProcessor(b sample_report.SampleProcessor) {
 	r.insertHandler(b)
 }

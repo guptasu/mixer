@@ -10,7 +10,7 @@ go_library(
     deps = [
         "//pkg/adapter:go_default_library",
         "//pkg/status:go_default_library",
-        "//pkg/templates/metric:go_default_library",
+        "//pkg/templates/sample/report:go_default_library",
         "@com_github_gogo_protobuf//types:go_default_library",
         "@com_github_golang_protobuf//proto:go_default_library",
         "@com_github_googleapis_googleapis//:google/rpc",

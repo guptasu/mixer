@@ -21,7 +21,7 @@ go_library(
         "registrar2.gen.go",
     ],
     deps = [
-        "//pkg/templates/metric:go_default_library",
+        "//pkg/templates/sample/report:go_default_library",
         "@com_github_golang_protobuf//proto:go_default_library",
         "@com_github_googleapis_googleapis//:google/rpc",
         "@com_github_hashicorp_go_multierror//:go_default_library",
