@@ -15,8 +15,8 @@
 package adapter
 
 import (
-	"istio.io/mixer/pkg/adapter"
 	"istio.io/mixer/adapter/noop2"
+	"istio.io/mixer/pkg/adapter"
 )
 
 // Inventory2 returns the inventory of all available adapters.

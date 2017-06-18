@@ -2,6 +2,7 @@ package config
 
 import (
 	"io"
+
 	"github.com/golang/protobuf/proto"
 )
 
