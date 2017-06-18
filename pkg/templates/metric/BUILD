@@ -4,11 +4,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 
 go_library(
     name = "go_default_library",
-    srcs = [
-        "MetricProcessor.gen.go",
-        "MetricTemplate.pb.go",
-        "MetricTemplate.gen.pb.go",
-    ],
+    srcs = glob(["*.go"]),
     deps = [
         "//pkg/status:go_default_library",
         "@com_github_gogo_protobuf//types:go_default_library",
