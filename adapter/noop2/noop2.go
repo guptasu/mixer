@@ -56,6 +56,7 @@ func (builder) ReportSample(instances []*sample_report.Instance) error {
 	return nil
 }
 
+// Register registers the no-op adapter as processor for all the templates.
 func Register(r adapter.Registrar2) {
 	r.RegisterSampleProcessor(builder{})
 }

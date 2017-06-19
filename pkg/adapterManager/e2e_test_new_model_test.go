@@ -35,7 +35,7 @@ import (
 )
 
 const (
-	minimalGlobalCnfg_2 = `
+	globalCnfg = `
 subject: namespace:ns
 revision: "2022"
 adapters:
@@ -63,7 +63,7 @@ handlers:
     adapter: noop2
 `
 
-	srvcCnfgConstInitialSection_2 = `
+	srvcCnfg = `
 subject: namespace:ns
 constructors:
   - instanceName: MyMetricConstructor
@@ -83,15 +83,15 @@ action_rules:
 `
 )
 
-func createYamlConfigs_2() (declarativeSrvcCnfg *os.File, declaredGlobalCnfg *os.File) {
+func createCnfgs() (declarativeSrvcCnfg *os.File, declaredGlobalCnfg *os.File) {
 	srvcCnfgFile, _ := ioutil.TempFile("", "managerDispatchBenchmarkTest")
 	globalCnfgFile, _ := ioutil.TempFile("", "managerDispatchBenchmarkTest")
 
-	_, _ = globalCnfgFile.Write([]byte(minimalGlobalCnfg_2))
+	_, _ = globalCnfgFile.Write([]byte(globalCnfg))
 	_ = globalCnfgFile.Close()
 
 	var srvcCnfgBuffer bytes.Buffer
-	srvcCnfgBuffer.WriteString(srvcCnfgConstInitialSection_2)
+	srvcCnfgBuffer.WriteString(srvcCnfg)
 
 	_, _ = srvcCnfgFile.Write([]byte(srvcCnfgBuffer.String()))
 	_ = srvcCnfgFile.Close()
@@ -99,9 +99,7 @@ func createYamlConfigs_2() (declarativeSrvcCnfg *os.File, declaredGlobalCnfg *os
 	return srvcCnfgFile, globalCnfgFile
 }
 
-var rpcStatus_2 google_rpc.Status
-
-func testAdapterManagerDispatch_2(t *testing.T, declarativeSrvcCnfgFilePath string, declaredGlobalCnfgFilePath string) {
+func testEnd2EndMixer(t *testing.T, declarativeSrvcCnfgFilePath string, declaredGlobalCnfgFilePath string) {
 	apiPoolSize := 1024
 	adapterPoolSize := 1024
 	identityAttribute := "target.service"
@@ -157,16 +155,15 @@ func testAdapterManagerDispatch_2(t *testing.T, declarativeSrvcCnfgFilePath stri
 
 	r = adapterMgr.dispatchReport(context.Background(), configs, requestBag, attribute.GetMutableBag(nil))
 
-	rpcStatus_2 = r
-	if rpcStatus_2.Code != 0 {
-		t.Errorf("dispatchReport benchmark test returned status code %d; expected 0", rpcStatus_2.Code)
+	if r.Code != 0 {
+		t.Errorf("dispatchReport benchmark test returned status code %d; expected 0", r.Code)
 	}
 
 }
 
-func TestNewModel(t *testing.T) {
-	sc, gsc := createYamlConfigs_2()
-	testAdapterManagerDispatch_2(t, sc.Name(), gsc.Name())
+func TestEnd2EndMixer(t *testing.T) {
+	sc, gsc := createCnfgs()
+	testEnd2EndMixer(t, sc.Name(), gsc.Name())
 	_ = os.Remove(sc.Name())
 	_ = os.Remove(gsc.Name())
 }

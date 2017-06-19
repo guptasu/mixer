@@ -6,7 +6,7 @@ import (
 	"github.com/golang/protobuf/proto"
 )
 
-// Interface for every Handler to implement.
+// Handler represents default functionality every Adapter must implement.
 type Handler interface {
 	io.Closer
 
