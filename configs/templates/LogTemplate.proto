@@ -8,6 +8,6 @@ import "mixer/configs/mixer/TemplateExtensions.proto";
 option (istio.mixer.v1.config.template.template_variety) = TEMPLATE_VARIETY_REPORT;
 option (istio.mixer.v1.config.template.template_name) = "Log";
 
-message Constructor {
+message Template {
     map<string, istio.mixer.v1.config.descriptor.ValueType> dimensions = 1;
 }

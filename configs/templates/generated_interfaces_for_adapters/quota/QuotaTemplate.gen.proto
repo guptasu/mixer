@@ -8,13 +8,6 @@ import "mixer/configs/mixer/TemplateExtensions.proto";
 option (istio.mixer.v1.config.template.template_variety) = TEMPLATE_VARIETY_CHECK;
 option (istio.mixer.v1.config.template.template_name) = "Quota";
 
-/*
-Data from Template proto
-message Constructor{
-  map<string, istio.mixer.v1.config.descriptor.ValueType> dimensions = 2;
-}
-*/
-
 message Type {
   map<string, istio.mixer.v1.config.descriptor.ValueType> dimensions = 1;
 }

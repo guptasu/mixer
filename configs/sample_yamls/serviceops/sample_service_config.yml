@@ -5,13 +5,13 @@
 contructors:
 # QUOTA
 - instance_name: rl_by_service_by_consumer
-  templateName: istio.mixer.adapter.quota.Quota
+  template: istio.mixer.adapter.quota.Quota
   params:
     dimensions:
       service: target.labels["app"]
       consumer: source.labels["app"]
 - instance_name: rl_by_service_by_datacenter
-  templateName: istio.mixer.adapter.quota.Quota
+  template: istio.mixer.adapter.quota.Quota
   params:
     dimensions:
       service: target.labels["app"]
@@ -19,13 +19,13 @@ contructors:
 
 # LIST
 - instance_name: sample_version_list_chkr
-  templateName: foo.bar.mylistchecker.List
+  template: foo.bar.mylistchecker.List
   params:
     checkExpression: source.ip
 
 # METRIC
 - instance_name: response_size
-  templateName: istio.mixer.adapter.metric.Metric
+  template: istio.mixer.adapter.metric.Metric
   params:
     value: response.size
     dimensions:
@@ -36,7 +36,7 @@ contructors:
       version: target.labels["version"]
       response_code: response.code | 200
 - instance_name: response_duration
-  templateName: istio.mixer.adapter.metric.Metric
+  template: istio.mixer.adapter.metric.Metric
   params:
     value: response.latency | response.duration | 0ms
     dimensions:
@@ -49,7 +49,7 @@ contructors:
 
 # LOG
 - instance_name: ApacheCommonLog-text-inst
-  templateName: istio.mixer.adapter.log.Log
+  template: istio.mixer.adapter.log.Log
   params:
     dimensions:
       originIp: "origin.ip"
