@@ -16,3 +16,16 @@ go_library(
         "@com_github_googleapis_googleapis//:google/rpc",
     ],
 )
+
+go_test(
+    name = "small_tests",
+    size = "small",
+    srcs = [
+        "noop2_test.go",
+    ],
+    library = ":go_default_library",
+    deps = [
+        "//pkg/adapterManager:go_default_library",
+        "//pkg/config:go_default_library",
+    ],
+)

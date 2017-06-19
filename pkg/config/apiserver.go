@@ -227,7 +227,7 @@ func NewAPI(version string, port uint16, tc expr.TypeChecker, aspectFinder Aspec
 		store:    store,
 		readBody: ioutil.ReadAll,
 		validate: func(cfg map[string]string) (*Validated, descriptor.Finder, *adapter.ConfigErrors) {
-			v := newValidator(aspectFinder, builderFinder, nil,findAspects, true, tc)
+			v := newValidator(aspectFinder, builderFinder, nil, findAspects, true, tc)
 			rt, ce := v.validate(cfg)
 			return rt, v.descriptorFinder, ce
 		},

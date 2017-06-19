@@ -19,21 +19,29 @@ import (
 
 	"github.com/golang/glog"
 
-	adpCnfg "istio.io/mixer/pkg/adapter/config"
 	registrar2 "istio.io/mixer/pkg/adapter"
+	adpCnfg "istio.io/mixer/pkg/adapter/config"
 )
 
+// BuilderInfo provides information about an individual builder.
+type HandlerInfo struct {
+	// Builder is the builder of interest.
+	Handler adpCnfg.Handler
+
+	// Templates specifies the the name of the templates this builder is capable of handling.
+	Templates []string
+}
 
 // registry2 implements pkg/adapter/Registrar2.
 // registry2 is initialized in the constructor and is immutable thereafter.
 // All registered handlers must have unique names per aspect kind.
 type registry2 struct {
-	handlersByName map[string]*adpCnfg.Handler
+	handlersByName map[string]*HandlerInfo
 }
 
 // newRegistry returns a new Builder registry.
 func newRegistry2(builders []registrar2.RegisterFn2) *registry2 {
-	r := &registry2{make(map[string]*adpCnfg.Handler)}
+	r := &registry2{make(map[string]*HandlerInfo)}
 	for idx, builder := range builders {
 		glog.V(3).Infof("Registering [%d] %#v", idx, builder)
 		builder(r)
@@ -45,29 +53,45 @@ func newRegistry2(builders []registrar2.RegisterFn2) *registry2 {
 	return r
 }
 
+// HandlerMap returns the known handlers, indexed by their names.
+func HandlerMap(handlerRegFns []registrar2.RegisterFn2) map[string]*HandlerInfo {
+	return newRegistry2(handlerRegFns).handlersByName
+}
+
 func (r *registry2) FindHandler(name string) (b adpCnfg.Handler, found bool) {
 	if bi, found := r.handlersByName[name]; !found {
 		return nil, false
 	} else {
-		return *bi, true
+		return bi.Handler, true
 	}
 }
 
-func (r *registry2) insertHandler(b adpCnfg.Handler) {
+func (r *registry2) insertHandler(tmplName string, b adpCnfg.Handler) {
 	bi := r.handlersByName[b.Name()]
 	if bi == nil {
-		bi = &b
+		bi = &HandlerInfo{Handler: b, Templates: make([]string, 0)}
 		r.handlersByName[b.Name()] = bi
-	} else if *bi != b {
+
+	} else if bi.Handler != b {
 		// panic only if 2 different handler objects are trying to identify by the
 		// same Name.  2nd registration is ok so long as old and the new are same
 		msg := fmt.Errorf("duplicate registration for '%s' : old = %v new = %v", b.Name(), bi, b)
 		glog.Error(msg)
 		panic(msg)
 	}
-
-
+	if !contains(bi.Templates, tmplName) {
+		bi.Templates = append(bi.Templates, tmplName)
+	}
 	if glog.V(1) {
 		glog.Infof("Registered %s", b.Name())
 	}
+}
+
+func contains(s []string, e string) bool {
+	for _, a := range s {
+		if a == e {
+			return true
+		}
+	}
+	return false
 }

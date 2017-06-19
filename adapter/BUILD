@@ -15,11 +15,11 @@ go_library(
         "//adapter/kubernetes:go_default_library",
         "//adapter/memQuota:go_default_library",
         "//adapter/noop:go_default_library",
+        "//adapter/noop2:go_default_library",
         "//adapter/prometheus:go_default_library",
         "//adapter/redisquota:go_default_library",
         "//adapter/statsd:go_default_library",
         "//adapter/stdioLogger:go_default_library",
         "//pkg/adapter:go_default_library",
-        "//adapter/noop2:go_default_library",
     ],
 )

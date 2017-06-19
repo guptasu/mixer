@@ -25,7 +25,6 @@ import (
 )
 
 type (
-	Adapter struct{}
 	builder struct{}
 )
 

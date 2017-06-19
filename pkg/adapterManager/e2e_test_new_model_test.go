@@ -24,14 +24,14 @@ import (
 
 	google_rpc "github.com/googleapis/googleapis/google/rpc"
 	//adapter "istio.io/mixer/adapter"
+	"istio.io/mixer/adapter/noop"
+	"istio.io/mixer/adapter/noop2"
 	pkgAdapter "istio.io/mixer/pkg/adapter"
 	"istio.io/mixer/pkg/aspect"
 	"istio.io/mixer/pkg/attribute"
 	"istio.io/mixer/pkg/config"
 	"istio.io/mixer/pkg/expr"
 	"istio.io/mixer/pkg/pool"
-	"istio.io/mixer/adapter/noop"
-	"istio.io/mixer/adapter/noop2"
 )
 
 const (
@@ -133,9 +133,8 @@ func testAdapterManagerDispatch_2(t *testing.T, declarativeSrvcCnfgFilePath stri
 	},
 		// TODO use Inventory2 here, but getting log_dir flag error
 		[]pkgAdapter.RegisterFn2{
-		noop2.Register,
-	}, aspect.Inventory(), eval, gp, adapterGP)
-
+			noop2.Register,
+		}, aspect.Inventory(), eval, gp, adapterGP)
 
 	cnfgMgr := config.NewManager(eval, adapterMgr.AspectValidatorFinder, adapterMgr.BuilderValidatorFinder,
 		adapterMgr.HandlerFinder, adapterMgr.SupportedKinds, store,

@@ -479,7 +479,7 @@ func (p *validator) validateHandlers(key string, cfg string) (ce *adapter.Config
 		// ignore bool arg since it has to succeed as the last
 		// step succeeded.
 
-		handler,_ := p.handlerFinder(hh.Adapter)
+		handler, _ := p.handlerFinder(hh.Adapter)
 		//p.validated.handlerByName[hh.Adapter] = handler
 		handler.Configure(acfg)
 		// Configure handler for all available types

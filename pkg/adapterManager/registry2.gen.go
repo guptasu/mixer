@@ -22,5 +22,5 @@ import (
 )
 
 func (r *registry2) RegisterSampleProcessor(b sample_report.SampleProcessor) {
-	r.insertHandler(b)
+	r.insertHandler("istio.mixer.adapter.sample.report.Sample", b)
 }

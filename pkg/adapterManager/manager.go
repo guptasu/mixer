@@ -23,14 +23,16 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
-	adptCnfg "istio.io/mixer/pkg/adapter/config"
+
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/glog"
 	rpc "github.com/googleapis/googleapis/google/rpc"
 	opentracing "github.com/opentracing/opentracing-go"
 	"github.com/opentracing/opentracing-go/log"
 	"github.com/prometheus/client_golang/prometheus"
+
 	"istio.io/mixer/pkg/adapter"
+	adptCnfg "istio.io/mixer/pkg/adapter/config"
 	"istio.io/mixer/pkg/aspect"
 	"istio.io/mixer/pkg/attribute"
 	"istio.io/mixer/pkg/config"
