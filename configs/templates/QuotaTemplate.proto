@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package istio.mixer.adapter.quota;
+
+import "google/protobuf/duration.proto";
+
+import "mixer/v1/config/descriptor/value_type.proto";
+import "mixer/configs/mixer/TemplateExtensions.proto";
+
+option (istio.mixer.v1.config.template.template_variety) = TEMPLATE_VARIETY_REPORT;
+option (istio.mixer.v1.config.template.template_name) = "Quota";
+
+message Template{
+  // The set of dimensions that are necessary to describe a specific value cell
+  // for a quota of this type.
+  map<string, istio.mixer.v1.config.descriptor.ValueType> dimensions = 2;
+}

@@ -1,0 +1,94 @@
+
+#
+########################## contructors ########################
+#
+contructors:
+# QUOTA
+- instance_name: rl_by_service_by_consumer
+  template: istio.mixer.adapter.quota.Quota
+  params:
+    dimensions:
+      service: target.labels["app"]
+      consumer: source.labels["app"]
+- instance_name: rl_by_service_by_datacenter
+  template: istio.mixer.adapter.quota.Quota
+  params:
+    dimensions:
+      service: target.labels["app"]
+      datacenter: "us-west-5b"
+
+# LIST
+- instance_name: sample_version_list_chkr
+  template: foo.bar.mylistchecker.List
+  params:
+    checkExpression: source.ip
+
+# METRIC
+- instance_name: response_size
+  template: istio.mixer.adapter.metric.Metric
+  params:
+    value: response.size
+    dimensions:
+      source: source.labels["app"]
+      target: target.service
+      service: target.labels["app"]
+      method: request.path
+      version: target.labels["version"]
+      response_code: response.code | 200
+- instance_name: response_duration
+  template: istio.mixer.adapter.metric.Metric
+  params:
+    value: response.latency | response.duration | 0ms
+    dimensions:
+      source: source.labels["app"]
+      target: target.service
+      service: target.labels["app"]
+      method: request.path
+      version: target.labels["version"]
+      response_code: response.code | 200
+
+# LOG
+- instance_name: ApacheCommonLog-text-inst
+  template: istio.mixer.adapter.log.Log
+  params:
+    dimensions:
+      originIp: "origin.ip"
+      sourceUser: "source.user"
+      timestamp: "request.time"
+      method: "request.method"
+      url: "request.url"
+      protocol: "request.scheme"
+      responseSize: "response.size"
+      responseCode: "response.code"
+
+#
+########################## actions ########################
+#
+actions:
+- selector: *
+  handler: redisQuotaLocal
+  instances:
+  - rl_by_service_by_consumer
+
+  # only apply per datacenter limits if from a different
+  # datacenter
+- selector: source.labels["datacenter"] != target.labels["datacenter"]
+  handler: redisQuotaLocal
+  instances:
+  - rl_by_service_by_datacenter
+
+- selector: *
+  handler: versionList
+  instances:
+  - MyListCheckerConstructor
+
+- selector: *
+  handler: prometheusLocal
+  instances:
+  - response_duration
+  - response_size
+
+- selector: *
+  handler: loggerLocal
+  instances:
+  - ApacheCommonLog-text-inst
