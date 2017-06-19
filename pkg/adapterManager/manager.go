@@ -197,8 +197,9 @@ func (m *Manager) dispatchReport(ctx context.Context, configs []*cpb.Combined, r
 		})
 }
 
-func (m *Manager) HandlerFinder(name string) (adptCnfg.Handler, bool) {
-	return m.handlers.FindHandler(name)
+// HandlerFinder returns a Handler instance given the name of the handler.
+func (m *Manager) HandlerFinder(handlerName string) (adptCnfg.Handler, bool) {
+	return m.handlers.FindHandler(handlerName)
 }
 
 // Report dispatches to the set of aspects associated with the Report API method

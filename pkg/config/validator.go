@@ -73,6 +73,7 @@ type (
 	// the given builder.
 	AdapterToAspectMapper func(builder string) KindSet
 
+	// HandlerFinder is used to find specific handlers for validating and configuring them.
 	HandlerFinder func(name string) (config.Handler, bool)
 )
 
@@ -413,7 +414,7 @@ func (p *validator) validate(cfg map[string]string) (rt *Validated, ce *adapter.
 	}
 
 	for _, kk := range keymap[handlers] {
-		if re := p.validateHandlers(kk, cfg[kk]); re != nil {
+		if re := p.validateHandlers(cfg[kk]); re != nil {
 			return rt, ce.Appendf("handlerConfig", "failed validation").Extend(re)
 		}
 	}
@@ -451,7 +452,7 @@ func (p *validator) validateServiceConfig(pk rulesKey, cfg string, validatePrese
 	return nil
 }
 
-func (p *validator) validateHandlers(key string, cfg string) (ce *adapter.ConfigErrors) {
+func (p *validator) validateHandlers(cfg string) (ce *adapter.ConfigErrors) {
 	var ferr error
 	var data []byte
 
@@ -468,35 +469,23 @@ func (p *validator) validateHandlers(key string, cfg string) (ce *adapter.Config
 
 	var acfg proto.Message
 	var err *adapter.ConfigErrors
-	// FIXME update this when we start supporting adapters defined in multiple scopes
-	//p.validated.handlerByName = make(map[string]config.Handler)
 
 	for _, hh := range m.GetHandlers() {
 		if acfg, err = convertHandlerParams(p.handlerFinder, hh.Adapter, hh.Params, p.strict); err != nil {
-			ce = ce.Appendf("Adapter: "+hh.Adapter, "failed to convert aspect params to proto: %v", err)
+			ce = ce.Appendf("Adapter: "+hh.Adapter, "failed to convert handler params to proto: %v", err)
 			continue
 		}
 		// ignore bool arg since it has to succeed as the last
 		// step succeeded.
-
 		handler, _ := p.handlerFinder(hh.Adapter)
-		//p.validated.handlerByName[hh.Adapter] = handler
-		handler.Configure(acfg)
-		// Configure handler for all available types
-		//configureTypes(handler, m.GetTypes())
-		//dispatcher.configureTypes(handler)
+		// TODO validateHandlers only calls the adapter.Configure method. Need to call Configure templates too.
+		if err := handler.Configure(acfg); err != nil {
+			ce = ce.Appendf("Adapter: "+hh.Adapter, "failed to configure handler params: %v", err)
+			continue
+		}
 
 		hh.Params = acfg
-		//// check which kinds aa.Impl provides
-		//// Then register it for all of them.
-		//kinds := p.findAspects(hh.Impl)acfg
-		//for kind := Kind(0); kind < NumKinds; kind++ {
-		//	if kinds.IsSet(kind) {
-		//		p.validated.adapterByName[adapterKey{kind, hh.Name}] = hh
-		//	}
-		//}
 	}
-	//p.validated.handler[key] = m
 	return
 }
 

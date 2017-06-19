@@ -23,7 +23,7 @@ import (
 	adpCnfg "istio.io/mixer/pkg/adapter/config"
 )
 
-// BuilderInfo provides information about an individual builder.
+// HandlerInfo provides information about an individual handler.
 type HandlerInfo struct {
 	// Builder is the builder of interest.
 	Handler adpCnfg.Handler
@@ -58,12 +58,14 @@ func HandlerMap(handlerRegFns []registrar2.RegisterFn2) map[string]*HandlerInfo 
 	return newRegistry2(handlerRegFns).handlersByName
 }
 
+// FindHandler returns the handler object with the given name.
 func (r *registry2) FindHandler(name string) (b adpCnfg.Handler, found bool) {
-	if bi, found := r.handlersByName[name]; !found {
+	bi, found := r.handlersByName[name]
+	if !found {
 		return nil, false
-	} else {
-		return bi.Handler, true
 	}
+	return bi.Handler, true
+
 }
 
 func (r *registry2) insertHandler(tmplName string, b adpCnfg.Handler) {

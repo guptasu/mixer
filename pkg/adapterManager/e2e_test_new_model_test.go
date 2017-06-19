@@ -21,8 +21,6 @@ import (
 	"os"
 	"testing"
 	"time"
-
-	google_rpc "github.com/googleapis/googleapis/google/rpc"
 	//adapter "istio.io/mixer/adapter"
 	"istio.io/mixer/adapter/noop"
 	"istio.io/mixer/adapter/noop2"
@@ -151,9 +149,7 @@ func testEnd2EndMixer(t *testing.T, declarativeSrvcCnfgFilePath string, declared
 		return
 	}
 
-	var r google_rpc.Status
-
-	r = adapterMgr.dispatchReport(context.Background(), configs, requestBag, attribute.GetMutableBag(nil))
+	r := adapterMgr.dispatchReport(context.Background(), configs, requestBag, attribute.GetMutableBag(nil))
 
 	if r.Code != 0 {
 		t.Errorf("dispatchReport benchmark test returned status code %d; expected 0", r.Code)
