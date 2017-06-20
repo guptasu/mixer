@@ -110,7 +110,7 @@ type configTable struct {
 	cfg      string
 }
 
-func newVfinder(ada map[string]adapter.ConfigValidator, hdlr map[string]ada_cnfg.Handler, asp map[Kind]AspectValidator) *fakeVFinder {
+func newVfinder(ada map[string]adapter.ConfigValidator, hdlr map[string]ada_cnfg.AdapterConfigValidatorAndConfigurer, asp map[Kind]AspectValidator) *fakeVFinder {
 	var kinds KindSet
 	for k := range asp {
 		kinds = kinds.Set(k)
@@ -161,7 +161,7 @@ func TestConfigValidatorError(t *testing.T) {
 		t.Run(strconv.Itoa(idx), func(t *testing.T) {
 
 			var ce *adapter.ConfigErrors
-			mgr := newVfinder(tt.ada, tt.asp)
+			mgr := newVfinder(tt.ada, tt.hdlr, tt.asp)
 			p := newValidator(mgr.FindAspectValidator, mgr.FindAdapterValidator, nil, mgr.AdapterToAspectMapperFunc, tt.strict, evaluator)
 			if tt.cfg == sSvcConfig {
 				ce = p.validateServiceConfig(globalRulesKey, fmt.Sprintf(tt.cfg, tt.selector), false)
