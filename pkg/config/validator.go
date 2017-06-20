@@ -414,7 +414,7 @@ func (p *validator) validate(cfg map[string]string) (rt *Validated, ce *adapter.
 	}
 
 	for _, kk := range keymap[handlers] {
-		if re := p.validateHandlers(cfg[kk]); re != nil {
+		if re := p.validateAndConfigureHandlers(cfg[kk]); re != nil {
 			return rt, ce.Appendf("handlerConfig", "failed validation").Extend(re)
 		}
 	}
@@ -452,7 +452,7 @@ func (p *validator) validateServiceConfig(pk rulesKey, cfg string, validatePrese
 	return nil
 }
 
-func (p *validator) validateHandlers(cfg string) (ce *adapter.ConfigErrors) {
+func (p *validator) validateAndConfigureHandlers(cfg string) (ce *adapter.ConfigErrors) {
 	var ferr error
 	var data []byte
 
