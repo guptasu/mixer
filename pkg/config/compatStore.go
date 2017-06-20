@@ -33,7 +33,6 @@ func NewCompatFSStore(globalConfigFile string, serviceConfigFile string) (store.
 	dm := map[string]string{
 		keyGlobalServiceConfig: serviceConfigFile,
 		keyDescriptors:         globalConfigFile,
-		keyHandlers:            globalConfigFile,
 	}
 	var data []byte
 	var dir string
