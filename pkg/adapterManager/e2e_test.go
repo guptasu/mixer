@@ -14,6 +14,7 @@
 
 package adapterManager
 
+// Test that both old and new config models can live together.
 import (
 	"bytes"
 	"context"
@@ -21,7 +22,7 @@ import (
 	"os"
 	"testing"
 	"time"
-	//adapter "istio.io/mixer/adapter"
+
 	"istio.io/mixer/adapter/noop"
 	"istio.io/mixer/adapter/noop2"
 	pkgAdapter "istio.io/mixer/pkg/adapter"
@@ -56,6 +57,28 @@ manifests:
       api.method:
         value_type: STRING
 
+metrics:
+  - name: request_count
+    kind: COUNTER
+    value: INT64
+    description: request count by source, target, service, and code
+    labels:
+      source: 1 # STRING
+      target: 1 # STRING
+      service: 1 # STRING
+      method: 1 # STRING
+      response_code: 2 # INT64
+  - name: request_latency
+    kind: COUNTER
+    value: DURATION
+    description: request latency by source, target, and service
+    labels:
+      source: 1 # STRING
+      target: 1 # STRING
+      service: 1 # STRING
+      method: 1 # STRING
+      response_code: 2 # INT64
+
 handlers:
   - name: noop2
     adapter: noop2
@@ -63,6 +86,22 @@ handlers:
 
 	srvcCnfg = `
 subject: namespace:ns
+rules:
+- selector: true
+  aspects:
+  - kind: metrics
+    adapter: no-op
+    params:
+      metrics:
+      - descriptorName: request_count
+        value: response.code | 100
+        labels:
+          source: source.name | "one"
+          target: target.name | "one"
+          service: api.name | "one"
+          method: api.method | "one"
+          response_code: response.code | 111
+
 constructors:
   - instanceName: MyMetricConstructor
     templateName: myMetricTypeReqCount
@@ -82,8 +121,8 @@ action_rules:
 )
 
 func createCnfgs() (declarativeSrvcCnfg *os.File, declaredGlobalCnfg *os.File) {
-	srvcCnfgFile, _ := ioutil.TempFile("", "managerDispatchBenchmarkTest")
-	globalCnfgFile, _ := ioutil.TempFile("", "managerDispatchBenchmarkTest")
+	srvcCnfgFile, _ := ioutil.TempFile("", "managerDispatchTest")
+	globalCnfgFile, _ := ioutil.TempFile("", "managerDispatchTest")
 
 	_, _ = globalCnfgFile.Write([]byte(globalCnfg))
 	_ = globalCnfgFile.Close()
@@ -127,7 +166,7 @@ func testEnd2EndMixer(t *testing.T, declarativeSrvcCnfgFilePath string, declared
 	adapterMgr := NewManager([]pkgAdapter.RegisterFn{
 		noop.Register,
 	},
-		// TODO use Inventory2 here, but getting log_dir flag error
+		// TODO use Inventory2 here, but getting log_dir redefined flag error
 		[]pkgAdapter.RegisterFn2{
 			noop2.Register,
 		}, aspect.Inventory(), eval, gp, adapterGP)
@@ -152,7 +191,7 @@ func testEnd2EndMixer(t *testing.T, declarativeSrvcCnfgFilePath string, declared
 	r := adapterMgr.dispatchReport(context.Background(), configs, requestBag, attribute.GetMutableBag(nil))
 
 	if r.Code != 0 {
-		t.Errorf("dispatchReport benchmark test returned status code %d; expected 0", r.Code)
+		t.Errorf("dispatchReport test returned status code %d; expected 0", r.Code)
 	}
 
 }

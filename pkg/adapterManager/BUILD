@@ -53,6 +53,26 @@ go_test(
 )
 
 go_test(
+    name = "e2e_old_new_model_test",
+    size = "small",
+    srcs = [
+        "e2e_test.go",
+    ],
+    library = ":go_default_library",
+    deps = [
+        "//adapter:go_default_library",
+        "//adapter/noop:go_default_library",
+        "//adapter/noop2:go_default_library",
+        "//pkg/config/descriptor:go_default_library",
+        "@com_github_gogo_protobuf//types:go_default_library",
+        "@com_github_golang_protobuf//proto:go_default_library",
+        "@com_github_googleapis_googleapis//:google/rpc",
+        "@com_github_istio_api//:mixer/v1/config",
+        "@com_github_istio_api//:mixer/v1/config/descriptor",
+    ],
+)
+
+go_test(
     name = "dispatch_benchmark_test",
     size = "small",
     srcs = [
