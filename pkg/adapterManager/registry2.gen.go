@@ -12,9 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// !!!!!!!!!!!!!!!!!!!!! WARNING !!!!!!!!!!!!!!!!!!!!!!!!
-// THIS IS AUTO GENERATED FILE - SIMULATED - HAND WRITTEN
-
 package adapterManager
 
 import (
