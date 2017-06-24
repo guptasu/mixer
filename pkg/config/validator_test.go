@@ -132,7 +132,7 @@ func TestConfigValidatorError(t *testing.T) {
 			},
 			2, "service.name == “*”", false, sSvcConfig},
 		{ct.Append("/:metrics", unknownValidator("metrics")),
-		 nil, nil, 2, "\"\"", false, sSvcConfig},
+			nil, nil, 2, "\"\"", false, sSvcConfig},
 	}
 
 	for idx, tt := range tests {

@@ -471,7 +471,7 @@ func (p *validator) validateAndConfigureHandlers(cfg string) (ce *adapter.Config
 
 	for _, hh := range m.GetHandlers() {
 		if acfg, err = convertHandlerParams(p.builderInfoFinder, hh.Adapter, hh.Params, p.strict); err != nil {
-			ce = ce.Appendf("Adapter: "+ hh.Adapter, "failed to convert handler params to proto: %v", err)
+			ce = ce.Appendf("Adapter: "+hh.Adapter, "failed to convert handler params to proto: %v", err)
 			continue
 		}
 		// ignore bool arg since it has to succeed as the last
@@ -479,7 +479,7 @@ func (p *validator) validateAndConfigureHandlers(cfg string) (ce *adapter.Config
 		builderInfo, _ := p.builderInfoFinder(hh.Adapter)
 		_, err := builderInfo.CreateHandlerBuilderFn().Build(acfg)
 		if err != nil {
-			ce = ce.Appendf("Adapter: "+ hh.Adapter, "failed to build handler: %v", err)
+			ce = ce.Appendf("Adapter: "+hh.Adapter, "failed to build handler: %v", err)
 			continue
 		}
 
