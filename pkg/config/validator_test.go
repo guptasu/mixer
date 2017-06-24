@@ -25,18 +25,15 @@ import (
 
 	dpb "istio.io/api/mixer/v1/config/descriptor"
 	"istio.io/mixer/pkg/adapter"
-	ada_cnfg "istio.io/mixer/pkg/adapter/config"
 	listcheckerpb "istio.io/mixer/pkg/aspect/config"
 	"istio.io/mixer/pkg/attribute"
 	"istio.io/mixer/pkg/config/descriptor"
 	pb "istio.io/mixer/pkg/config/proto"
 	"istio.io/mixer/pkg/expr"
-	"github.com/golang/protobuf/proto"
 )
 
 type fakeVFinder struct {
 	ada   map[string]adapter.ConfigValidator
-	hdlr  map[string]ada_cnfg.AdapterConfigValidatorAndConfigurer
 	asp   map[Kind]AspectValidator
 	kinds KindSet
 }
@@ -68,24 +65,6 @@ func (m *lc) ValidateConfig(c adapter.Config) *adapter.ConfigErrors {
 	return m.ce
 }
 
-type hv struct {
-	ev error
-	ec error
-}
-
-func (m *hv) DefaultConfig() (c proto.Message) {
-	return nil
-}
-
-// ValidateConfig determines whether the given configuration meets all correctness requirements.
-func (h *hv) ValidateConfig(c proto.Message) error {
-	return h.ev
-}
-
-func (h *hv) Configure(m proto.Message) error {
-	return h.ec
-}
-
 type ac struct {
 	ce *adapter.ConfigErrors
 }
@@ -102,7 +81,6 @@ func (a *ac) ValidateConfig(AspectParams, expr.TypeChecker, descriptor.Finder) *
 type configTable struct {
 	cerr     *adapter.ConfigErrors
 	ada      map[string]adapter.ConfigValidator
-	hdlr     map[string]ada_cnfg.AdapterConfigValidatorAndConfigurer
 	asp      map[Kind]AspectValidator
 	nerrors  int
 	selector string
@@ -110,7 +88,7 @@ type configTable struct {
 	cfg      string
 }
 
-func newVfinder(ada map[string]adapter.ConfigValidator, hdlr map[string]ada_cnfg.AdapterConfigValidatorAndConfigurer, asp map[Kind]AspectValidator) *fakeVFinder {
+func newVfinder(ada map[string]adapter.ConfigValidator, asp map[Kind]AspectValidator) *fakeVFinder {
 	var kinds KindSet
 	for k := range asp {
 		kinds = kinds.Set(k)
@@ -128,40 +106,40 @@ func TestConfigValidatorError(t *testing.T) {
 			map[string]adapter.ConfigValidator{
 				"denyChecker": &lc{},
 				"metrics2":    &lc{},
-			},map[string]ada_cnfg.AdapterConfigValidatorAndConfigurer{"testHandler": &hv{},},
+			},
 			nil, 0, "service.name == “*”", false, ConstGlobalConfig},
 		{nil,
 			map[string]adapter.ConfigValidator{
 				"metrics":  &lc{},
 				"metrics2": &lc{},
-			},map[string]ada_cnfg.AdapterConfigValidatorAndConfigurer{"testHandler": &hv{},},
+			},
 			nil, 1, "service.name == “*”", false, ConstGlobalConfig},
-		{nil, nil,map[string]ada_cnfg.AdapterConfigValidatorAndConfigurer{"testHandler": &hv{},},
+		{nil, nil,
 			map[Kind]AspectValidator{
 				MetricsKind: &ac{},
 				QuotasKind:  &ac{},
 			},
 			0, "service.name == “*”", false, sSvcConfig},
-		{nil, nil,map[string]ada_cnfg.AdapterConfigValidatorAndConfigurer{"testHandler": &hv{},},
+		{nil, nil,
 			map[Kind]AspectValidator{
 				MetricsKind: &ac{},
 				QuotasKind:  &ac{},
 			},
 			1, "service.name == “*”", true, sSvcConfig},
-		{cerr, nil,map[string]ada_cnfg.AdapterConfigValidatorAndConfigurer{"testHandler": &hv{},},
+		{cerr, nil,
 			map[Kind]AspectValidator{
 				QuotasKind: &ac{ce: cerr},
 			},
 			2, "service.name == “*”", false, sSvcConfig},
 		{ct.Append("/:metrics", unknownValidator("metrics")),
-			nil, map[string]ada_cnfg.AdapterConfigValidatorAndConfigurer{"testHandler": &hv{},},nil, 2, "\"\"", false, sSvcConfig},
+		 nil, nil, 2, "\"\"", false, sSvcConfig},
 	}
 
 	for idx, tt := range tests {
 		t.Run(strconv.Itoa(idx), func(t *testing.T) {
 
 			var ce *adapter.ConfigErrors
-			mgr := newVfinder(tt.ada, tt.hdlr, tt.asp)
+			mgr := newVfinder(tt.ada, tt.asp)
 			p := newValidator(mgr.FindAspectValidator, mgr.FindAdapterValidator, nil, mgr.AdapterToAspectMapperFunc, tt.strict, evaluator)
 			if tt.cfg == sSvcConfig {
 				ce = p.validateServiceConfig(globalRulesKey, fmt.Sprintf(tt.cfg, tt.selector), false)

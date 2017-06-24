@@ -38,7 +38,6 @@ import (
 
 	dpb "istio.io/api/mixer/v1/config/descriptor"
 	"istio.io/mixer/pkg/adapter"
-	"istio.io/mixer/pkg/adapter/config"
 	"istio.io/mixer/pkg/config/descriptor"
 	pb "istio.io/mixer/pkg/config/proto"
 	"istio.io/mixer/pkg/expr"
@@ -73,20 +72,20 @@ type (
 	// the given builder.
 	AdapterToAspectMapper func(builder string) KindSet
 
-	// HandlerFinder is used to find specific handlers for validating and configuring them.
-	HandlerFinder func(name string) (config.Handler, bool)
+	// BuilderInfoFinder is used to find specific handlers BuilderInfo for configuration.
+	BuilderInfoFinder func(name string) (*adapter.BuilderInfo, bool)
 )
 
 // newValidator returns a validator given component validators.
-func newValidator(managerFinder AspectValidatorFinder, adapterFinder BuilderValidatorFinder, handlerFinder HandlerFinder,
+func newValidator(managerFinder AspectValidatorFinder, adapterFinder BuilderValidatorFinder, builderInfoFinder BuilderInfoFinder,
 	findAspects AdapterToAspectMapper, strict bool, typeChecker expr.TypeChecker) *validator {
 	return &validator{
-		managerFinder: managerFinder,
-		adapterFinder: adapterFinder,
-		handlerFinder: handlerFinder,
-		findAspects:   findAspects,
-		strict:        strict,
-		typeChecker:   typeChecker,
+		managerFinder:     managerFinder,
+		adapterFinder:     adapterFinder,
+		builderInfoFinder: builderInfoFinder,
+		findAspects:       findAspects,
+		strict:            strict,
+		typeChecker:       typeChecker,
 		validated: &Validated{
 			adapterByName: make(map[adapterKey]*pb.Adapter),
 			rule:          make(map[rulesKey]*pb.ServiceConfig),
@@ -100,14 +99,14 @@ func newValidator(managerFinder AspectValidatorFinder, adapterFinder BuilderVali
 type (
 	// validator is the Configuration validator.
 	validator struct {
-		managerFinder    AspectValidatorFinder
-		adapterFinder    BuilderValidatorFinder
-		handlerFinder    HandlerFinder
-		findAspects      AdapterToAspectMapper
-		descriptorFinder descriptor.Finder
-		strict           bool
-		typeChecker      expr.TypeChecker
-		validated        *Validated
+		managerFinder     AspectValidatorFinder
+		adapterFinder     BuilderValidatorFinder
+		builderInfoFinder BuilderInfoFinder
+		findAspects       AdapterToAspectMapper
+		descriptorFinder  descriptor.Finder
+		strict            bool
+		typeChecker       expr.TypeChecker
+		validated         *Validated
 	}
 
 	adapterKey struct {
@@ -471,16 +470,16 @@ func (p *validator) validateAndConfigureHandlers(cfg string) (ce *adapter.Config
 	var err *adapter.ConfigErrors
 
 	for _, hh := range m.GetHandlers() {
-		if acfg, err = convertHandlerParams(p.handlerFinder, hh.Adapter, hh.Params, p.strict); err != nil {
-			ce = ce.Appendf("Adapter: "+hh.Adapter, "failed to convert handler params to proto: %v", err)
+		if acfg, err = convertHandlerParams(p.builderInfoFinder, hh.Adapter, hh.Params, p.strict); err != nil {
+			ce = ce.Appendf("Adapter: "+ hh.Adapter, "failed to convert handler params to proto: %v", err)
 			continue
 		}
 		// ignore bool arg since it has to succeed as the last
 		// step succeeded.
-		handler, _ := p.handlerFinder(hh.Adapter)
-		// TODO validateHandlers only calls the adapter.Configure method. Need to call Configure templates too.
-		if err := handler.Configure(acfg); err != nil {
-			ce = ce.Appendf("Adapter: "+hh.Adapter, "failed to configure handler params: %v", err)
+		builderInfo, _ := p.builderInfoFinder(hh.Adapter)
+		_, err := builderInfo.CreateHandlerBuilderFn().Build(acfg)
+		if err != nil {
+			ce = ce.Appendf("Adapter: "+ hh.Adapter, "failed to build handler: %v", err)
 			continue
 		}
 
@@ -489,19 +488,19 @@ func (p *validator) validateAndConfigureHandlers(cfg string) (ce *adapter.Config
 	return
 }
 
-func convertHandlerParams(f HandlerFinder, name string, params interface{}, strict bool) (ac adapter.Config, ce *adapter.ConfigErrors) {
-	var avl config.Handler
+func convertHandlerParams(f BuilderInfoFinder, name string, params interface{}, strict bool) (ac adapter.Config, ce *adapter.ConfigErrors) {
+	var bi *adapter.BuilderInfo
 	var found bool
 
-	if avl, found = f(name); !found {
+	if bi, found = f(name); !found {
 		return nil, ce.Append(name, unknownValidator(name))
 	}
 
-	ac = avl.DefaultConfig()
+	ac = bi.DefaultConfig
 	if err := decode(params, ac, strict); err != nil {
 		return nil, ce.Appendf(name, "failed to decode adapter params: %v", err)
 	}
-	if err := avl.ValidateConfig(ac); err != nil {
+	if err := bi.ValidateConfig(ac); err != nil {
 		return nil, ce.Appendf(name, "adapter validation failed: %v", err)
 	}
 	return ac, nil

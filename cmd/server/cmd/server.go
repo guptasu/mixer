@@ -197,7 +197,7 @@ func runServer(sa *serverArgs, printf, fatalf shared.FormatFn) {
 	}
 	adapterMgr := adapterManager.NewManager(adapter.Inventory(), adapter.Inventory2(), aspect.Inventory(), eval, gp, adapterGP)
 	store := configStore(sa.configStoreURL, sa.serviceConfigFile, sa.globalConfigFile, printf, fatalf)
-	configManager := config.NewManager(eval, adapterMgr.AspectValidatorFinder, adapterMgr.BuilderValidatorFinder, adapterMgr.HandlerFinder,
+	configManager := config.NewManager(eval, adapterMgr.AspectValidatorFinder, adapterMgr.BuilderValidatorFinder, adapterMgr.BuilderInfoFinder,
 		adapterMgr.SupportedKinds,
 		store, time.Second*time.Duration(sa.configFetchIntervalSec),
 		sa.configIdentityAttribute,
