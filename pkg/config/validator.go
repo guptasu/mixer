@@ -38,6 +38,7 @@ import (
 
 	dpb "istio.io/api/mixer/v1/config/descriptor"
 	"istio.io/mixer/pkg/adapter"
+	"istio.io/mixer/pkg/adapter/config"
 	"istio.io/mixer/pkg/config/descriptor"
 	pb "istio.io/mixer/pkg/config/proto"
 	"istio.io/mixer/pkg/expr"
@@ -87,11 +88,12 @@ func newValidator(managerFinder AspectValidatorFinder, adapterFinder BuilderVali
 		strict:            strict,
 		typeChecker:       typeChecker,
 		validated: &Validated{
-			adapterByName: make(map[adapterKey]*pb.Adapter),
-			rule:          make(map[rulesKey]*pb.ServiceConfig),
-			adapter:       make(map[string]*pb.GlobalConfig),
-			descriptor:    make(map[string]*pb.GlobalConfig),
-			shas:          make(map[string][sha1.Size]byte),
+			adapterByName:        make(map[adapterKey]*pb.Adapter),
+			handlerBuilderByName: make(map[string]*ValidatedHandlerBuilder),
+			rule:                 make(map[rulesKey]*pb.ServiceConfig),
+			adapter:              make(map[string]*pb.GlobalConfig),
+			descriptor:           make(map[string]*pb.GlobalConfig),
+			shas:                 make(map[string][sha1.Size]byte),
 		},
 	}
 }
@@ -127,11 +129,18 @@ type (
 	Validated struct {
 		adapterByName map[adapterKey]*pb.Adapter
 		// descriptors and adapters are only allowed in global scope
-		adapter    map[string]*pb.GlobalConfig
-		descriptor map[string]*pb.GlobalConfig
-		rule       map[rulesKey]*pb.ServiceConfig
-		shas       map[string][sha1.Size]byte
-		numAspects int
+		adapter              map[string]*pb.GlobalConfig
+		handlerBuilderByName map[string]*ValidatedHandlerBuilder
+		descriptor           map[string]*pb.GlobalConfig
+		rule                 map[rulesKey]*pb.ServiceConfig
+		shas                 map[string][sha1.Size]byte
+		numAspects           int
+	}
+
+	// ValidatedHandlerBuilder stores validated HandlerInfo.
+	ValidatedHandlerBuilder struct {
+		handlerBuilder *config.HandlerBuilder
+		handler        *pb.Handler
 	}
 )
 
@@ -413,7 +422,7 @@ func (p *validator) validate(cfg map[string]string) (rt *Validated, ce *adapter.
 	}
 
 	for _, kk := range keymap[handlers] {
-		if re := p.validateAndConfigureHandlers(cfg[kk]); re != nil {
+		if re := p.validateHandlers(cfg[kk]); re != nil {
 			return rt, ce.Appendf("handlerConfig", "failed validation").Extend(re)
 		}
 	}
@@ -451,7 +460,7 @@ func (p *validator) validateServiceConfig(pk rulesKey, cfg string, validatePrese
 	return nil
 }
 
-func (p *validator) validateAndConfigureHandlers(cfg string) (ce *adapter.ConfigErrors) {
+func (p *validator) validateHandlers(cfg string) (ce *adapter.ConfigErrors) {
 	var ferr error
 	var data []byte
 
@@ -470,38 +479,30 @@ func (p *validator) validateAndConfigureHandlers(cfg string) (ce *adapter.Config
 	var err *adapter.ConfigErrors
 
 	for _, hh := range m.GetHandlers() {
-		if acfg, err = convertHandlerParams(p.builderInfoFinder, hh.Adapter, hh.Params, p.strict); err != nil {
-			ce = ce.Appendf("Adapter: "+hh.Adapter, "failed to convert handler params to proto: %v", err)
+		bi, found := p.builderInfoFinder(hh.Adapter)
+		if !found {
+			return ce.Appendf("handlerConfig", "Adapter %s referenced in Handler %s is not found", hh.GetAdapter(), hh.GetName())
 			continue
 		}
-		// ignore bool arg since it has to succeed as the last
-		// step succeeded.
-		builderInfo, _ := p.builderInfoFinder(hh.Adapter)
-		_, err := builderInfo.CreateHandlerBuilderFn().Build(acfg)
-		if err != nil {
-			ce = ce.Appendf("Adapter: "+hh.Adapter, "failed to build handler: %v", err)
+		if acfg, err = convertHandlerParams(bi, hh.GetAdapter(), hh.Params, p.strict); err != nil {
+			ce = ce.Appendf("Handler: "+hh.Adapter, "failed to convert handler params to proto: %v", err)
 			continue
 		}
 
 		hh.Params = acfg
+		hb := bi.CreateHandlerBuilderFn()
+		p.validated.handlerBuilderByName[hh.GetName()] = &ValidatedHandlerBuilder{handler: hh, handlerBuilder: &hb}
 	}
 	return
 }
 
-func convertHandlerParams(f BuilderInfoFinder, name string, params interface{}, strict bool) (ac adapter.Config, ce *adapter.ConfigErrors) {
-	var bi *adapter.BuilderInfo
-	var found bool
-
-	if bi, found = f(name); !found {
-		return nil, ce.Append(name, unknownValidator(name))
-	}
-
+func convertHandlerParams(bi *adapter.BuilderInfo, name string, params interface{}, strict bool) (ac adapter.Config, ce *adapter.ConfigErrors) {
 	ac = bi.DefaultConfig
 	if err := decode(params, ac, strict); err != nil {
-		return nil, ce.Appendf(name, "failed to decode adapter params: %v", err)
+		return nil, ce.Appendf(name, "failed to decode handler params: %v", err)
 	}
 	if err := bi.ValidateConfig(ac); err != nil {
-		return nil, ce.Appendf(name, "adapter validation failed: %v", err)
+		return nil, ce.Appendf(name, "handler validation failed: %v", err)
 	}
 	return ac, nil
 }
