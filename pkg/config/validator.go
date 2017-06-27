@@ -95,6 +95,7 @@ func newValidator(managerFinder AspectValidatorFinder, adapterFinder BuilderVali
 		templateRepo:         templateRepo,
 		findAspects:          findAspects,
 		constructorByName:    make(map[string]*pb.Constructor),
+		actions:              make([]*pb.Action, 0),
 		strict:               strict,
 		typeChecker:          typeChecker,
 		handlerBuilderByName: make(map[string]*HandlerBuilderInfo),
@@ -121,6 +122,7 @@ type (
 		descriptorFinder     descriptor.Finder
 		handlerBuilderByName map[string]*HandlerBuilderInfo
 		constructorByName    map[string]*pb.Constructor
+		actions              []*pb.Action
 		strict               bool
 		typeChecker          expr.TypeChecker
 		validated            *Validated
@@ -413,13 +415,19 @@ func (p *validator) validateRules(rules []*pb.Rule, path string, cnstrByName map
 
 		path = path + "/" + rule.GetSelector()
 		for idx, aa := range rule.GetActions() {
+			hasError := false
 			if aa.GetHandler() == "" || hdlrByName[aa.GetHandler()] == nil {
+				hasError = true
 				ce = ce.Appendf(fmt.Sprintf("%s[%d]", path, idx), "handler not specified or is invalid")
 			}
 			for _, instanceName := range aa.GetInstances() {
 				if cnstrByName[instanceName] == nil {
+					hasError = true
 					ce = ce.Appendf(fmt.Sprintf("%s[%d]", path, idx), "instance '%s' is not defined.", instanceName)
 				}
+			}
+			if !hasError {
+				p.actions = append(p.actions, aa)
 			}
 		}
 		rs := rule.GetRules()

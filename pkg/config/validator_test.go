@@ -460,12 +460,12 @@ action_rules:
   - handler: somehandler
     instances:
     - RequestCountByService
-    rules:
-    - selector: target.service == "*"
-      actions:
-      - handler: somehandler
-        instances:
-        - RequestCountByService
+  rules:
+  - selector: target.service == "*"
+    actions:
+    - handler: somehandler
+      instances:
+      - RequestCountByService
 `
 	const sSvcConfigMissingHandler = `
 subject: namespace:ns
@@ -509,6 +509,7 @@ action_rules:
 		cnstrMap   map[string]*pb.Constructor
 		handlerMap map[string]*HandlerBuilderInfo
 		cerr       []string
+		nActions   int
 		expr       expr.TypeChecker
 	}{
 		{
@@ -517,6 +518,7 @@ action_rules:
 			map[string]*pb.Constructor{"RequestCountByService": {}},
 			map[string]*HandlerBuilderInfo{"somehandler": {}},
 			nil,
+			1,
 			evaluator,
 		},
 		{
@@ -525,6 +527,7 @@ action_rules:
 			map[string]*pb.Constructor{"RequestCountByService": {}},
 			map[string]*HandlerBuilderInfo{"somehandler": {}},
 			nil,
+			2,
 			evaluator,
 		},
 		{
@@ -533,6 +536,7 @@ action_rules:
 			map[string]*pb.Constructor{},
 			map[string]*HandlerBuilderInfo{},
 			[]string{"handler not specified or is invalid", "instance 'RequestCountByService' is not defined"},
+			0,
 			evaluator,
 		},
 		{
@@ -541,6 +545,7 @@ action_rules:
 			map[string]*pb.Constructor{"RequestCountByService": {}},
 			map[string]*HandlerBuilderInfo{"somehandler": {}},
 			[]string{"handler not specified or is invalid"},
+			0,
 			evaluator,
 		},
 		{
@@ -549,6 +554,7 @@ action_rules:
 			map[string]*pb.Constructor{"RequestCountByService": {}},
 			map[string]*HandlerBuilderInfo{"somehandler": {}},
 			[]string{"handler not specified or is invalid"},
+			1,
 			evaluator,
 		},
 		{
@@ -557,6 +563,7 @@ action_rules:
 			map[string]*pb.Constructor{"RequestCountByService": {}},
 			map[string]*HandlerBuilderInfo{"somehandler": {}},
 			[]string{"bad expression"},
+			1, /*even if the selector is wrong the action is correct*/
 			&fakeExpr{err: errors.New("bad expression")},
 		},
 	}
@@ -575,6 +582,9 @@ action_rules:
 
 			if ok != cok {
 				t.Errorf("Expected %t Got %t", ok, cok)
+			}
+			if len(p.actions) != tt.nActions {
+				t.Errorf("Expected len(p.actions)=%d Got %d", tt.nActions, len(p.actions))
 			}
 			if ce == nil {
 				return
