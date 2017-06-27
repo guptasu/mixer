@@ -83,7 +83,8 @@ type (
 )
 
 // newValidator returns a validator given component validators.
-func newValidator(managerFinder AspectValidatorFinder, adapterFinder BuilderValidatorFinder, builderInfoFinder BuilderInfoFinder, configureHandler ConfigureHandler,
+func newValidator(managerFinder AspectValidatorFinder, adapterFinder BuilderValidatorFinder,
+	builderInfoFinder BuilderInfoFinder, configureHandler ConfigureHandler,
 	findAspects AdapterToAspectMapper, strict bool, typeChecker expr.TypeChecker) *validator {
 	return &validator{
 		managerFinder:        managerFinder,
@@ -176,6 +177,11 @@ func (v *Validated) Clone() *Validated {
 		aa[k] = a
 	}
 
+	hh := map[string]*HandlerInfo{}
+	for k, a := range v.handlerByName {
+		hh[k] = a
+	}
+
 	rule := map[rulesKey]*pb.ServiceConfig{}
 	for k, a := range v.rule {
 		rule[k] = a
@@ -188,6 +194,7 @@ func (v *Validated) Clone() *Validated {
 
 	return &Validated{
 		adapterByName: aa,
+		handlerByName: hh,
 		rule:          rule,
 		adapter:       copyDescriptors(v.adapter),
 		descriptor:    copyDescriptors(v.descriptor),
@@ -475,7 +482,11 @@ func (p *validator) buildAndCacheHandlers() (ce *adapter.ConfigErrors) {
 		if err != nil {
 			return ce.Appendf("handlerConfig: "+name, "failed to build a handler instance: %v", err)
 		}
-		p.validated.handlerByName[name] = &HandlerInfo{adapterName: handlerBuilder.handlerCnfg.GetAdapter(), handlerInstance: &handlerInstance, supportedTemplates: nil}
+		p.validated.handlerByName[name] = &HandlerInfo{
+			adapterName:        handlerBuilder.handlerCnfg.GetAdapter(),
+			handlerInstance:    &handlerInstance,
+			supportedTemplates: handlerBuilder.supportedTemplates,
+		}
 	}
 	return nil
 }
@@ -530,10 +541,6 @@ func (p *validator) validateHandlers(cfg string) (ce *adapter.ConfigErrors) {
 		}
 
 		hh.Params = hcfg
-		if bi.CreateHandlerBuilderFn == nil {
-			ce = ce.Appendf("handlerConfig", "CreateHandlerBuilderFn cannot be nil for handler build info %v", bi)
-			continue
-		}
 		hb := bi.CreateHandlerBuilderFn()
 		p.handlerBuilderByName[hh.GetName()] = &HandlerBuilderInfo{handlerCnfg: hh, handlerBuilder: &hb, supportedTemplates: bi.SupportedTemplates}
 	}

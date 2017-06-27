@@ -99,7 +99,8 @@ type configTable struct {
 	cfg      string
 }
 
-func newVfinder(ada map[string]adapter.ConfigValidator, asp map[Kind]AspectValidator, hbi map[string]*adapter.BuilderInfo) *fakeVFinder {
+func newVfinder(ada map[string]adapter.ConfigValidator, asp map[Kind]AspectValidator,
+	hbi map[string]*adapter.BuilderInfo) *fakeVFinder {
 	var kinds KindSet
 	for k := range asp {
 		kinds = kinds.Set(k)
@@ -156,7 +157,8 @@ func TestConfigValidatorError(t *testing.T) {
 
 			var ce *adapter.ConfigErrors
 			mgr := newVfinder(tt.ada, tt.asp, tt.hbi)
-			p := newValidator(mgr.FindAspectValidator, mgr.FindAdapterValidator, mgr.FindBuilderInfo, configureHandler, mgr.AdapterToAspectMapperFunc, tt.strict, evaluator)
+			p := newValidator(mgr.FindAspectValidator, mgr.FindAdapterValidator, mgr.FindBuilderInfo, configureHandler,
+				mgr.AdapterToAspectMapperFunc, tt.strict, evaluator)
 			if tt.cfg == sSvcConfig {
 				ce = p.validateServiceConfig(globalRulesKey, fmt.Sprintf(tt.cfg, tt.selector), false)
 			} else {
@@ -209,7 +211,8 @@ func TestHandlerConfigValidator(t *testing.T) {
 			var ce *adapter.ConfigErrors
 
 			mgr := newVfinder(tt.ada, tt.asp, tt.hbi)
-			p := newValidator(mgr.FindAspectValidator, mgr.FindAdapterValidator, mgr.FindBuilderInfo, configureHandler, mgr.AdapterToAspectMapperFunc, tt.strict, evaluator)
+			p := newValidator(mgr.FindAspectValidator, mgr.FindAdapterValidator, mgr.FindBuilderInfo, configureHandler,
+				mgr.AdapterToAspectMapperFunc, tt.strict, evaluator)
 			ce1 := p.validateHandlers(tt.cfg)
 			if ce1 != nil {
 				ce = ce1.Extend(ce)
@@ -266,18 +269,21 @@ handlers:
 	for idx, tt := range tests {
 		t.Run(strconv.Itoa(idx), func(t *testing.T) {
 			mgr := newVfinder(tt.ada, tt.asp, tt.hbi)
-			p := newValidator(mgr.FindAspectValidator, mgr.FindAdapterValidator, mgr.FindBuilderInfo, configureHandler, mgr.AdapterToAspectMapperFunc, tt.strict, evaluator)
+			p := newValidator(mgr.FindAspectValidator, mgr.FindAdapterValidator, mgr.FindBuilderInfo, configureHandler,
+				mgr.AdapterToAspectMapperFunc, tt.strict, evaluator)
 			_ = p.validateHandlers(tt.cfg)
 			if tt.nerrors > 0 {
 				if _, ok := p.handlerBuilderByName["fooHandler"]; ok {
-					t.Fatalf("Expected: Handler '%s' not in validator.validated.handlerBuilderByName' Got: %v", "fooHandler", p.handlerBuilderByName["fooHandler"])
+					t.Fatalf("Expected: Handler '%s' not in validator.validated.handlerBuilderByName' Got: %v",
+						"fooHandler", p.handlerBuilderByName["fooHandler"])
 				}
 			} else {
 				if _, ok := p.handlerBuilderByName["fooHandler"]; !ok {
 					t.Fatalf("Expected: Handler '%s' present in validator.validated.handlerBuilderByName' Got: nil", "fooHandler")
 				}
 				if !reflect.DeepEqual(p.handlerBuilderByName["fooHandler"].supportedTemplates, []adapter.SupportedTemplates{testSupportedTemplate}) {
-					t.Fatalf("Expected: p.handlerBuilderByName[\"fooHandler\"]=%v. Got: %v", []adapter.SupportedTemplates{testSupportedTemplate}, p.handlerBuilderByName["fooHandler"].supportedTemplates)
+					t.Fatalf("Expected: p.handlerBuilderByName[\"fooHandler\"]=%v. Got: %v",
+						[]adapter.SupportedTemplates{testSupportedTemplate}, p.handlerBuilderByName["fooHandler"].supportedTemplates)
 				}
 			}
 		})
@@ -298,8 +304,6 @@ func (f fakeBadHandlerBuilder) Build(cnfg proto.Message) (config.Handler, error)
 	return nil, errors.New("build failed")
 }
 func TestBuildAndCacheHandlers(t *testing.T) {
-	const testSupportedTemplate adapter.SupportedTemplates = "testSupportedTemplate"
-
 	var hbgood config.HandlerBuilder = fakeGoodHandlerBuilder{}
 	var hbb config.HandlerBuilder = fakeBadHandlerBuilder{}
 	tests := []struct {
@@ -436,7 +440,8 @@ func TestFullConfigValidator(tt *testing.T) {
 		tt.Run(fmt.Sprintf("[%d]", idx), func(t *testing.T) {
 			mgr := newVfinder(ctx.ada, ctx.asp, ctx.hbi)
 			fe.err = ctx.exprErr
-			p := newValidator(mgr.FindAspectValidator, mgr.FindAdapterValidator, nil, configureHandler, mgr.AdapterToAspectMapperFunc, ctx.strict, fe)
+			p := newValidator(mgr.FindAspectValidator, mgr.FindAdapterValidator, nil, configureHandler,
+				mgr.AdapterToAspectMapperFunc, ctx.strict, fe)
 			// ConstGlobalConfig only defines 1 adapter: denyChecker
 			_, ce := p.validate(newFakeMap(ConstGlobalConfig, ctx.cfg))
 			cok := ce == nil
@@ -465,7 +470,8 @@ var globalRulesKey = rulesKey{Scope: global, Subject: global}
 func TestConfigParseError(t *testing.T) {
 	mgr := &fakeVFinder{}
 	evaluator := newFakeExpr()
-	p := newValidator(mgr.FindAspectValidator, mgr.FindAdapterValidator, nil, configureHandler, mgr.AdapterToAspectMapperFunc, false, evaluator)
+	p := newValidator(mgr.FindAspectValidator, mgr.FindAdapterValidator, nil, configureHandler,
+		mgr.AdapterToAspectMapperFunc, false, evaluator)
 	ce := p.validateServiceConfig(globalRulesKey, "<config>  </config>", false)
 
 	if ce == nil || !strings.Contains(ce.Error(), "error unmarshaling") {
@@ -635,6 +641,10 @@ func TestValidated_Clone(t *testing.T) {
 		{AccessLogsKind, "n1"}: {},
 	}
 
+	hh := map[string]*HandlerInfo{
+		"foo": nil,
+	}
+
 	rule := map[rulesKey]*pb.ServiceConfig{
 		{"global", "global"}: {},
 	}
@@ -653,6 +663,7 @@ func TestValidated_Clone(t *testing.T) {
 
 	v := &Validated{
 		adapterByName: aa,
+		handlerByName: hh,
 		rule:          rule,
 		adapter:       adp,
 		descriptor:    desc,
