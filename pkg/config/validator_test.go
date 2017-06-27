@@ -118,58 +118,32 @@ func TestConfigValidatorError(t *testing.T) {
 	cerr := ct.Appendf("url", "Must have a valid URL")
 
 	tests := []*configTable{
-		{
-			nil,
+		{nil,
 			map[string]adapter.ConfigValidator{
 				"denyChecker": &lc{},
 				"metrics2":    &lc{},
-			},
-			map[string]*adapter.BuilderInfo{
-				"fooHandlerAdapter": {
-					DefaultConfig:          &types.Empty{},
-					ValidateConfig:         func(c proto.Message) error { return nil },
-					CreateHandlerBuilderFn: func() config.HandlerBuilder { return nil },
-				},
-			},
-			nil, 0, "service.name == “*”", false, ConstGlobalConfig,
-		},
-		{
-			nil,
-			map[string]adapter.ConfigValidator{
-				"denyChecker": &lc{},
-				"metrics2":    &lc{},
-			},
-			map[string]*adapter.BuilderInfo{ /*Empty lookup. Should cause error, Adapter not found*/ },
-			nil, 1, "service.name == “*”", false, ConstGlobalConfig,
-		},
+			}, nil,
+			nil, 0, "service.name == “*”", false, ConstGlobalConfig},
 		{nil,
 			map[string]adapter.ConfigValidator{
 				"metrics":  &lc{},
 				"metrics2": &lc{},
-			},
-			map[string]*adapter.BuilderInfo{
-				"fooHandlerAdapter": {
-					DefaultConfig:          &types.Empty{},
-					ValidateConfig:         func(c proto.Message) error { return nil },
-					CreateHandlerBuilderFn: func() config.HandlerBuilder { return nil },
-				},
-			},
-			nil, 1, "service.name == “*”", false, ConstGlobalConfig,
-		},
+			}, nil,
+			nil, 1, "service.name == “*”", false, ConstGlobalConfig},
 		{nil, nil, nil,
 			map[Kind]AspectValidator{
 				MetricsKind: &ac{},
 				QuotasKind:  &ac{},
 			},
 			0, "service.name == “*”", false, sSvcConfig},
-		{nil, nil,
-			nil, map[Kind]AspectValidator{
+		{nil, nil, nil,
+			map[Kind]AspectValidator{
 				MetricsKind: &ac{},
 				QuotasKind:  &ac{},
 			},
 			1, "service.name == “*”", true, sSvcConfig},
-		{cerr, nil,
-			nil, map[Kind]AspectValidator{
+		{cerr, nil, nil,
+			map[Kind]AspectValidator{
 				QuotasKind: &ac{ce: cerr},
 			},
 			2, "service.name == “*”", false, sSvcConfig},
@@ -181,23 +155,70 @@ func TestConfigValidatorError(t *testing.T) {
 		t.Run(strconv.Itoa(idx), func(t *testing.T) {
 
 			var ce *adapter.ConfigErrors
-
 			mgr := newVfinder(tt.ada, tt.asp, tt.hbi)
 			p := newValidator(mgr.FindAspectValidator, mgr.FindAdapterValidator, mgr.FindBuilderInfo, configureHandler, mgr.AdapterToAspectMapperFunc, tt.strict, evaluator)
 			if tt.cfg == sSvcConfig {
 				ce = p.validateServiceConfig(globalRulesKey, fmt.Sprintf(tt.cfg, tt.selector), false)
 			} else {
 				ce = p.validateAdapters(keyAdapters, tt.cfg)
-				ce1 := p.validateHandlers(tt.cfg)
-				if ce1 != nil {
-					ce = ce1.Extend(ce)
-				}
 			}
 			cok := ce == nil
 			ok := tt.nerrors == 0
 
 			if ok != cok {
-				t.Fatalf("Expected %t Got %t. %v", ok, cok, ce)
+				t.Fatalf("Expected %t Got %t", ok, cok)
+			}
+			if ce == nil {
+				return
+			}
+
+			if len(ce.Multi.Errors) != tt.nerrors {
+				t.Fatalf("Expected: '%v' Got: %v", tt.cerr.Error(), ce.Error())
+			}
+		})
+	}
+}
+
+func TestHandlerConfigValidator(t *testing.T) {
+	evaluator := newFakeExpr()
+
+	tests := []*configTable{
+		{
+			nil,
+			nil,
+			map[string]*adapter.BuilderInfo{
+				"fooHandlerAdapter": {
+					DefaultConfig:          &types.Empty{},
+					ValidateConfig:         func(c proto.Message) error { return nil },
+					CreateHandlerBuilderFn: func() config.HandlerBuilder { return nil },
+				},
+			},
+			nil, 0, "service.name == “*”", false, ConstGlobalConfig,
+		},
+		{
+			nil,
+			nil,
+			map[string]*adapter.BuilderInfo{ /*Empty lookup. Should cause error, Adapter not found*/ },
+			nil, 1, "service.name == “*”", false, ConstGlobalConfig,
+		},
+	}
+
+	for idx, tt := range tests {
+		t.Run(strconv.Itoa(idx), func(t *testing.T) {
+
+			var ce *adapter.ConfigErrors
+
+			mgr := newVfinder(tt.ada, tt.asp, tt.hbi)
+			p := newValidator(mgr.FindAspectValidator, mgr.FindAdapterValidator, mgr.FindBuilderInfo, configureHandler, mgr.AdapterToAspectMapperFunc, tt.strict, evaluator)
+			ce1 := p.validateHandlers(tt.cfg)
+			if ce1 != nil {
+				ce = ce1.Extend(ce)
+			}
+			cok := ce == nil
+			ok := tt.nerrors == 0
+
+			if ok != cok {
+				t.Fatalf("Expected %t Got %t", ok, cok)
 			}
 			if ce == nil {
 				return
@@ -265,11 +286,14 @@ handlers:
 
 type fakeGoodHandlerBuilder struct {
 }
+
 func (f fakeGoodHandlerBuilder) Build(cnfg proto.Message) (config.Handler, error) {
 	return nil, nil
 }
+
 type fakeBadHandlerBuilder struct {
 }
+
 func (f fakeBadHandlerBuilder) Build(cnfg proto.Message) (config.Handler, error) {
 	return nil, errors.New("build failed")
 }
@@ -290,7 +314,7 @@ func TestBuildAndCacheHandlers(t *testing.T) {
 				return nil
 			},
 			map[string]*HandlerBuilderInfo{
-				"foo": &HandlerBuilderInfo{
+				"foo": {
 					handlerBuilder: &hbgood, handlerCnfg: &pb.Handler{Params: &types.Empty{}},
 				},
 			},
@@ -299,10 +323,10 @@ func TestBuildAndCacheHandlers(t *testing.T) {
 		{
 			func(constructors []*pb.Constructor, actions []*pb.Action,
 				handlers map[string]*HandlerBuilderInfo) (ce *adapter.ConfigErrors) {
-				return  ce.Append("some field", errors.New("some error during configuration"))
+				return ce.Append("some field", errors.New("some error during configuration"))
 			},
 			map[string]*HandlerBuilderInfo{
-				"foo": &HandlerBuilderInfo{
+				"foo": {
 					handlerBuilder: &hbgood, handlerCnfg: &pb.Handler{Params: &types.Empty{}},
 				},
 			},
@@ -315,7 +339,7 @@ func TestBuildAndCacheHandlers(t *testing.T) {
 				return nil
 			},
 			map[string]*HandlerBuilderInfo{
-				"foo": &HandlerBuilderInfo{
+				"foo": {
 					handlerBuilder: &hbb, handlerCnfg: &pb.Handler{Params: &types.Empty{}},
 				},
 			},
@@ -330,7 +354,7 @@ func TestBuildAndCacheHandlers(t *testing.T) {
 			err := p.buildAndCacheHandlers()
 			if tt.expectedError == "" {
 				if len(p.validated.handlerByName) == len(tt.handlerBuilderByName) {
-					for k, _ := range tt.handlerBuilderByName {
+					for k := range tt.handlerBuilderByName {
 						if _, ok := p.validated.handlerByName[k]; !ok {
 							t.Fatalf("Expected: validated.handlerByName[%s] to be present. Got: Not present", k)
 						}
@@ -340,7 +364,7 @@ func TestBuildAndCacheHandlers(t *testing.T) {
 				}
 			} else {
 				if !strings.Contains(err.Error(), tt.expectedError) {
-					t.Fatalf("got error: %s: expected %s\n", tt.expectedError, err.Error())
+					t.Fatalf("Expected %s. Got %s", err.Error(), tt.expectedError)
 				}
 			}
 		})
@@ -706,7 +730,7 @@ func TestConvertAdapterParamsErrors(t *testing.T) {
 			}, "ABC", tt.params, true)
 
 			if !strings.Contains(ce.Error(), tt.cv.err) {
-				t.Errorf("got %s\nwant %s", ce.Error(), tt.cv.err)
+				t.Errorf("Expected %s. Got %s", tt.cv.err, ce.Error())
 			}
 		})
 	}
@@ -759,7 +783,7 @@ func TestConvertHandlerParamsErrors(t *testing.T) {
 				}, "myhandlerCnfgBlock", tt.params, true)
 
 			if !strings.Contains(ce.Error(), tt.errorStr) {
-				t.Errorf("got %s\nwant %s", ce.Error(), tt.errorStr)
+				t.Errorf("Expected %s got %s\n", tt.errorStr, ce.Error())
 			}
 		})
 	}
