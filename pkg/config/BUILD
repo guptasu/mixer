@@ -7,6 +7,7 @@ go_library(
     srcs = [
         "apiserver.go",
         "compatStore.go",
+        "handlerConfigurer.go",
         "inventory.go",
         "kind.go",
         "manager.go",
@@ -49,6 +50,7 @@ go_test(
     deps = [
         "//pkg/aspect/config:go_default_library",
         "@com_github_gogo_protobuf//proto:go_default_library",
+        "@com_github_gogo_protobuf//types:go_default_library",
         "@com_github_googleapis_googleapis//:google/rpc",
         "@com_github_istio_api//:mixer/v1",
         "@com_github_istio_api//:mixer/v1/config/descriptor",

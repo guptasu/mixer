@@ -204,7 +204,7 @@ func runServer(sa *serverArgs, printf, fatalf shared.FormatFn) {
 		sa.configIdentityAttributeDomain)
 
 	configAPIServer := config.NewAPI("v1", sa.configAPIPort, eval,
-		adapterMgr.AspectValidatorFinder, adapterMgr.BuilderValidatorFinder,
+		adapterMgr.AspectValidatorFinder, adapterMgr.BuilderValidatorFinder, adapterMgr.BuilderInfoFinder,
 		adapterMgr.SupportedKinds, store)
 
 	var serverCert *tls.Certificate

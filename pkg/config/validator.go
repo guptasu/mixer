@@ -75,25 +75,32 @@ type (
 
 	// BuilderInfoFinder is used to find specific handlers BuilderInfo for configuration.
 	BuilderInfoFinder func(name string) (*adapter.BuilderInfo, bool)
+
+	// ConfigureHandler is used to configure handler implementation with Types associated with all the templates that
+	// it supports.
+	ConfigureHandler func(constructors []*pb.Constructor, actions []*pb.Action,
+		handlers map[string]*HandlerBuilderInfo) (ce *adapter.ConfigErrors)
 )
 
 // newValidator returns a validator given component validators.
-func newValidator(managerFinder AspectValidatorFinder, adapterFinder BuilderValidatorFinder, builderInfoFinder BuilderInfoFinder,
+func newValidator(managerFinder AspectValidatorFinder, adapterFinder BuilderValidatorFinder, builderInfoFinder BuilderInfoFinder, configureHandler ConfigureHandler,
 	findAspects AdapterToAspectMapper, strict bool, typeChecker expr.TypeChecker) *validator {
 	return &validator{
-		managerFinder:     managerFinder,
-		adapterFinder:     adapterFinder,
-		builderInfoFinder: builderInfoFinder,
-		findAspects:       findAspects,
-		strict:            strict,
-		typeChecker:       typeChecker,
+		managerFinder:        managerFinder,
+		adapterFinder:        adapterFinder,
+		builderInfoFinder:    builderInfoFinder,
+		configureHandler:     configureHandler,
+		findAspects:          findAspects,
+		strict:               strict,
+		typeChecker:          typeChecker,
+		handlerBuilderByName: make(map[string]*HandlerBuilderInfo),
 		validated: &Validated{
-			adapterByName:        make(map[adapterKey]*pb.Adapter),
-			handlerBuilderByName: make(map[string]*ValidatedHandlerBuilder),
-			rule:                 make(map[rulesKey]*pb.ServiceConfig),
-			adapter:              make(map[string]*pb.GlobalConfig),
-			descriptor:           make(map[string]*pb.GlobalConfig),
-			shas:                 make(map[string][sha1.Size]byte),
+			adapterByName: make(map[adapterKey]*pb.Adapter),
+			handlerByName: make(map[string]*HandlerInfo),
+			rule:          make(map[rulesKey]*pb.ServiceConfig),
+			adapter:       make(map[string]*pb.GlobalConfig),
+			descriptor:    make(map[string]*pb.GlobalConfig),
+			shas:          make(map[string][sha1.Size]byte),
 		},
 	}
 }
@@ -101,14 +108,16 @@ func newValidator(managerFinder AspectValidatorFinder, adapterFinder BuilderVali
 type (
 	// validator is the Configuration validator.
 	validator struct {
-		managerFinder     AspectValidatorFinder
-		adapterFinder     BuilderValidatorFinder
-		builderInfoFinder BuilderInfoFinder
-		findAspects       AdapterToAspectMapper
-		descriptorFinder  descriptor.Finder
-		strict            bool
-		typeChecker       expr.TypeChecker
-		validated         *Validated
+		managerFinder        AspectValidatorFinder
+		adapterFinder        BuilderValidatorFinder
+		builderInfoFinder    BuilderInfoFinder
+		configureHandler     ConfigureHandler
+		findAspects          AdapterToAspectMapper
+		descriptorFinder     descriptor.Finder
+		handlerBuilderByName map[string]*HandlerBuilderInfo
+		strict               bool
+		typeChecker          expr.TypeChecker
+		validated            *Validated
 	}
 
 	adapterKey struct {
@@ -129,18 +138,26 @@ type (
 	Validated struct {
 		adapterByName map[adapterKey]*pb.Adapter
 		// descriptors and adapters are only allowed in global scope
-		adapter              map[string]*pb.GlobalConfig
-		handlerBuilderByName map[string]*ValidatedHandlerBuilder
-		descriptor           map[string]*pb.GlobalConfig
-		rule                 map[rulesKey]*pb.ServiceConfig
-		shas                 map[string][sha1.Size]byte
-		numAspects           int
+		adapter       map[string]*pb.GlobalConfig
+		handlerByName map[string]*HandlerInfo
+		descriptor    map[string]*pb.GlobalConfig
+		rule          map[rulesKey]*pb.ServiceConfig
+		shas          map[string][sha1.Size]byte
+		numAspects    int
 	}
 
-	// ValidatedHandlerBuilder stores validated HandlerInfo.
-	ValidatedHandlerBuilder struct {
-		handlerBuilder *config.HandlerBuilder
-		handler        *pb.Handler
+	// HandlerBuilderInfo stores validated HandlerBuilders..
+	HandlerBuilderInfo struct {
+		handlerBuilder     *config.HandlerBuilder
+		handlerCnfg        *pb.Handler
+		supportedTemplates []adapter.SupportedTemplates
+	}
+
+	// HandlerInfo stores validated and configured Handlers.
+	HandlerInfo struct {
+		handlerInstance    *config.Handler
+		adapterName        string
+		supportedTemplates []adapter.SupportedTemplates
 	}
 )
 
@@ -426,6 +443,7 @@ func (p *validator) validate(cfg map[string]string) (rt *Validated, ce *adapter.
 			return rt, ce.Appendf("handlerConfig", "failed validation").Extend(re)
 		}
 	}
+
 	// The order is important here, because serviceConfig refers to adapters and descriptors
 	p.descriptorFinder = descriptor.NewFinder(p.validated.descriptor[descriptorKey(global)])
 	for _, kk := range keymap[rules] {
@@ -437,7 +455,29 @@ func (p *validator) validate(cfg map[string]string) (rt *Validated, ce *adapter.
 			return rt, ce.Appendf("serviceConfig", "failed validation").Extend(re)
 		}
 	}
+
+	// everything is validated now we can configure the handlers.
+	// TODO : Add validation of Constructors and Actions before this step
+	if re := p.buildAndCacheHandlers(); re != nil {
+		return rt, ce.Extend(re)
+	}
+
 	return p.validated, nil
+}
+
+func (p *validator) buildAndCacheHandlers() (ce *adapter.ConfigErrors) {
+	if err := p.configureHandler(nil, nil, p.handlerBuilderByName); err != nil {
+		return ce.Appendf("handlerConfig", "failed to configure handler: %v", err)
+	}
+
+	for name, handlerBuilder := range p.handlerBuilderByName {
+		handlerInstance, err := (*handlerBuilder.handlerBuilder).Build(handlerBuilder.handlerCnfg.Params.(proto.Message))
+		if err != nil {
+			return ce.Appendf("handlerConfig: "+name, "failed to build a handler instance: %v", err)
+		}
+		p.validated.handlerByName[name] = &HandlerInfo{adapterName: handlerBuilder.handlerCnfg.GetAdapter(), handlerInstance: &handlerInstance, supportedTemplates: nil}
+	}
+	return nil
 }
 
 // ValidateServiceConfig validates service config.
@@ -475,23 +515,27 @@ func (p *validator) validateHandlers(cfg string) (ce *adapter.ConfigErrors) {
 		return ce.Appendf("handlerConfig", "failed to unmarshal config into proto: %v", err)
 	}
 
-	var acfg proto.Message
+	var hcfg proto.Message
 	var err *adapter.ConfigErrors
 
 	for _, hh := range m.GetHandlers() {
 		bi, found := p.builderInfoFinder(hh.Adapter)
 		if !found {
-			return ce.Appendf("handlerConfig", "Adapter %s referenced in Handler %s is not found", hh.GetAdapter(), hh.GetName())
+			ce = ce.Appendf("handlerConfig", "Adapter %s referenced in Handler %s is not found", hh.GetAdapter(), hh.GetName())
 			continue
 		}
-		if acfg, err = convertHandlerParams(bi, hh.GetAdapter(), hh.Params, p.strict); err != nil {
+		if hcfg, err = convertHandlerParams(bi, hh.GetName(), hh.Params, p.strict); err != nil {
 			ce = ce.Appendf("Handler: "+hh.Adapter, "failed to convert handler params to proto: %v", err)
 			continue
 		}
 
-		hh.Params = acfg
+		hh.Params = hcfg
+		if bi.CreateHandlerBuilderFn == nil {
+			ce = ce.Appendf("handlerConfig", "CreateHandlerBuilderFn cannot be nil for handler build info %v", bi)
+			continue
+		}
 		hb := bi.CreateHandlerBuilderFn()
-		p.validated.handlerBuilderByName[hh.GetName()] = &ValidatedHandlerBuilder{handler: hh, handlerBuilder: &hb}
+		p.handlerBuilderByName[hh.GetName()] = &HandlerBuilderInfo{handlerCnfg: hh, handlerBuilder: &hb, supportedTemplates: bi.SupportedTemplates}
 	}
 	return
 }
