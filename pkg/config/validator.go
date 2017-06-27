@@ -79,7 +79,7 @@ type (
 
 	// ConfigureHandler is used to configure handler implementation with Types associated with all the templates that
 	// it supports.
-	ConfigureHandler func(constructors []*pb.Constructor, actions []*pb.Action,
+	ConfigureHandler func(actions []*pb.Action, constructors map[string]*pb.Constructor,
 		handlers map[string]*HandlerBuilderInfo) (ce *adapter.ConfigErrors)
 )
 
@@ -94,6 +94,7 @@ func newValidator(managerFinder AspectValidatorFinder, adapterFinder BuilderVali
 		configureHandler:     configureHandler,
 		templateRepo:         templateRepo,
 		findAspects:          findAspects,
+		constructorByName:    make(map[string]*pb.Constructor),
 		strict:               strict,
 		typeChecker:          typeChecker,
 		handlerBuilderByName: make(map[string]*HandlerBuilderInfo),
@@ -119,6 +120,7 @@ type (
 		findAspects          AdapterToAspectMapper
 		descriptorFinder     descriptor.Finder
 		handlerBuilderByName map[string]*HandlerBuilderInfo
+		constructorByName    map[string]*pb.Constructor
 		strict               bool
 		typeChecker          expr.TypeChecker
 		validated            *Validated
@@ -212,6 +214,7 @@ const (
 	subjects     = "subjects"
 	rules        = "rules"
 	constructors = "constructors"
+	actionRules  = "actionRules"
 	adapters     = "adapters"
 	handlers     = "handlers"
 	descriptors  = "descriptors"
@@ -401,6 +404,35 @@ func (p *validator) validateAspectRules(rules []*pb.AspectRule, path string, val
 	return numAspects, ce
 }
 
+func (p *validator) validateRules(rules []*pb.Rule, path string, cnstrByName map[string]*pb.Constructor,
+	hdlrByName map[string]*HandlerBuilderInfo) (ce *adapter.ConfigErrors) {
+	for _, rule := range rules {
+		if err := p.validateSelector(rule.GetSelector(), p.descriptorFinder); err != nil {
+			ce = ce.Append(path+":Selector "+rule.GetSelector(), err)
+		}
+
+		path = path + "/" + rule.GetSelector()
+		for idx, aa := range rule.GetActions() {
+			if aa.GetHandler() == "" || hdlrByName[aa.GetHandler()] == nil {
+				ce = ce.Appendf(fmt.Sprintf("%s[%d]", path, idx), "handler not specified or is invalid")
+			}
+			for _, instanceName := range aa.GetInstances() {
+				if cnstrByName[instanceName] == nil {
+					ce = ce.Appendf(fmt.Sprintf("%s[%d]", path, idx), "instance '%s' is not defined.", instanceName)
+				}
+			}
+		}
+		rs := rule.GetRules()
+		if len(rs) == 0 {
+			continue
+		}
+		if verr := p.validateRules(rs, path, cnstrByName, hdlrByName); verr != nil {
+			ce = ce.Extend(verr)
+		}
+	}
+	return ce
+}
+
 // validateConstructors validates the constructors in the service configuration.
 func (p *validator) validateConstructors(constructors []*pb.Constructor) (ce *adapter.ConfigErrors) {
 	for _, cnstr := range constructors {
@@ -409,6 +441,7 @@ func (p *validator) validateConstructors(constructors []*pb.Constructor) (ce *ad
 			continue
 		} else {
 			cnstr.Params = ccfg
+			p.constructorByName[cnstr.GetInstanceName()] = cnstr
 		}
 	}
 	return ce
@@ -487,12 +520,22 @@ func (p *validator) validate(cfg map[string]string) (rt *Validated, ce *adapter.
 		if ck == nil {
 			continue
 		}
-		if re := p.validateServiceConfig2(*ck, cfg[kk]); re != nil {
+		if re := p.validateConstructorConfigs(*ck, cfg[kk]); re != nil {
 			return rt, ce.Appendf("serviceConfig", "failed validation").Extend(re)
 		}
 	}
 
-	// everything is validated now we can configure the handlers.
+	for _, kk := range keymap[actionRules] {
+		ck := parseRulesKey(kk)
+		if ck == nil {
+			continue
+		}
+		if re := p.validateRulesConfig(*ck, cfg[kk], p.constructorByName, p.handlerBuilderByName); re != nil {
+			return rt, ce.Appendf("serviceConfig", "failed validation").Extend(re)
+		}
+	}
+
+	// everything is validated we can configure the handlers.
 	// TODO : Add validation of Constructors and Actions before this step
 	if re := p.buildAndCacheHandlers(); re != nil {
 		return rt, ce.Extend(re)
@@ -502,7 +545,7 @@ func (p *validator) validate(cfg map[string]string) (rt *Validated, ce *adapter.
 }
 
 func (p *validator) buildAndCacheHandlers() (ce *adapter.ConfigErrors) {
-	if err := p.configureHandler(nil, nil, p.handlerBuilderByName); err != nil {
+	if err := p.configureHandler(nil, p.constructorByName, p.handlerBuilderByName); err != nil {
 		return ce.Appendf("handlerConfig", "failed to configure handler: %v", err)
 	}
 
@@ -540,10 +583,24 @@ func (p *validator) validateServiceConfig(pk rulesKey, cfg string, validatePrese
 	return nil
 }
 
-func (p *validator) validateServiceConfig2(pk rulesKey, cfg string) (ce *adapter.ConfigErrors) {
+func (p *validator) validateRulesConfig(pk rulesKey, cfg string, cnstrByName map[string]*pb.Constructor,
+	hdlrByName map[string]*HandlerBuilderInfo) (ce *adapter.ConfigErrors) {
 	var err error
 	m := &pb.ServiceConfig{}
-	var numAspects int
+	if err = yaml.Unmarshal([]byte(cfg), m); err != nil {
+		return ce.Appendf("serviceConfig", "failed to unmarshal config into proto: %v", err)
+	}
+
+	if ce = p.validateRules(m.GetActionRules(), "", cnstrByName, hdlrByName); ce != nil {
+		return ce
+	}
+
+	return nil
+}
+
+func (p *validator) validateConstructorConfigs(pk rulesKey, cfg string) (ce *adapter.ConfigErrors) {
+	var err error
+	m := &pb.ServiceConfig{}
 	if err = yaml.Unmarshal([]byte(cfg), m); err != nil {
 		return ce.Appendf("serviceConfig", "failed to unmarshal config into proto: %v", err)
 	}
@@ -551,8 +608,6 @@ func (p *validator) validateServiceConfig2(pk rulesKey, cfg string) (ce *adapter
 	if ce = p.validateConstructors(m.GetConstructors()); ce != nil {
 		return ce
 	}
-	p.validated.rule[pk] = m
-	p.validated.numAspects += numAspects
 
 	return nil
 }

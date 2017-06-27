@@ -19,7 +19,7 @@ import (
 	pb "istio.io/mixer/pkg/config/proto"
 )
 
-func configureHandlers(constructors []*pb.Constructor, actions []*pb.Action,
+func configureHandlers(actions []*pb.Action, constructors map[string]*pb.Constructor,
 	handlers map[string]*HandlerBuilderInfo) (ce *adapter.ConfigErrors) {
 	// TODO For each handler, invoke configure for all the templates that it supports.
 	return nil
