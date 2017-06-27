@@ -42,6 +42,7 @@ import (
 	"istio.io/mixer/pkg/config/descriptor"
 	pb "istio.io/mixer/pkg/config/proto"
 	"istio.io/mixer/pkg/expr"
+	"istio.io/mixer/pkg/template"
 )
 
 type (
@@ -84,13 +85,14 @@ type (
 
 // newValidator returns a validator given component validators.
 func newValidator(managerFinder AspectValidatorFinder, adapterFinder BuilderValidatorFinder,
-	builderInfoFinder BuilderInfoFinder, configureHandler ConfigureHandler,
+	builderInfoFinder BuilderInfoFinder, configureHandler ConfigureHandler, templateRepo template.Repository,
 	findAspects AdapterToAspectMapper, strict bool, typeChecker expr.TypeChecker) *validator {
 	return &validator{
 		managerFinder:        managerFinder,
 		adapterFinder:        adapterFinder,
 		builderInfoFinder:    builderInfoFinder,
 		configureHandler:     configureHandler,
+		templateRepo:         templateRepo,
 		findAspects:          findAspects,
 		strict:               strict,
 		typeChecker:          typeChecker,
@@ -113,6 +115,7 @@ type (
 		adapterFinder        BuilderValidatorFinder
 		builderInfoFinder    BuilderInfoFinder
 		configureHandler     ConfigureHandler
+		templateRepo         template.Repository
 		findAspects          AdapterToAspectMapper
 		descriptorFinder     descriptor.Finder
 		handlerBuilderByName map[string]*HandlerBuilderInfo
@@ -204,13 +207,14 @@ func (v *Validated) Clone() *Validated {
 }
 
 const (
-	global      = "global"
-	scopes      = "scopes"
-	subjects    = "subjects"
-	rules       = "rules"
-	adapters    = "adapters"
-	handlers    = "handlers"
-	descriptors = "descriptors"
+	global       = "global"
+	scopes       = "scopes"
+	subjects     = "subjects"
+	rules        = "rules"
+	constructors = "constructors"
+	adapters     = "adapters"
+	handlers     = "handlers"
+	descriptors  = "descriptors"
 
 	keyAdapters            = "/scopes/global/adapters"
 	keyHandlers            = "/scopes/global/handlers"
@@ -397,6 +401,19 @@ func (p *validator) validateAspectRules(rules []*pb.AspectRule, path string, val
 	return numAspects, ce
 }
 
+// validateConstructors validates the constructors in the service configuration.
+func (p *validator) validateConstructors(constructors []*pb.Constructor) (ce *adapter.ConfigErrors) {
+	for _, cnstr := range constructors {
+		if ccfg, err := convertConstructorParam(p.templateRepo, cnstr.GetTemplate(), cnstr.GetParams(), p.strict); err != nil {
+			ce = ce.Appendf(fmt.Sprintf("constructor:%s", cnstr.GetInstanceName()), "failed to parse params: %v", err)
+			continue
+		} else {
+			cnstr.Params = ccfg
+		}
+	}
+	return ce
+}
+
 // classifyKeys classifies keys of cfg into rules, adapters, and descriptors.
 func classifyKeys(cfg map[string]string) map[string][]string {
 	keymap := map[string][]string{}
@@ -406,6 +423,8 @@ func classifyKeys(cfg map[string]string) map[string][]string {
 		switch kk[len(kk)-1] {
 		case rules:
 			k = rules
+		case constructors:
+			k = constructors
 		case adapters:
 			k = adapters
 		case handlers:
@@ -463,6 +482,16 @@ func (p *validator) validate(cfg map[string]string) (rt *Validated, ce *adapter.
 		}
 	}
 
+	for _, kk := range keymap[constructors] {
+		ck := parseRulesKey(kk)
+		if ck == nil {
+			continue
+		}
+		if re := p.validateServiceConfig2(*ck, cfg[kk]); re != nil {
+			return rt, ce.Appendf("serviceConfig", "failed validation").Extend(re)
+		}
+	}
+
 	// everything is validated now we can configure the handlers.
 	// TODO : Add validation of Constructors and Actions before this step
 	if re := p.buildAndCacheHandlers(); re != nil {
@@ -511,6 +540,23 @@ func (p *validator) validateServiceConfig(pk rulesKey, cfg string, validatePrese
 	return nil
 }
 
+func (p *validator) validateServiceConfig2(pk rulesKey, cfg string) (ce *adapter.ConfigErrors) {
+	var err error
+	m := &pb.ServiceConfig{}
+	var numAspects int
+	if err = yaml.Unmarshal([]byte(cfg), m); err != nil {
+		return ce.Appendf("serviceConfig", "failed to unmarshal config into proto: %v", err)
+	}
+
+	if ce = p.validateConstructors(m.GetConstructors()); ce != nil {
+		return ce
+	}
+	p.validated.rule[pk] = m
+	p.validated.numAspects += numAspects
+
+	return nil
+}
+
 func (p *validator) validateHandlers(cfg string) (ce *adapter.ConfigErrors) {
 	var ferr error
 	var data []byte
@@ -547,15 +593,15 @@ func (p *validator) validateHandlers(cfg string) (ce *adapter.ConfigErrors) {
 	return
 }
 
-func convertHandlerParams(bi *adapter.BuilderInfo, name string, params interface{}, strict bool) (ac adapter.Config, ce *adapter.ConfigErrors) {
-	ac = bi.DefaultConfig
-	if err := decode(params, ac, strict); err != nil {
+func convertHandlerParams(bi *adapter.BuilderInfo, name string, params interface{}, strict bool) (hc proto.Message, ce *adapter.ConfigErrors) {
+	hc = bi.DefaultConfig
+	if err := decode(params, hc, strict); err != nil {
 		return nil, ce.Appendf(name, "failed to decode handler params: %v", err)
 	}
-	if err := bi.ValidateConfig(ac); err != nil {
+	if err := bi.ValidateConfig(hc); err != nil {
 		return nil, ce.Appendf(name, "handler validation failed: %v", err)
 	}
-	return ac, nil
+	return hc, nil
 }
 
 // unknownValidator returns error for the given name.
@@ -585,6 +631,21 @@ func convertAdapterParams(f BuilderValidatorFinder, name string, params interfac
 		return nil, ce.Appendf(name, "adapter validation failed: %v", err)
 	}
 	return ac, nil
+}
+
+// convertConstructorParam converts and returns a typed proto message based on available templates.
+func convertConstructorParam(tf template.Repository, templateName string, params interface{},
+	strict bool) (cp proto.Message, ce *adapter.ConfigErrors) {
+
+	var found bool
+	if cp, found = tf.GetConstructorDefaultConfig(templateName); !found {
+		return nil, ce.Appendf("template", "'%s' is not a valid template", templateName)
+	}
+
+	if err := decode(params, cp, strict); err != nil {
+		return nil, ce.Appendf(templateName, "failed to decode constructor params: %v", err)
+	}
+	return cp, nil
 }
 
 // convertAspectParams converts returns a typed proto message based on available validator.

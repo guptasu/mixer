@@ -25,6 +25,7 @@ go_library(
         "//pkg/expr:go_default_library",
         "//pkg/pool:go_default_library",
         "//pkg/status:go_default_library",
+        "//pkg/template:go_default_library",
         "@com_github_emicklei_go_restful//:go_default_library",
         "@com_github_ghodss_yaml//:go_default_library",
         "@com_github_gogo_protobuf//jsonpb:go_default_library",

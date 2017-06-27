@@ -34,6 +34,7 @@ import (
 	"istio.io/mixer/pkg/config/descriptor"
 	pb "istio.io/mixer/pkg/config/proto"
 	"istio.io/mixer/pkg/expr"
+	"istio.io/mixer/pkg/template"
 )
 
 type fakeVFinder struct {
@@ -157,7 +158,7 @@ func TestConfigValidatorError(t *testing.T) {
 
 			var ce *adapter.ConfigErrors
 			mgr := newVfinder(tt.ada, tt.asp, tt.hbi)
-			p := newValidator(mgr.FindAspectValidator, mgr.FindAdapterValidator, mgr.FindBuilderInfo, configureHandler,
+			p := newValidator(mgr.FindAspectValidator, mgr.FindAdapterValidator, mgr.FindBuilderInfo, configureHandler, nil,
 				mgr.AdapterToAspectMapperFunc, tt.strict, evaluator)
 			if tt.cfg == sSvcConfig {
 				ce = p.validateServiceConfig(globalRulesKey, fmt.Sprintf(tt.cfg, tt.selector), false)
@@ -176,6 +177,59 @@ func TestConfigValidatorError(t *testing.T) {
 
 			if len(ce.Multi.Errors) != tt.nerrors {
 				t.Fatalf("Expected: '%v' Got: %v", tt.cerr.Error(), ce.Error())
+			}
+		})
+	}
+}
+
+func TestConvertHandlerParamsErrors(t *testing.T) {
+
+	tTable := []struct {
+		params         interface{}
+		defaultCnfg    proto.Message
+		validateConfig adapter.ValidateConfig
+		errorStr       string
+	}{
+		{
+			map[string]interface{}{
+				"check_expression": "src.ip",
+				"blacklist":        "true (this should be bool)",
+			},
+			&listcheckerpb.ListsParams{},
+			func(c proto.Message) error { return nil },
+			"failed to decode",
+		},
+		{
+			map[string]interface{}{
+				"check_expression": "src.ip",
+				"blacklist":        true,
+				"wrongextrafield":  true,
+			},
+			&listcheckerpb.ListsParams{},
+			func(c proto.Message) error { return nil },
+			"failed to unmarshal",
+		},
+		{
+			map[string]interface{}{
+				"check_expression": "src.ip",
+				"blacklist":        true,
+			},
+			&listcheckerpb.ListsParams{},
+			func(c proto.Message) error { return errors.New("handler config validation failed") },
+			"handler config validation failed",
+		},
+	}
+
+	for _, tt := range tTable {
+		t.Run(tt.errorStr, func(t *testing.T) {
+			_, ce := convertHandlerParams(
+				&adapter.BuilderInfo{
+					DefaultConfig:  tt.defaultCnfg,
+					ValidateConfig: tt.validateConfig,
+				}, "myhandlerCnfgBlock", tt.params, true)
+
+			if !strings.Contains(ce.Error(), tt.errorStr) {
+				t.Errorf("Expected %s got %s\n", tt.errorStr, ce.Error())
 			}
 		})
 	}
@@ -211,12 +265,9 @@ func TestHandlerConfigValidator(t *testing.T) {
 			var ce *adapter.ConfigErrors
 
 			mgr := newVfinder(tt.ada, tt.asp, tt.hbi)
-			p := newValidator(mgr.FindAspectValidator, mgr.FindAdapterValidator, mgr.FindBuilderInfo, configureHandler,
+			p := newValidator(mgr.FindAspectValidator, mgr.FindAdapterValidator, mgr.FindBuilderInfo, configureHandler, nil,
 				mgr.AdapterToAspectMapperFunc, tt.strict, evaluator)
-			ce1 := p.validateHandlers(tt.cfg)
-			if ce1 != nil {
-				ce = ce1.Extend(ce)
-			}
+			ce = p.validateHandlers(tt.cfg)
 			cok := ce == nil
 			ok := tt.nerrors == 0
 
@@ -269,7 +320,7 @@ handlers:
 	for idx, tt := range tests {
 		t.Run(strconv.Itoa(idx), func(t *testing.T) {
 			mgr := newVfinder(tt.ada, tt.asp, tt.hbi)
-			p := newValidator(mgr.FindAspectValidator, mgr.FindAdapterValidator, mgr.FindBuilderInfo, configureHandler,
+			p := newValidator(mgr.FindAspectValidator, mgr.FindAdapterValidator, mgr.FindBuilderInfo, configureHandler, nil,
 				mgr.AdapterToAspectMapperFunc, tt.strict, evaluator)
 			_ = p.validateHandlers(tt.cfg)
 			if tt.nerrors > 0 {
@@ -290,19 +341,16 @@ handlers:
 	}
 }
 
-type fakeGoodHandlerBuilder struct {
-}
+type fakeGoodHandlerBuilder struct{}
 
-func (f fakeGoodHandlerBuilder) Build(cnfg proto.Message) (config.Handler, error) {
-	return nil, nil
-}
+func (f fakeGoodHandlerBuilder) Build(cnfg proto.Message) (config.Handler, error) { return nil, nil }
 
-type fakeBadHandlerBuilder struct {
-}
+type fakeBadHandlerBuilder struct{}
 
 func (f fakeBadHandlerBuilder) Build(cnfg proto.Message) (config.Handler, error) {
 	return nil, errors.New("build failed")
 }
+
 func TestBuildAndCacheHandlers(t *testing.T) {
 	var hbgood config.HandlerBuilder = fakeGoodHandlerBuilder{}
 	var hbb config.HandlerBuilder = fakeBadHandlerBuilder{}
@@ -353,7 +401,7 @@ func TestBuildAndCacheHandlers(t *testing.T) {
 
 	for idx, tt := range tests {
 		t.Run(strconv.Itoa(idx), func(t *testing.T) {
-			p := newValidator(nil, nil, nil, tt.configureHandler, nil, true, nil)
+			p := newValidator(nil, nil, nil, tt.configureHandler, nil, nil, true, nil)
 			p.handlerBuilderByName = tt.handlerBuilderByName
 			err := p.buildAndCacheHandlers()
 			if tt.expectedError == "" {
@@ -375,12 +423,110 @@ func TestBuildAndCacheHandlers(t *testing.T) {
 	}
 }
 
+type fakeTemplateRepo struct {
+	templateConstructorParamMap map[string]proto.Message
+}
+
+func newFakeTemplateRepo(templateConstructorParamMap map[string]proto.Message) template.Repository {
+	return fakeTemplateRepo{templateConstructorParamMap: templateConstructorParamMap}
+}
+func (t fakeTemplateRepo) GetConstructorDefaultConfig(template string) (proto.Message, bool) {
+	if t.templateConstructorParamMap == nil {
+		return nil, false
+	}
+	if v, ok := t.templateConstructorParamMap[template]; ok {
+		return proto.Clone(v), true
+	}
+	return nil, false
+}
+
+func TestServiceConfigValidation(t *testing.T) {
+	const sSvcConfigInvalidTemplate = `
+subject: namespace:ns
+revision: "2022"
+constructors:
+- instanceName: RequestCountByService
+  template: invalidtemplate
+  params:
+    value: 1
+    dimensions:
+      source: origin.service
+      target_ip: destination.ip
+`
+	const sSvcConfigValidParams = `
+subject: namespace:ns
+revision: "2022"
+constructors:
+- instanceName: RequestCountByService
+  template: FooTemplate
+  params:
+`
+	const sSvcConfigExtraParamFields = `
+subject: namespace:ns
+revision: "2022"
+constructors:
+- instanceName: RequestCountByService
+  template: FooTemplate
+  params:
+    check_expression: src.ip
+    blacklist: true
+`
+
+	evaluator := newFakeExpr()
+	var ct *adapter.ConfigErrors
+	tests := []struct {
+		cfg     string
+		nerrors int
+		cerr    *adapter.ConfigErrors
+	}{
+		{
+			sSvcConfigInvalidTemplate,
+			1,
+			ct.Append("template", errors.New("..is not a valid template")),
+		},
+		{
+			sSvcConfigValidParams,
+			0,
+			nil,
+		},
+		{
+			sSvcConfigExtraParamFields,
+			1,
+			ct.Append("template", errors.New("failed to decode constructor params")),
+		},
+	}
+
+	tdf := newFakeTemplateRepo(map[string]proto.Message{"FooTemplate": &types.Empty{}})
+	for idx, tt := range tests {
+		t.Run(strconv.Itoa(idx), func(t *testing.T) {
+
+			var ce *adapter.ConfigErrors
+
+			p := newValidator(nil, nil, nil, configureHandler, tdf, nil, true, evaluator)
+			ce = p.validateServiceConfig2(globalRulesKey, tt.cfg)
+
+			cok := ce == nil
+			ok := tt.nerrors == 0
+
+			if ok != cok {
+				t.Errorf("Expected %t Got %t", ok, cok)
+			}
+			if ce == nil {
+				return
+			}
+
+			if len(ce.Multi.Errors) != tt.nerrors {
+				t.Fatalf("Expected: '%v' Got: %v", tt.cerr.Error(), ce.Error())
+			}
+		})
+	}
+}
+
 func TestFullConfigValidator(tt *testing.T) {
 	fe := newFakeExpr()
 	ctable := []struct {
 		cerr     *adapter.ConfigError
 		ada      map[string]adapter.ConfigValidator
-		hbi      map[string]*adapter.BuilderInfo
 		asp      map[Kind]AspectValidator
 		selector string
 		strict   bool
@@ -392,7 +538,7 @@ func TestFullConfigValidator(tt *testing.T) {
 				"denyChecker": &lc{},
 				"metrics":     &lc{},
 				"listchecker": &lc{},
-			}, nil,
+			},
 			map[Kind]AspectValidator{
 				DenialsKind: &ac{},
 				MetricsKind: &ac{},
@@ -404,7 +550,7 @@ func TestFullConfigValidator(tt *testing.T) {
 				"denyChecker": &lc{},
 				"metrics":     &lc{},
 				"listchecker": &lc{},
-			}, nil,
+			},
 			map[Kind]AspectValidator{
 				DenialsKind: &ac{},
 				MetricsKind: &ac{},
@@ -416,7 +562,7 @@ func TestFullConfigValidator(tt *testing.T) {
 				"denyChecker": &lc{},
 				"metrics":     &lc{},
 				"listchecker": &lc{},
-			}, nil,
+			},
 			map[Kind]AspectValidator{
 				DenialsKind: &ac{},
 				MetricsKind: &ac{},
@@ -428,7 +574,7 @@ func TestFullConfigValidator(tt *testing.T) {
 				"denyChecker": &lc{},
 				"metrics":     &lc{},
 				"listchecker": &lc{},
-			}, nil,
+			},
 			map[Kind]AspectValidator{
 				DenialsKind: &ac{},
 				MetricsKind: &ac{},
@@ -438,9 +584,9 @@ func TestFullConfigValidator(tt *testing.T) {
 	}
 	for idx, ctx := range ctable {
 		tt.Run(fmt.Sprintf("[%d]", idx), func(t *testing.T) {
-			mgr := newVfinder(ctx.ada, ctx.asp, ctx.hbi)
+			mgr := newVfinder(ctx.ada, ctx.asp, nil)
 			fe.err = ctx.exprErr
-			p := newValidator(mgr.FindAspectValidator, mgr.FindAdapterValidator, nil, configureHandler,
+			p := newValidator(mgr.FindAspectValidator, mgr.FindAdapterValidator, nil, configureHandler, nil,
 				mgr.AdapterToAspectMapperFunc, ctx.strict, fe)
 			// ConstGlobalConfig only defines 1 adapter: denyChecker
 			_, ce := p.validate(newFakeMap(ConstGlobalConfig, ctx.cfg))
@@ -470,7 +616,7 @@ var globalRulesKey = rulesKey{Scope: global, Subject: global}
 func TestConfigParseError(t *testing.T) {
 	mgr := &fakeVFinder{}
 	evaluator := newFakeExpr()
-	p := newValidator(mgr.FindAspectValidator, mgr.FindAdapterValidator, nil, configureHandler,
+	p := newValidator(mgr.FindAspectValidator, mgr.FindAdapterValidator, nil, configureHandler, nil,
 		mgr.AdapterToAspectMapperFunc, false, evaluator)
 	ce := p.validateServiceConfig(globalRulesKey, "<config>  </config>", false)
 
@@ -742,59 +888,6 @@ func TestConvertAdapterParamsErrors(t *testing.T) {
 
 			if !strings.Contains(ce.Error(), tt.cv.err) {
 				t.Errorf("Expected %s. Got %s", tt.cv.err, ce.Error())
-			}
-		})
-	}
-}
-
-func TestConvertHandlerParamsErrors(t *testing.T) {
-
-	tTable := []struct {
-		params         interface{}
-		defaultCnfg    proto.Message
-		validateConfig adapter.ValidateConfig
-		errorStr       string
-	}{
-		{
-			map[string]interface{}{
-				"check_expression": "src.ip",
-				"blacklist":        "true (this should be bool)",
-			},
-			&listcheckerpb.ListsParams{},
-			func(c proto.Message) error { return nil },
-			"failed to decode",
-		},
-		{
-			map[string]interface{}{
-				"check_expression": "src.ip",
-				"blacklist":        true,
-				"wrongextrafield":  true,
-			},
-			&listcheckerpb.ListsParams{},
-			func(c proto.Message) error { return nil },
-			"failed to unmarshal",
-		},
-		{
-			map[string]interface{}{
-				"check_expression": "src.ip",
-				"blacklist":        true,
-			},
-			&listcheckerpb.ListsParams{},
-			func(c proto.Message) error { return errors.New("handler config validation failed") },
-			"handler config validation failed",
-		},
-	}
-
-	for _, tt := range tTable {
-		t.Run(tt.errorStr, func(t *testing.T) {
-			_, ce := convertHandlerParams(
-				&adapter.BuilderInfo{
-					DefaultConfig:  tt.defaultCnfg,
-					ValidateConfig: tt.validateConfig,
-				}, "myhandlerCnfgBlock", tt.params, true)
-
-			if !strings.Contains(ce.Error(), tt.errorStr) {
-				t.Errorf("Expected %s got %s\n", tt.errorStr, ce.Error())
 			}
 		})
 	}
