@@ -32,49 +32,49 @@ func TestDedupeAndGroupInstances(t *testing.T) {
 	}{
 		{
 			name:         "SimpleNoDedupeNeeded",
-			handlers:     map[string]*HandlerBuilderInfo{"h1": nil},
-			constructors: map[string]*pb.Constructor{"i1": {"i1", "t1", nil}},
-			actions:      []*pb.Action{{"h1", []string{"i1"}}},
+			handlers:     map[string]*HandlerBuilderInfo{"hndlr1": nil},
+			constructors: map[string]*pb.Constructor{"i1": {"i1", "tpml1", nil}},
+			actions:      []*pb.Action{{"hndlr1", []string{"i1"}}},
 			result: map[string]instancesByTemplate{
-				"h1": {map[string][]string{"t1": {"i1"}}},
+				"hndlr1": {map[string][]string{"tpml1": {"i1"}}},
 			},
 			eError: "",
 		},
 		{
 			name:     "DedupeAcrossActions",
-			handlers: map[string]*HandlerBuilderInfo{"h1": nil},
+			handlers: map[string]*HandlerBuilderInfo{"hndlr1": nil},
 			constructors: map[string]*pb.Constructor{
-				"repeatInst": {"repeatInst", "t1", nil},
-				"i2":         {"i2", "t1", nil}},
+				"repeatInst": {"repeatInst", "tpml1", nil},
+				"inst2":      {"inst2", "tpml1", nil}},
 			actions: []*pb.Action{
-				{"h1", []string{"repeatInst"}},
-				{"h1", []string{"repeatInst", "i2"}}},
+				{"hndlr1", []string{"repeatInst"}},
+				{"hndlr1", []string{"repeatInst", "inst2"}}},
 			result: map[string]instancesByTemplate{
-				"h1": {map[string][]string{"t1": {"repeatInst", "i2"}}},
+				"hndlr1": {map[string][]string{"tpml1": {"repeatInst", "inst2"}}},
 			},
 			eError: "",
 		},
 		{
 			name:     "DedupeWithinAction",
-			handlers: map[string]*HandlerBuilderInfo{"h1": nil},
+			handlers: map[string]*HandlerBuilderInfo{"hndlr1": nil},
 			constructors: map[string]*pb.Constructor{
-				"repeatInst": {"repeatInst", "t1", nil},
-				"i2":         {"i2", "t1", nil}},
+				"repeatInst": {"repeatInst", "tpml1", nil},
+				"inst2":      {"inst2", "tpml1", nil}},
 			actions: []*pb.Action{
-				{"h1", []string{"repeatInst", "repeatInst"}},
-				{"h1", []string{"i2"}}},
+				{"hndlr1", []string{"repeatInst", "repeatInst"}},
+				{"hndlr1", []string{"inst2"}}},
 			result: map[string]instancesByTemplate{
-				"h1": {map[string][]string{"t1": {"repeatInst", "i2"}}},
+				"hndlr1": {map[string][]string{"tpml1": {"repeatInst", "inst2"}}},
 			},
 			eError: "",
 		},
 		{
 			name:     "BadInstanceRef",
-			handlers: map[string]*HandlerBuilderInfo{"h1": nil},
+			handlers: map[string]*HandlerBuilderInfo{"hndlr1": nil},
 			constructors: map[string]*pb.Constructor{
-				"i2": {"i2", "t1", nil}},
+				"inst2": {"inst2", "tpml1", nil}},
 			actions: []*pb.Action{
-				{"h1", []string{"badRefToInst"}},
+				{"hndlr1", []string{"badRefToInst"}},
 			},
 			result: nil,
 			eError: "unable to find an a constructor with instance name 'badRefToInst'",
@@ -83,51 +83,51 @@ func TestDedupeAndGroupInstances(t *testing.T) {
 			name:     "BadHandlerRef",
 			handlers: map[string]*HandlerBuilderInfo{},
 			constructors: map[string]*pb.Constructor{
-				"i2": {"i2", "t1", nil}},
+				"inst2": {"inst2", "tpml1", nil}},
 			actions: []*pb.Action{
-				{"badHandlerRef", []string{"i2"}},
+				{"badHandlerRef", []string{"inst2"}},
 			},
 			result: nil,
 			eError: "unable to find a configured handler with name 'badHandlerRef'",
 		},
 		{
 			name:     "MultipleTemplates",
-			handlers: map[string]*HandlerBuilderInfo{"h1": nil},
+			handlers: map[string]*HandlerBuilderInfo{"hndlr1": nil},
 			constructors: map[string]*pb.Constructor{
-				"i1tA": {"i1tA", "tA", nil},
-				"i2tA": {"i2tA", "tA", nil},
+				"inst1tmplA": {"inst1tmplA", "tmplA", nil},
+				"inst2tmplA": {"inst2tmplA", "tmplA", nil},
 
-				"i3tB": {"i3tB", "tB", nil},
-				"i4tB": {"i4tB", "tB", nil},
-				"i5tB": {"i5tB", "tB", nil},
+				"inst3tmplB": {"inst3tmplB", "tmplB", nil},
+				"inst4tmplB": {"inst4tmplB", "tmplB", nil},
+				"inst5tmplB": {"inst5tmplB", "tmplB", nil},
 			},
 			actions: []*pb.Action{
-				{"h1", []string{"i2tA", "i4tB", "i5tB", "i1tA", "i3tB"}},
+				{"hndlr1", []string{"inst2tmplA", "inst4tmplB", "inst5tmplB", "inst1tmplA", "inst3tmplB"}},
 			},
 			result: map[string]instancesByTemplate{
-				"h1": {map[string][]string{"tA": {"i2tA", "i1tA"}, "tB": {"i3tB", "i5tB", "i4tB"}}},
+				"hndlr1": {map[string][]string{"tmplA": {"inst2tmplA", "inst1tmplA"}, "tmplB": {"inst3tmplB", "inst5tmplB", "inst4tmplB"}}},
 			},
 			eError: "",
 		},
 		{
 			name:     "UnionAcrossActionsWithMultipleTemplates",
-			handlers: map[string]*HandlerBuilderInfo{"h1": nil, "h2": nil},
+			handlers: map[string]*HandlerBuilderInfo{"hndlr1": nil, "hndlr2": nil},
 			constructors: map[string]*pb.Constructor{
-				"i1tA": {"i1tA", "tA", nil},
-				"i2tA": {"i2tA", "tA", nil},
+				"inst1tmplA": {"inst1tmplA", "tmplA", nil},
+				"inst2tmplA": {"inst2tmplA", "tmplA", nil},
 
-				"i3tB": {"i3tB", "tB", nil},
-				"i4tB": {"i4tB", "tB", nil},
-				"i5tB": {"i5tB", "tB", nil},
+				"inst3tmplB": {"inst3tmplB", "tmplB", nil},
+				"inst4tmplB": {"inst4tmplB", "tmplB", nil},
+				"inst5tmplB": {"inst5tmplB", "tmplB", nil},
 			},
 			actions: []*pb.Action{
-				{"h1", []string{"i1tA", "i3tB"}},
-				{"h1", []string{"i2tA", "i4tB", "i5tB"}},
-				{"h2", []string{"i2tA", "i4tB", "i5tB", "i1tA", "i3tB"}},
+				{"hndlr1", []string{"inst1tmplA", "inst3tmplB"}},
+				{"hndlr1", []string{"inst2tmplA", "inst4tmplB", "inst5tmplB"}},
+				{"hndlr2", []string{"inst2tmplA", "inst4tmplB", "inst5tmplB", "inst1tmplA", "inst3tmplB"}},
 			},
 			result: map[string]instancesByTemplate{
-				"h1": {map[string][]string{"tA": {"i2tA", "i1tA"}, "tB": {"i3tB", "i5tB", "i4tB"}}},
-				"h2": {map[string][]string{"tA": {"i2tA", "i1tA"}, "tB": {"i3tB", "i5tB", "i4tB"}}},
+				"hndlr1": {map[string][]string{"tmplA": {"inst2tmplA", "inst1tmplA"}, "tmplB": {"inst3tmplB", "inst5tmplB", "inst4tmplB"}}},
+				"hndlr2": {map[string][]string{"tmplA": {"inst2tmplA", "inst1tmplA"}, "tmplB": {"inst3tmplB", "inst5tmplB", "inst4tmplB"}}},
 			},
 			eError: "",
 		},

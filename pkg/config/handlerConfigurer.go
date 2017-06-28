@@ -31,7 +31,7 @@ type instancesByTemplate struct {
 	instancesNamesByTemplate map[string][]string
 }
 
-func (t *instancesByTemplate) insertInstance(instName string, tmplName string) {
+func (t *instancesByTemplate) insertInstance(tmplName string, instName string) {
 	// TODO validate the tmplName and if handler supports the template
 	instsPerTmpl, alreadyPresent := t.instancesNamesByTemplate[tmplName]
 	if !alreadyPresent {
@@ -58,10 +58,10 @@ func groupHandlerInstancesByTemplate(actions []*pb.Action, constructors map[stri
 			return nil, fmt.Errorf("unable to find a configured handler with name '%s' referenced in action %v", hName, action)
 		}
 
-		tmplCnstrsMapping, alreadyPresent := result[hName]
+		instsByTmpl, alreadyPresent := result[hName]
 		if !alreadyPresent {
-			tmplCnstrsMapping = newInstancesByTemplateMapping()
-			result[hName] = tmplCnstrsMapping
+			instsByTmpl = newInstancesByTemplateMapping()
+			result[hName] = instsByTmpl
 		}
 
 		for _, iName := range action.GetInstances() {
@@ -72,8 +72,7 @@ func groupHandlerInstancesByTemplate(actions []*pb.Action, constructors map[stri
 					"referenced in action %v", iName, action)
 			}
 
-			tmplCnstrsMapping.insertInstance(iName, cnstr.GetTemplate())
-
+			instsByTmpl.insertInstance(cnstr.GetTemplate(), iName)
 		}
 	}
 	return result, nil

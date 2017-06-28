@@ -132,10 +132,10 @@ type builderFinder interface {
 }
 
 // NewManager creates a new adapterManager.
-func NewManager(builders []adapter.RegisterFn, builderInfoGetters []adapter.GetBuilderInfoFn, inventory aspect.ManagerInventory,
+func NewManager(builders []adapter.RegisterFn, getAdptrBuilderInfoFns []adapter.GetBuilderInfoFn, inventory aspect.ManagerInventory,
 	exp expr.Evaluator, gp *pool.GoroutinePool, adapterGP *pool.GoroutinePool) *Manager {
 	mm := Aspects(inventory)
-	return newManager(newRegistry(builders), newRegistry2(builderInfoGetters, DoesBuilderSupportsTemplate), mm, exp, inventory, gp, adapterGP)
+	return newManager(newRegistry(builders), newRegistry2(getAdptrBuilderInfoFns, DoesBuilderSupportsTemplate), mm, exp, inventory, gp, adapterGP)
 }
 
 func newManager(r builderFinder, r2 builderInfoFinder, m [config.NumKinds]aspect.Manager, exp expr.Evaluator,
