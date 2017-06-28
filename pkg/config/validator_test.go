@@ -403,7 +403,7 @@ func TestBuildAndCacheHandlers(t *testing.T) {
 		t.Run(strconv.Itoa(idx), func(t *testing.T) {
 			p := newValidator(nil, nil, nil, tt.configureHandler, nil, nil, true, nil)
 			p.handlerBuilderByName = tt.handlerBuilderByName
-			err := p.buildAndCacheHandlers()
+			err := p.buildHandlers()
 			if tt.expectedError == "" {
 				if len(p.validated.handlerByName) == len(tt.handlerBuilderByName) {
 					for k := range tt.handlerBuilderByName {

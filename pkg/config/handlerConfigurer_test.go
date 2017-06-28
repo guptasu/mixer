@@ -135,7 +135,7 @@ func TestDedupeAndGroupInstances(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			v, err := dedupeAndGroupInstancesByTemplate(tt.actions, tt.constructors, tt.handlers)
+			v, err := groupHandlerInstancesByTemplate(tt.actions, tt.constructors, tt.handlers)
 			if tt.eError == "" {
 				if err != nil {
 					t.Errorf("got err %v\nwant <nil>", err)

@@ -545,15 +545,15 @@ func (p *validator) validate(cfg map[string]string) (rt *Validated, ce *adapter.
 
 	// everything is validated we can configure the handlers.
 	// TODO : Add validation of Constructors and Actions before this step
-	if re := p.buildAndCacheHandlers(); re != nil {
+	if re := p.buildHandlers(); re != nil {
 		return rt, ce.Extend(re)
 	}
 
 	return p.validated, nil
 }
 
-func (p *validator) buildAndCacheHandlers() (ce *adapter.ConfigErrors) {
-	if err := p.configureHandler(nil, p.constructorByName, p.handlerBuilderByName); err != nil {
+func (p *validator) buildHandlers() (ce *adapter.ConfigErrors) {
+	if err := p.configureHandler(p.actions, p.constructorByName, p.handlerBuilderByName); err != nil {
 		return ce.Appendf("handlerConfig", "failed to configure handler: %v", err)
 	}
 

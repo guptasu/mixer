@@ -22,10 +22,8 @@ import (
 
 func configureHandlers(actions []*pb.Action, constructors map[string]*pb.Constructor,
 	handlers map[string]*HandlerBuilderInfo) error {
-	_, err := dedupeAndGroupInstancesByTemplate(actions, constructors, handlers)
-
-	// TODO Add TypeInference and Dispatch to config code.
-	
+	_, err := groupHandlerInstancesByTemplate(actions, constructors, handlers)
+	// TODO Add type inference and dispatch to adapter code.
 	return err
 }
 
@@ -34,7 +32,7 @@ type instancesByTemplate struct {
 }
 
 func (t *instancesByTemplate) insertInstance(instName string, tmplName string) {
-	// TODO validate the tmplName
+	// TODO validate the tmplName and if handler supports the template
 	instsPerTmpl, alreadyPresent := t.instancesNamesByTemplate[tmplName]
 	if !alreadyPresent {
 		t.instancesNamesByTemplate[tmplName] = make([]string, 0)
@@ -50,7 +48,7 @@ func newInstancesByTemplateMapping() instancesByTemplate {
 	return instancesByTemplate{make(map[string][]string)}
 }
 
-func dedupeAndGroupInstancesByTemplate(actions []*pb.Action, constructors map[string]*pb.Constructor,
+func groupHandlerInstancesByTemplate(actions []*pb.Action, constructors map[string]*pb.Constructor,
 	handlers map[string]*HandlerBuilderInfo) (map[string]instancesByTemplate, error) {
 	result := make(map[string]instancesByTemplate)
 
