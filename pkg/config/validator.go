@@ -80,7 +80,7 @@ type (
 	// ConfigureHandler is used to configure handler implementation with Types associated with all the templates that
 	// it supports.
 	ConfigureHandler func(actions []*pb.Action, constructors map[string]*pb.Constructor,
-		handlers map[string]*HandlerBuilderInfo) (ce *adapter.ConfigErrors)
+		handlers map[string]*HandlerBuilderInfo) error
 )
 
 // newValidator returns a validator given component validators.

@@ -42,6 +42,7 @@ go_test(
     size = "small",
     srcs = [
         "apiserver_test.go",
+        "handlerConfigurer_test.go",
         "kind_test.go",
         "manager_test.go",
         "runtime_test.go",

@@ -110,7 +110,7 @@ func newVfinder(ada map[string]adapter.ConfigValidator, asp map[Kind]AspectValid
 }
 
 func fakeConfigureHandler(actions []*pb.Action, constructors map[string]*pb.Constructor,
-	handlers map[string]*HandlerBuilderInfo) (ce *adapter.ConfigErrors) {
+	handlers map[string]*HandlerBuilderInfo) error {
 	return nil
 }
 
@@ -361,7 +361,7 @@ func TestBuildAndCacheHandlers(t *testing.T) {
 	}{
 		{
 			func(actions []*pb.Action, constructors map[string]*pb.Constructor,
-				handlers map[string]*HandlerBuilderInfo) (ce *adapter.ConfigErrors) {
+				handlers map[string]*HandlerBuilderInfo) error {
 				// TODO For each handler, invoke configure for all the templates that it supports.
 				return nil
 			},
@@ -374,8 +374,8 @@ func TestBuildAndCacheHandlers(t *testing.T) {
 		},
 		{
 			func(actions []*pb.Action, constructors map[string]*pb.Constructor,
-				handlers map[string]*HandlerBuilderInfo) (ce *adapter.ConfigErrors) {
-				return ce.Append("some field", errors.New("some error during configuration"))
+				handlers map[string]*HandlerBuilderInfo) error {
+				return errors.New("some error during configuration")
 			},
 			map[string]*HandlerBuilderInfo{
 				"foo": {
@@ -386,7 +386,7 @@ func TestBuildAndCacheHandlers(t *testing.T) {
 		},
 		{
 			func(actions []*pb.Action, constructors map[string]*pb.Constructor,
-				handlers map[string]*HandlerBuilderInfo) (ce *adapter.ConfigErrors) {
+				handlers map[string]*HandlerBuilderInfo) error {
 				// TODO For each handler, invoke configure for all the templates that it supports.
 				return nil
 			},
