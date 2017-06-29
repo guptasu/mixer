@@ -6,14 +6,16 @@ import (
 	"github.com/golang/protobuf/proto"
 
 	pb "istio.io/api/mixer/v1/config/descriptor"
+	adptConfig "istio.io/mixer/pkg/adapter/config"
 	sample_report "istio.io/mixer/pkg/template/sample/report"
 )
 
 var (
 	templateInfos = map[string]Info{
 		sample_report.TemplateName: {
-			InferTypeFn:    inferTypeForSampleReport,
-			CnstrDefConfig: &sample_report.ConstructorParam{},
+			InferTypeFn:     inferTypeForSampleReport,
+			CnstrDefConfig:  &sample_report.ConstructorParam{},
+			ConfigureTypeFn: configureTypeForSampleReport,
 		},
 	}
 )
@@ -40,4 +42,8 @@ func inferTypeForSampleReport(cp interface{}, tEvalFn TypeEvalFn) (proto.Message
 	}
 
 	return infrdType, nil
+}
+
+func configureTypeForSampleReport(types interface{}, builder *adptConfig.HandlerBuilder) error {
+	return (*builder).(sample_report.SampleProcessorBuilder).ConfigureSample(types.(map[string]*sample_report.Type))
 }

@@ -23,6 +23,7 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/wrappers"
 
+	"istio.io/mixer/pkg/adapter/config"
 	pb "istio.io/mixer/pkg/config/proto"
 	"istio.io/mixer/pkg/expr"
 	tmpl "istio.io/mixer/pkg/template"
@@ -42,6 +43,90 @@ func (t fakeTmplRepo) GetTemplateInfo(template string) (tmpl.Info, bool) {
 		InferTypeFn:    func(interface{}, tmpl.TypeEvalFn) (proto.Message, error) { return t.inferTypeResult, t.inferTypeError },
 		CnstrDefConfig: nil,
 	}, t.tmptExists
+}
+
+type fakeTmplRepo2 struct {
+	retErr         error
+	actualCallInfo *[]interface{}
+}
+
+func newFakeTmplRepo2(retErr error, actualCallInfo *[]interface{}) fakeTmplRepo2 {
+	return fakeTmplRepo2{retErr: retErr, actualCallInfo: actualCallInfo}
+}
+func (t fakeTmplRepo2) GetTemplateInfo(template string) (tmpl.Info, bool) {
+	return tmpl.Info{
+		ConfigureTypeFn: func(types interface{}, builder *config.HandlerBuilder) error {
+			(*t.actualCallInfo) = append(*(t.actualCallInfo), types)
+			return t.retErr
+		},
+	}, true
+}
+
+func TestDispatchTypesToHandlers(t *testing.T) {
+	tests := []struct {
+		name               string
+		handlers           map[string]*HandlerBuilderInfo
+		tmplCnfgrMtdErrRet error
+		hndlrInstsByTmpls  map[string]instancesByTemplate
+		infrdTyps          map[string]proto.Message
+		wantErr            string
+		wantCallCount      int
+	}{
+		{
+			name:               "simple",
+			tmplCnfgrMtdErrRet: nil,
+			handlers:           map[string]*HandlerBuilderInfo{"hndlr": {handlerBuilder: nil}},
+			infrdTyps:          map[string]proto.Message{"inst1": nil},
+			hndlrInstsByTmpls:  map[string]instancesByTemplate{"hndlr": {map[string][]string{"any": {"inst1"}}}},
+			wantErr:            "",
+			wantCallCount:      1,
+		},
+		{
+			name:               "MultiHandlerAndInsts",
+			tmplCnfgrMtdErrRet: nil,
+			handlers:           map[string]*HandlerBuilderInfo{"hndlr": {handlerBuilder: nil}, "hndlr2": {handlerBuilder: nil}},
+			infrdTyps:          map[string]proto.Message{"inst1": &wrappers.Int32Value{1}, "inst2": &wrappers.Int32Value{2}, "inst3": &wrappers.Int32Value{3}},
+			hndlrInstsByTmpls:  map[string]instancesByTemplate{"hndlr": {map[string][]string{"any1": {"inst1", "inst2"}, "any2": {"inst3"}}}},
+			wantErr:            "",
+			wantCallCount:      2,
+		},
+		{
+			name:               "badHandlerRef",
+			tmplCnfgrMtdErrRet: nil,
+			handlers:           map[string]*HandlerBuilderInfo{},
+			infrdTyps:          map[string]proto.Message{},
+			hndlrInstsByTmpls:  map[string]instancesByTemplate{"badHandler": {map[string][]string{"any": {"inst1"}}}},
+			wantErr:            "not registered",
+		},
+		{
+			name:               "badInstRef",
+			tmplCnfgrMtdErrRet: nil,
+			handlers:           map[string]*HandlerBuilderInfo{"hndlr": {handlerBuilder: nil}},
+			infrdTyps:          map[string]proto.Message{},
+			hndlrInstsByTmpls:  map[string]instancesByTemplate{"hndlr": {map[string][]string{"any": {"badInstRef"}}}},
+			wantErr:            "instance badInstRef is not found",
+		},
+	}
+
+	ex, _ := expr.NewCEXLEvaluator(expr.DefaultCacheSize)
+	for _, tt := range tests {
+		actualCallInfo := make([]interface{}, 0)
+		tmplRepo := newFakeTmplRepo2(tt.tmplCnfgrMtdErrRet, &actualCallInfo)
+		hc := handlerConfigurer{typeChecker: ex, tmplRepo: tmplRepo}
+		err := hc.dispatchTypesToHandlers(tt.infrdTyps, tt.hndlrInstsByTmpls, tt.handlers)
+		if tt.wantErr == "" {
+			if err != nil {
+				t.Errorf("got err %v\nwant <nil>", err)
+			}
+			if tt.wantCallCount != len(actualCallInfo) {
+				t.Errorf("got %v\nwant %v", len(actualCallInfo), tt.wantCallCount)
+			}
+		} else {
+			if err == nil || !strings.Contains(err.Error(), tt.wantErr) {
+				t.Errorf("got error %v\nwant %v", err, tt.wantErr)
+			}
+		}
+	}
 }
 
 func TestInferTypes(t *testing.T) {

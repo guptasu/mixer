@@ -13,7 +13,7 @@ func TestGetTemplateInfo(t *testing.T) {
 		expected Info
 		present  bool
 	}{
-		{sample_report.TemplateName, Info{&sample_report.ConstructorParam{}, inferTypeForSampleReport}, true},
+		{sample_report.TemplateName, Info{&sample_report.ConstructorParam{}, inferTypeForSampleReport, configureTypeForSampleReport}, true},
 		{"unknown template", Info{}, false},
 	} {
 		t.Run(tst.template, func(t *testing.T) {

@@ -29,14 +29,51 @@ func configureHandlers(actions []*pb.Action, constructors map[string]*pb.Constru
 	handlers map[string]*HandlerBuilderInfo, tmplRepo template.Repository, expr expr.TypeChecker, df expr.AttributeDescriptorFinder) error {
 	configurer := handlerConfigurer{tmplRepo: tmplRepo, typeChecker: expr, attrDescFinder: df}
 
-	_, err := configurer.inferTypes(constructors)
+	iTypes, err := configurer.inferTypes(constructors)
 	if err != nil {
 		return err
 	}
-	_, err = configurer.groupHandlerInstancesByTemplate(actions, constructors, handlers)
+	grpHandlers, err := configurer.groupHandlerInstancesByTemplate(actions, constructors, handlers)
+	if err != nil {
+		return err
+	}
 
 	// TODO Add dispatch to adapter code.
+	configurer.dispatchTypesToHandlers(iTypes, grpHandlers, handlers)
 	return err
+}
+
+func (h *handlerConfigurer) dispatchTypesToHandlers(infrdTypes map[string]proto.Message,
+	instsByTmpls map[string]instancesByTemplate, handlers map[string]*HandlerBuilderInfo) error {
+	for hName, instsByTmpl := range instsByTmpls {
+		hb, found := handlers[hName]
+		if !found {
+			// This should not happen, since the dispatchTypesToHandlers should get called after all verifications.
+			return fmt.Errorf("handler %s is not registered", hName)
+		}
+
+		for tmplName, insts := range instsByTmpl.instancesNamesByTemplate {
+			ti, found := h.tmplRepo.GetTemplateInfo(tmplName)
+			if !found {
+				// This should not happen, since the dispatchTypesToHandlers should get called after all verifications.
+				return fmt.Errorf("template %s is not registered", tmplName)
+			}
+
+			typesToConfigure := make(map[string]proto.Message)
+			for _, inst := range insts {
+				v, found := infrdTypes[inst]
+				if !found {
+					// This should not happen, since the dispatchTypesToHandlers should get called after all
+					// verifications.
+					return fmt.Errorf("instance %s is not found in inferred types", inst)
+				}
+				typesToConfigure[inst] = v
+			}
+			ti.ConfigureTypeFn(typesToConfigure, hb.handlerBuilder)
+		}
+	}
+	// TODO How to handle case where error in config/or adapter returns error, and we have done partial configuration.
+	return nil
 }
 
 type (

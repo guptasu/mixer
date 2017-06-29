@@ -425,6 +425,7 @@ func (p *validator) validateRules(rules []*pb.Rule, path string, cnstrByName map
 					hasError = true
 					ce = ce.Appendf(fmt.Sprintf("%s[%d]", path, idx), "instance '%s' is not defined.", instanceName)
 				}
+				// TODO Validate if the cnstr's template is something that the handler supports.
 			}
 			if !hasError {
 				p.actions = append(p.actions, aa)

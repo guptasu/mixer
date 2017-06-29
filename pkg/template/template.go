@@ -4,6 +4,7 @@ import (
 	"github.com/golang/protobuf/proto"
 
 	pb "istio.io/api/mixer/v1/config/descriptor"
+	adptConfig "istio.io/mixer/pkg/adapter/config"
 )
 
 type (
@@ -15,11 +16,14 @@ type (
 	TypeEvalFn func(string) (pb.ValueType, error)
 	// InferTypeFn does Type inference from the Constructor.params proto message.
 	InferTypeFn func(interface{}, TypeEvalFn) (proto.Message, error)
+	// ConfigureTypeFn dispatches the inferred types to handlers
+	ConfigureTypeFn func(types interface{}, builder *adptConfig.HandlerBuilder) error
 	// Info contains all the information related a template like
 	// Default constructor params, type inference method etc.
 	Info struct {
-		CnstrDefConfig proto.Message
-		InferTypeFn    InferTypeFn
+		CnstrDefConfig  proto.Message
+		InferTypeFn     InferTypeFn
+		ConfigureTypeFn ConfigureTypeFn
 	}
 	// templateRepo implements Repository
 	templateRepo struct{}
