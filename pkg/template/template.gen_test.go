@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/ghodss/yaml"
+	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/empty"
 
 	pb "istio.io/api/mixer/v1/config/descriptor"
@@ -76,7 +77,7 @@ dimensions:
 			cp := tst.cnstrParamPb
 			_ = fillProto(tst.cnstrCnfg, cp)
 			typeEvalFn := func(expr string) (pb.ValueType, error) { return tst.typeEvalRet, tst.typeEvalError }
-			cv, cerr := inferTypeForSampleReport(cp, typeEvalFn)
+			cv, cerr := inferTypeForSampleReport(cp.(proto.Message), typeEvalFn)
 
 			if tst.expectedErr == "" {
 				if cerr != nil {

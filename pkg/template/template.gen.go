@@ -44,7 +44,7 @@ func inferTypeForSampleReport(cp proto.Message, tEvalFn TypeEvalFn) (proto.Messa
 	return infrdType, nil
 }
 
-func configureTypeForSampleReport(types interface{}, builder *adptConfig.HandlerBuilder) error {
+func configureTypeForSampleReport(types map[string]proto.Message, builder *adptConfig.HandlerBuilder) error {
 
 	castedBuilder, ok := (*builder).(sample_report.SampleProcessorBuilder)
 	if !ok {
@@ -52,7 +52,7 @@ func configureTypeForSampleReport(types interface{}, builder *adptConfig.Handler
 		return fmt.Errorf("cannot cast %v into %T", builder, x)
 	}
 	castedTypes := make(map[string]*sample_report.Type)
-	for k, v := range types.(map[string]proto.Message) {
+	for k, v := range types {
 		v1, ok := v.(*sample_report.Type)
 		if !ok {
 			return fmt.Errorf("cannot cast %v into %T", v1, sample_report.Type{})

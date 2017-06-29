@@ -17,10 +17,12 @@ package config
 import (
 	"fmt"
 	"reflect"
+	"sort"
 	"strings"
 	"testing"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/golang/protobuf/ptypes/wrappers"
 
 	"istio.io/mixer/pkg/adapter/config"
@@ -49,16 +51,20 @@ func (t fakeTmplRepo) GetTemplateInfo(template string) (tmpl.Info, bool) {
 
 type fakeTmplRepo2 struct {
 	retErr        error
-	trackCallInfo *[]map[string]proto.Message
+	trackCallInfo *[][]string
 }
 
-func newFakeTmplRepo2(retErr error, trackCallInfo *[]map[string]proto.Message) fakeTmplRepo2 {
+func newFakeTmplRepo2(retErr error, trackCallInfo *[][]string) fakeTmplRepo2 {
 	return fakeTmplRepo2{retErr: retErr, trackCallInfo: trackCallInfo}
 }
 func (t fakeTmplRepo2) GetTemplateInfo(template string) (tmpl.Info, bool) {
 	return tmpl.Info{
-		ConfigureTypeFn: func(types interface{}, builder *config.HandlerBuilder) error {
-			(*t.trackCallInfo) = append(*(t.trackCallInfo), types.(map[string]proto.Message))
+		ConfigureTypeFn: func(types map[string]proto.Message, builder *config.HandlerBuilder) error {
+			actInstNames := make([]string, 0)
+			for instName := range types {
+				actInstNames = append(actInstNames, instName)
+			}
+			(*t.trackCallInfo) = append(*(t.trackCallInfo), actInstNames)
 			return t.retErr
 		},
 	}, true
@@ -66,31 +72,31 @@ func (t fakeTmplRepo2) GetTemplateInfo(template string) (tmpl.Info, bool) {
 
 func TestDispatchTypesToHandlers(t *testing.T) {
 	tests := []struct {
-		name               string
-		handlers           map[string]*HandlerBuilderInfo
-		tmplCnfgrMtdErrRet error
-		hndlrInstsByTmpls  map[string]instancesByTemplate
-		infrdTyps          map[string]proto.Message
-		wantErr            string
-		wantCallInfo       []map[string]proto.Message
+		name                string
+		handlers            map[string]*HandlerBuilderInfo
+		tmplCnfgrMtdErrRet  error
+		hndlrInstsByTmpls   map[string]instancesByTemplate
+		infrdTyps           map[string]proto.Message
+		wantErr             string
+		expectCallTrackInfo [][]string
 	}{
 		{
-			name:               "simple",
-			tmplCnfgrMtdErrRet: nil,
-			handlers:           map[string]*HandlerBuilderInfo{"hndlr": {handlerBuilder: nil}},
-			infrdTyps:          map[string]proto.Message{"inst1": nil},
-			hndlrInstsByTmpls:  map[string]instancesByTemplate{"hndlr": {map[string][]string{"any": {"inst1"}}}},
-			wantErr:            "",
-			wantCallInfo:       []map[string]proto.Message{{"inst1": nil}},
+			name:                "simple",
+			tmplCnfgrMtdErrRet:  nil,
+			handlers:            map[string]*HandlerBuilderInfo{"hndlr": {handlerBuilder: nil}},
+			infrdTyps:           map[string]proto.Message{"inst1": nil},
+			hndlrInstsByTmpls:   map[string]instancesByTemplate{"hndlr": {map[string][]string{"any": {"inst1"}}}},
+			wantErr:             "",
+			expectCallTrackInfo: [][]string{{"inst1"}},
 		},
 		{
-			name:               "MultiHandlerAndInsts",
-			tmplCnfgrMtdErrRet: nil,
-			handlers:           map[string]*HandlerBuilderInfo{"hndlr": {handlerBuilder: nil}, "hndlr2": {handlerBuilder: nil}},
-			infrdTyps:          map[string]proto.Message{"inst1": nil, "inst2": nil, "inst3": nil},
-			hndlrInstsByTmpls:  map[string]instancesByTemplate{"hndlr": {map[string][]string{"any1": {"inst1", "inst2"}, "any2": {"inst3"}}}},
-			wantErr:            "",
-			wantCallInfo:       []map[string]proto.Message{{"inst1": nil, "inst2": nil}, {"inst3": nil}},
+			name:                "MultiHandlerAndInsts",
+			tmplCnfgrMtdErrRet:  nil,
+			handlers:            map[string]*HandlerBuilderInfo{"hndlr": {handlerBuilder: nil}, "hndlr2": {handlerBuilder: nil}},
+			infrdTyps:           map[string]proto.Message{"inst1": nil, "inst2": nil, "inst3": nil},
+			hndlrInstsByTmpls:   map[string]instancesByTemplate{"hndlr": {map[string][]string{"any1": {"inst1", "inst2"}, "any2": {"inst3"}}}},
+			wantErr:             "",
+			expectCallTrackInfo: [][]string{{"inst1", "inst2"}, {"inst3"}},
 		},
 		{
 			name:               "badHandlerRef",
@@ -112,21 +118,38 @@ func TestDispatchTypesToHandlers(t *testing.T) {
 
 	ex, _ := expr.NewCEXLEvaluator(expr.DefaultCacheSize)
 	for _, tt := range tests {
-		trackCallInfo := make([]map[string]proto.Message, 0)
-		tmplRepo := newFakeTmplRepo2(tt.tmplCnfgrMtdErrRet, &trackCallInfo)
+		actualCallTrackInfo := make([][]string, 0)
+		tmplRepo := newFakeTmplRepo2(tt.tmplCnfgrMtdErrRet, &actualCallTrackInfo)
 		hc := handlerConfigurer{typeChecker: ex, tmplRepo: tmplRepo}
 		err := hc.dispatchTypesToHandlers(tt.infrdTyps, tt.hndlrInstsByTmpls, tt.handlers)
 		if tt.wantErr == "" {
 			if err != nil {
 				t.Errorf("got err %v\nwant <nil>", err)
 			}
-			if !reflect.DeepEqual(tt.wantCallInfo, trackCallInfo) {
-				t.Errorf("got %v\nwant %v", trackCallInfo, tt.wantCallInfo)
-			}
+			ensureInterfacesInConfigCallsValid(t, tt.expectCallTrackInfo, actualCallTrackInfo)
 		} else {
 			if err == nil || !strings.Contains(err.Error(), tt.wantErr) {
 				t.Errorf("got error %v\nwant %v", err, tt.wantErr)
 			}
+		}
+	}
+}
+
+func ensureInterfacesInConfigCallsValid(t *testing.T, expectCallTrackInfo [][]string, actualCallTrackInfo [][]string) {
+	if len(expectCallTrackInfo) != len(actualCallTrackInfo) {
+		t.Errorf("got call info for dispatchTypesToHandlers = %v\nwant %v", actualCallTrackInfo, expectCallTrackInfo)
+	}
+	for _, v := range expectCallTrackInfo {
+		found := false
+		sort.Strings(v)
+		for _, m := range actualCallTrackInfo {
+			sort.Strings(m)
+			if reflect.DeepEqual(v, m) {
+				found = true
+			}
+		}
+		if !found {
+			t.Errorf("got call info for dispatchTypesToHandlers = %v\nwant %v", actualCallTrackInfo, expectCallTrackInfo)
 		}
 	}
 }
@@ -141,29 +164,29 @@ func TestInferTypes(t *testing.T) {
 	}{
 		{
 			name:         "SingleCnstr",
-			constructors: map[string]*pb.Constructor{"inst1": {"inst1", "tpml1", nil}},
+			constructors: map[string]*pb.Constructor{"inst1": {"inst1", "tpml1", &empty.Empty{}}},
 			tmplRepo:     newFakeTmplRepo(nil, &wrappers.Int32Value{Value: 1}, true),
 			want:         map[string]proto.Message{"inst1": &wrappers.Int32Value{Value: 1}},
 			wantError:    "",
 		},
 		{
 			name: "MultipleCnstr",
-			constructors: map[string]*pb.Constructor{"inst1": {"inst1", "tpml1", nil},
-				"inst2": {"inst2", "tpml1", nil}},
+			constructors: map[string]*pb.Constructor{"inst1": {"inst1", "tpml1", &empty.Empty{}},
+				"inst2": {"inst2", "tpml1", &empty.Empty{}}},
 			tmplRepo:  newFakeTmplRepo(nil, &wrappers.Int32Value{Value: 1}, true),
 			want:      map[string]proto.Message{"inst1": &wrappers.Int32Value{Value: 1}, "inst2": &wrappers.Int32Value{Value: 1}},
 			wantError: "",
 		},
 		{
 			name:         "InvalidTmplInCnstr",
-			constructors: map[string]*pb.Constructor{"inst1": {"inst1", "INVALIDTMPLNAME", nil}},
+			constructors: map[string]*pb.Constructor{"inst1": {"inst1", "INVALIDTMPLNAME", &empty.Empty{}}},
 			tmplRepo:     newFakeTmplRepo(fmt.Errorf("invalid tmpl"), nil, false),
 			want:         nil,
 			wantError:    "is not registered",
 		},
 		{
 			name:         "ErrorDuringTypeInfr",
-			constructors: map[string]*pb.Constructor{"inst1": {"inst1", "tpml1", nil}},
+			constructors: map[string]*pb.Constructor{"inst1": {"inst1", "tpml1", &empty.Empty{}}},
 			tmplRepo:     newFakeTmplRepo(fmt.Errorf("error during type infer"), nil, true),
 			want:         nil,
 			wantError:    "cannot infer type information",

@@ -17,7 +17,7 @@ type (
 	// InferTypeFn does Type inference from the Constructor.params proto message.
 	InferTypeFn func(proto.Message, TypeEvalFn) (proto.Message, error)
 	// ConfigureTypeFn dispatches the inferred types to handlers
-	ConfigureTypeFn func(types interface{}, builder *adptConfig.HandlerBuilder) error
+	ConfigureTypeFn func(types map[string]proto.Message, builder *adptConfig.HandlerBuilder) error
 	// Info contains all the information related a template like
 	// Default constructor params, type inference method etc.
 	Info struct {
