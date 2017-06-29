@@ -18,7 +18,7 @@ var (
 	}
 )
 
-func inferTypeForSampleReport(cp interface{}, teval TypeEvalFn) (proto.Message, error) {
+func inferTypeForSampleReport(cp interface{}, tEvalFn TypeEvalFn) (proto.Message, error) {
 	cpb := &sample_report.ConstructorParam{}
 	var err error
 	var ok bool
@@ -28,13 +28,13 @@ func inferTypeForSampleReport(cp interface{}, teval TypeEvalFn) (proto.Message, 
 	}
 
 	var infrdType = &sample_report.Type{}
-	if infrdType.Value, err = teval(cpb.Value); err != nil {
+	if infrdType.Value, err = tEvalFn(cpb.Value); err != nil {
 		return nil, err
 	}
 
 	infrdType.Dimensions = make(map[string]pb.ValueType)
 	for k, v := range cpb.Dimensions {
-		if infrdType.Dimensions[k], err = teval(v); err != nil {
+		if infrdType.Dimensions[k], err = tEvalFn(v); err != nil {
 			return nil, err
 		}
 	}

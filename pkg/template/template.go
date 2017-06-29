@@ -15,13 +15,14 @@ type (
 	TypeEvalFn func(string) (pb.ValueType, error)
 	// InferTypeFn does Type inference from the Constructor.params proto message.
 	InferTypeFn  func(interface{}, TypeEvalFn) (proto.Message, error)
-	templateRepo struct{}
 	// Info contains all the information related a template like
 	// Default constructor params, type inference method etc.
 	Info struct {
 		CnstrDefConfig proto.Message
 		InferTypeFn    InferTypeFn
 	}
+	// templateRepo implements Repository
+	templateRepo struct{}
 )
 
 func (t templateRepo) GetTemplateInfo(template string) (Info, bool) {

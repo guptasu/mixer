@@ -22,8 +22,8 @@ func TestGetTemplateInfo(t *testing.T) {
 			if rpresent != tst.present ||
 				!reflect.DeepEqual(k.CnstrDefConfig, tst.expected.CnstrDefConfig) ||
 				!reflect.DeepEqual(reflect.TypeOf(k.InferTypeFn), reflect.TypeOf(tst.expected.InferTypeFn)) {
-				t.Errorf("GetConstructorDefaultConfig(%s) = %v,%v, want %v,%v", tst.template, k, rpresent,
-					tst.expected, tst.present)
+				t.Errorf("got GetConstructorDefaultConfig(%s) = {%v,%v,%v}, want {%v,%v,%v}", tst.template, k.CnstrDefConfig, reflect.TypeOf(k.InferTypeFn), rpresent,
+					tst.expected.CnstrDefConfig, reflect.TypeOf(tst.expected.InferTypeFn), tst.present)
 			}
 		})
 	}
