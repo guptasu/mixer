@@ -26,6 +26,32 @@ import (
 	"istio.io/mixer/pkg/template"
 )
 
+type (
+	handlerConfigurer struct {
+		tmplRepo       template.Repository
+		typeChecker    expr.TypeChecker
+		attrDescFinder expr.AttributeDescriptorFinder
+	}
+	instancesByTemplate struct {
+		instancesNamesByTemplate map[string][]string
+	}
+)
+
+func (t *instancesByTemplate) insertInstance(tmplName string, instName string) {
+	instsPerTmpl, exists := t.instancesNamesByTemplate[tmplName]
+	if !exists {
+		t.instancesNamesByTemplate[tmplName] = make([]string, 0)
+	}
+
+	if !contains(instsPerTmpl, instName) {
+		t.instancesNamesByTemplate[tmplName] = append(t.instancesNamesByTemplate[tmplName], instName)
+	}
+}
+
+func newInstancesByTemplate() instancesByTemplate {
+	return instancesByTemplate{make(map[string][]string)}
+}
+
 func configureHandlers(actions []*pb.Action, constructors map[string]*pb.Constructor,
 	handlers map[string]*HandlerBuilderInfo, tmplRepo template.Repository, expr expr.TypeChecker, df expr.AttributeDescriptorFinder) error {
 	configurer := handlerConfigurer{tmplRepo: tmplRepo, typeChecker: expr, attrDescFinder: df}
@@ -77,32 +103,6 @@ func (h *handlerConfigurer) dispatchTypesToHandlers(infrdTypes map[string]proto.
 	}
 	// TODO How to handle case where error in config/or adapter returns error, and we have done partial configuration.
 	return nil
-}
-
-type (
-	handlerConfigurer struct {
-		tmplRepo       template.Repository
-		typeChecker    expr.TypeChecker
-		attrDescFinder expr.AttributeDescriptorFinder
-	}
-	instancesByTemplate struct {
-		instancesNamesByTemplate map[string][]string
-	}
-)
-
-func (t *instancesByTemplate) insertInstance(tmplName string, instName string) {
-	instsPerTmpl, exists := t.instancesNamesByTemplate[tmplName]
-	if !exists {
-		t.instancesNamesByTemplate[tmplName] = make([]string, 0)
-	}
-
-	if !contains(instsPerTmpl, instName) {
-		t.instancesNamesByTemplate[tmplName] = append(t.instancesNamesByTemplate[tmplName], instName)
-	}
-}
-
-func newInstancesByTemplate() instancesByTemplate {
-	return instancesByTemplate{make(map[string][]string)}
 }
 
 func (h *handlerConfigurer) groupHandlerInstancesByTemplate(actions []*pb.Action, constructors map[string]*pb.Constructor,
