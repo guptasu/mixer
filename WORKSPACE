@@ -11,6 +11,16 @@ load("@io_bazel_rules_go//go:def.bzl", "go_repositories", "new_go_repository")
 go_repositories()
 
 git_repository(
+    name = "io_bazel_rules_docker",
+    commit = "e770f81cef4165828df955f37b827874a884a1de",  # June 21, 2017 (v0.0.2)
+    remote = "https://github.com/bazelbuild/rules_docker.git",
+)
+
+load("@io_bazel_rules_docker//docker:docker.bzl", "docker_repositories")
+
+docker_repositories()
+
+git_repository(
     name = "org_pubref_rules_protobuf",
     commit = "9ede1dbc38f0b89ae6cd8e206a22dd93cc1d5637",  # Mar 31, 2017 (gogo* support)
     remote = "https://github.com/pubref/rules_protobuf",
@@ -456,12 +466,24 @@ new_go_repository(
     importpath = "github.com/grpc-ecosystem/go-grpc-prometheus",
 )
 
+new_go_repository(
+    name = "org_golang_google_api",
+    commit = "48e49d1645e228d1c50c3d54fb476b2224477303",  # Mar 27, 2017 (no release)
+    importpath = "google.golang.org/api",
+)
+
+new_go_repository(
+    name = "org_golang_google_genproto",
+    commit = "411e09b969b1170a9f0c467558eb4c4c110d9c77",  # Apr 4, 2017 (no release)
+    importpath = "google.golang.org/genproto",
+)
+
 ##
 ## Testing
 ##
 
 git_repository(
-    name = "istio_test_infra",
-    commit = "983183f98b79f8b67fe380fef4cdd21481830fd7",  # Apr 13, 2017 (no releases)
+    name = "com_github_istio_test_infra",
+    commit = "9a3ac467ba862432c75e42cecff7aa5c2980e3b8",  # Jun 18, 2017 (no releases)
     remote = "https://github.com/istio/test-infra.git",
 )
