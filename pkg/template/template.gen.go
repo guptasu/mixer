@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	templateInfos = map[string]TemplateInfo{
+	templateInfos = map[string]Info{
 		sample_report.TemplateName: {
 			InferTypeFn:    inferTypeForSampleReport,
 			CnstrDefConfig: &sample_report.ConstructorParam{},

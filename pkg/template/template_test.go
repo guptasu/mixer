@@ -10,11 +10,11 @@ import (
 func TestGetTemplateInfo(t *testing.T) {
 	for _, tst := range []struct {
 		template string
-		expected TemplateInfo
+		expected Info
 		present  bool
 	}{
-		{sample_report.TemplateName, TemplateInfo{&sample_report.ConstructorParam{}, inferTypeForSampleReport}, true},
-		{"unknown template", TemplateInfo{}, false},
+		{sample_report.TemplateName, Info{&sample_report.ConstructorParam{}, inferTypeForSampleReport}, true},
+		{"unknown template", Info{}, false},
 	} {
 		t.Run(tst.template, func(t *testing.T) {
 			tdf := templateRepo{}

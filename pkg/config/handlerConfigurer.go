@@ -39,23 +39,23 @@ func configureHandlers(actions []*pb.Action, constructors map[string]*pb.Constru
 	return err
 }
 
-type handlerConfigurer struct {
-	tmplRepo       template.Repository
-	typeChecker    expr.TypeChecker
-	attrDescFinder expr.AttributeDescriptorFinder
-}
-
-type instancesByTemplate struct {
-	instancesNamesByTemplate map[string][]string
-}
+type (
+	handlerConfigurer struct {
+		tmplRepo       template.Repository
+		typeChecker    expr.TypeChecker
+		attrDescFinder expr.AttributeDescriptorFinder
+	}
+	instancesByTemplate struct {
+		instancesNamesByTemplate map[string][]string
+	}
+)
 
 func (t *instancesByTemplate) insertInstance(tmplName string, instName string) {
-	instsPerTmpl, alreadyPresent := t.instancesNamesByTemplate[tmplName]
-	if !alreadyPresent {
+	instsPerTmpl, exists := t.instancesNamesByTemplate[tmplName]
+	if !exists {
 		t.instancesNamesByTemplate[tmplName] = make([]string, 0)
 	}
 
-	// Add the instance only if does not already exists
 	if !contains(instsPerTmpl, instName) {
 		t.instancesNamesByTemplate[tmplName] = append(t.instancesNamesByTemplate[tmplName], instName)
 	}
@@ -95,15 +95,6 @@ func (h *handlerConfigurer) groupHandlerInstancesByTemplate(actions []*pb.Action
 	return result, nil
 }
 
-func contains(s []string, e string) bool {
-	for _, a := range s {
-		if a == e {
-			return true
-		}
-	}
-	return false
-}
-
 func (h *handlerConfigurer) inferTypes(constructors map[string]*pb.Constructor) (map[string]proto.Message, error) {
 	result := make(map[string]proto.Message)
 	for _, cnstr := range constructors {
@@ -117,9 +108,18 @@ func (h *handlerConfigurer) inferTypes(constructors map[string]*pb.Constructor) 
 			return h.typeChecker.EvalType(expr, h.attrDescFinder)
 		})
 		if err != nil {
-			return nil, fmt.Errorf("cannot infer type information from params %v in constructor %s", cnstr.Params, cnstr.GetInstanceName())
+			return nil, fmt.Errorf("cannot infer type information from params %v in constructor %v", cnstr.Params, cnstr)
 		}
 		result[cnstr.GetInstanceName()] = inferredType
 	}
 	return result, nil
+}
+
+func contains(s []string, e string) bool {
+	for _, a := range s {
+		if a == e {
+			return true
+		}
+	}
+	return false
 }

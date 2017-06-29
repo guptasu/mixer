@@ -426,30 +426,16 @@ func newFakeTemplateRepo(templateConstructorParamMap map[string]proto.Message) t
 	return fakeTemplateRepo{templateConstructorParamMap: templateConstructorParamMap}
 }
 
-func (t fakeTemplateRepo) GetTemplateInfo(template string) (tmpl.TemplateInfo, bool) {
+func (t fakeTemplateRepo) GetTemplateInfo(template string) (tmpl.Info, bool) {
 	if t.templateConstructorParamMap == nil {
-		return tmpl.TemplateInfo{}, false
+		return tmpl.Info{}, false
 	}
 	if v, ok := t.templateConstructorParamMap[template]; ok {
-		return tmpl.TemplateInfo{
+		return tmpl.Info{
 			CnstrDefConfig: v,
 		}, true
 	}
-	return tmpl.TemplateInfo{}, false
-}
-
-func (t fakeTemplateRepo) GetTypeInferFn(template string) (tmpl.InferTypeFn, bool) {
-	return nil, false
-}
-
-func (t fakeTemplateRepo) GetConstructorDefaultConfig(template string) (proto.Message, bool) {
-	if t.templateConstructorParamMap == nil {
-		return nil, false
-	}
-	if v, ok := t.templateConstructorParamMap[template]; ok {
-		return proto.Clone(v), true
-	}
-	return nil, false
+	return tmpl.Info{}, false
 }
 
 func TestValidateRulesConfig(t *testing.T) {

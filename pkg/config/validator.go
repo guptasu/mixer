@@ -701,7 +701,7 @@ func convertConstructorParam(tf template.Repository, templateName string, params
 	strict bool) (cp proto.Message, ce *adapter.ConfigErrors) {
 
 	var found bool
-	var tmplInfo template.TemplateInfo
+	var tmplInfo template.Info
 	if tmplInfo, found = tf.GetTemplateInfo(templateName); !found {
 		return nil, ce.Appendf("template", "'%s' is not a registered", templateName)
 	}
