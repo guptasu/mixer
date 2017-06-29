@@ -17,6 +17,7 @@ package config
 import (
 	"fmt"
 
+	"github.com/golang/glog"
 	"github.com/golang/protobuf/proto"
 
 	pbd "istio.io/api/mixer/v1/config/descriptor"
@@ -38,9 +39,7 @@ func configureHandlers(actions []*pb.Action, constructors map[string]*pb.Constru
 		return err
 	}
 
-	// TODO Add dispatch to adapter code.
-	configurer.dispatchTypesToHandlers(iTypes, grpHandlers, handlers)
-	return err
+	return configurer.dispatchTypesToHandlers(iTypes, grpHandlers, handlers)
 }
 
 func (h *handlerConfigurer) dispatchTypesToHandlers(infrdTypes map[string]proto.Message,
@@ -69,7 +68,11 @@ func (h *handlerConfigurer) dispatchTypesToHandlers(infrdTypes map[string]proto.
 				}
 				typesToConfigure[inst] = v
 			}
-			ti.ConfigureTypeFn(typesToConfigure, hb.handlerBuilder)
+			err := ti.ConfigureTypeFn(typesToConfigure, hb.handlerBuilder)
+			if err != nil {
+				glog.Warningf("Cannot configure handler %s with types %v: %v", hName, typesToConfigure, err)
+				return err
+			}
 		}
 	}
 	// TODO How to handle case where error in config/or adapter returns error, and we have done partial configuration.
@@ -140,6 +143,7 @@ func (h *handlerConfigurer) inferTypes(constructors map[string]*pb.Constructor) 
 			return nil, fmt.Errorf("template %s in constructor %v is not registered", tmplName, cnstr)
 		}
 
+		// TODO: The validation on the correctness of the expression is done here. I think it is fine, pls double check.
 		inferredType, err := tmplInfo.InferTypeFn(cnstr.GetParams(), func(expr string) (pbd.ValueType, error) {
 			return h.typeChecker.EvalType(expr, h.attrDescFinder)
 		})

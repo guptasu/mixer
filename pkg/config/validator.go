@@ -216,7 +216,7 @@ const (
 	subjects     = "subjects"
 	rules        = "rules"
 	constructors = "constructors"
-	actionRules  = "actionRules"
+	actionRules  = "action_rules"
 	adapters     = "adapters"
 	handlers     = "handlers"
 	descriptors  = "descriptors"
@@ -225,6 +225,8 @@ const (
 	keyHandlers            = "/scopes/global/handlers"
 	keyDescriptors         = "/scopes/global/descriptors"
 	keyGlobalServiceConfig = "/scopes/global/subjects/global/rules"
+	keyConstructorsConfig  = "/scopes/global/subjects/global/constructors"
+	keyActionsConfig       = "/scopes/global/subjects/global/action_rules"
 )
 
 // String string representation of a Key
@@ -467,6 +469,8 @@ func classifyKeys(cfg map[string]string) map[string][]string {
 			k = rules
 		case constructors:
 			k = constructors
+		case actionRules:
+			k = actionRules
 		case adapters:
 			k = adapters
 		case handlers:
@@ -744,6 +748,11 @@ func convertAspectParams(f AspectValidatorFinder, name string, params interface{
 
 // decode interprets src interface{} as the specified proto message.
 // if strict is true returns error on unknown fields.
+// TODO dst at message CnstParam {Value string} fails to decode value: 1. Seems weird, investigate
+// The constructorParams are all stringified for all ValueType items, so if a value field is meant to be
+// of ValueType, it's expression can be anything and we are suppose to infer type from it. To parse the
+// field we need a proto, which is our synthesized ConstructorParam from each template. Due to the limitation
+// of non string fields cannot parsed into strings, we might have a problem.. Investigate.
 func decode(src interface{}, dst proto.Message, strict bool) error {
 	ba, err := json.Marshal(src)
 	if err != nil {

@@ -45,5 +45,17 @@ func inferTypeForSampleReport(cp interface{}, tEvalFn TypeEvalFn) (proto.Message
 }
 
 func configureTypeForSampleReport(types interface{}, builder *adptConfig.HandlerBuilder) error {
-	return (*builder).(sample_report.SampleProcessorBuilder).ConfigureSample(types.(map[string]*sample_report.Type))
+
+	castedBuilder, ok := (*builder).(sample_report.SampleProcessorBuilder)
+	if !ok {
+		var x sample_report.SampleProcessorBuilder
+		return fmt.Errorf("cannot cast %v into %T", builder, x)
+	}
+	//castedTypes := make(map[string]*sample_report.Type)
+
+	castedTypes, ok := types.(map[string]*sample_report.Type)
+	if !ok {
+		return fmt.Errorf("cannot cast %v into %T", types, map[string]*sample_report.Type{})
+	}
+	return castedBuilder.ConfigureSample(castedTypes)
 }
