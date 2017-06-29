@@ -34,7 +34,7 @@ import (
 	"istio.io/mixer/pkg/config/descriptor"
 	pb "istio.io/mixer/pkg/config/proto"
 	"istio.io/mixer/pkg/expr"
-	"istio.io/mixer/pkg/template"
+	tmpl "istio.io/mixer/pkg/template"
 )
 
 type fakeVFinder struct {
@@ -110,7 +110,7 @@ func newVfinder(ada map[string]adapter.ConfigValidator, asp map[Kind]AspectValid
 }
 
 func fakeConfigureHandler(actions []*pb.Action, constructors map[string]*pb.Constructor,
-	handlers map[string]*HandlerBuilderInfo, tmplRepo template.Repository, expr expr.TypeChecker, df expr.AttributeDescriptorFinder) error {
+	handlers map[string]*HandlerBuilderInfo, tmplRepo tmpl.Repository, expr expr.TypeChecker, df expr.AttributeDescriptorFinder) error {
 	return nil
 }
 
@@ -353,7 +353,7 @@ func (f fakeBadHandlerBuilder) Build(cnfg proto.Message) (config.Handler, error)
 
 func getConfigureHandlerFn(err error) ConfigureHandler {
 	return func(actions []*pb.Action, constructors map[string]*pb.Constructor,
-		handlers map[string]*HandlerBuilderInfo, tmplRepo template.Repository, expr expr.TypeChecker, df expr.AttributeDescriptorFinder) error {
+		handlers map[string]*HandlerBuilderInfo, tmplRepo tmpl.Repository, expr expr.TypeChecker, df expr.AttributeDescriptorFinder) error {
 		return err
 	}
 }
@@ -422,10 +422,23 @@ type fakeTemplateRepo struct {
 	templateConstructorParamMap map[string]proto.Message
 }
 
-func newFakeTemplateRepo(templateConstructorParamMap map[string]proto.Message) template.Repository {
+func newFakeTemplateRepo(templateConstructorParamMap map[string]proto.Message) tmpl.Repository {
 	return fakeTemplateRepo{templateConstructorParamMap: templateConstructorParamMap}
 }
-func (t fakeTemplateRepo) GetTypeInferFn(template string) (template.InferTypeFn, bool) {
+
+func (t fakeTemplateRepo) GetTemplateInfo(template string) (tmpl.TemplateInfo, bool) {
+	if t.templateConstructorParamMap == nil {
+		return tmpl.TemplateInfo{}, false
+	}
+	if v, ok := t.templateConstructorParamMap[template]; ok {
+		return tmpl.TemplateInfo{
+			CnstrDefConfig: v,
+		}, true
+	}
+	return tmpl.TemplateInfo{}, false
+}
+
+func (t fakeTemplateRepo) GetTypeInferFn(template string) (tmpl.InferTypeFn, bool) {
 	return nil, false
 }
 
@@ -652,7 +665,7 @@ constructors:
 	tests := []struct {
 		cfg     string
 		nerrors int
-		tdf     template.Repository
+		tdf     tmpl.Repository
 		cerr    []string
 	}{
 		{

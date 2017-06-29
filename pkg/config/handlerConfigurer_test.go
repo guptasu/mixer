@@ -37,6 +37,13 @@ type fakeTmplRepo struct {
 func newFakeTmplRepo(inferError error, inferResult proto.Message, tmplFound bool) tmpl.Repository {
 	return fakeTmplRepo{inferError: inferError, inferResult: inferResult, tmplFound: tmplFound}
 }
+func (t fakeTmplRepo) GetTemplateInfo(template string) (tmpl.TemplateInfo, bool) {
+	return tmpl.TemplateInfo{
+		InferTypeFn:    func(interface{}, tmpl.TypeEvalFn) (proto.Message, error) { return t.inferResult, t.inferError },
+		CnstrDefConfig: nil,
+	}, t.tmplFound
+}
+
 func (t fakeTmplRepo) GetTypeInferFn(template string) (tmpl.InferTypeFn, bool) {
 	return func(interface{}, tmpl.TypeEvalFn) (proto.Message, error) { return t.inferResult, t.inferError }, t.tmplFound
 }

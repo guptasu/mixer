@@ -701,10 +701,11 @@ func convertConstructorParam(tf template.Repository, templateName string, params
 	strict bool) (cp proto.Message, ce *adapter.ConfigErrors) {
 
 	var found bool
-	if cp, found = tf.GetConstructorDefaultConfig(templateName); !found {
+	var tmplInfo template.TemplateInfo
+	if tmplInfo, found = tf.GetTemplateInfo(templateName); !found {
 		return nil, ce.Appendf("template", "'%s' is not a registered", templateName)
 	}
-
+	cp = tmplInfo.CnstrDefConfig
 	if err := decode(params, cp, strict); err != nil {
 		return nil, ce.Appendf(templateName, "failed to decode constructor params: %v", err)
 	}

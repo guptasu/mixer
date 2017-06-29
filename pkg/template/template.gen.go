@@ -10,11 +10,11 @@ import (
 )
 
 var (
-	templateConstructorParamMap = map[string]proto.Message{
-		sample_report.TemplateName: &sample_report.ConstructorParam{},
-	}
-	templateInferTypeFnMapping = map[string]InferTypeFn{
-		sample_report.TemplateName: inferTypeForSampleReport,
+	templateInfos = map[string]TemplateInfo{
+		sample_report.TemplateName: {
+			InferTypeFn:    inferTypeForSampleReport,
+			CnstrDefConfig: &sample_report.ConstructorParam{},
+		},
 	}
 )
 

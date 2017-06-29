@@ -9,32 +9,26 @@ import (
 type (
 	// Repository defines all the helper functions to access the generated template specific types and fields.
 	Repository interface {
-		GetConstructorDefaultConfig(template string) (proto.Message, bool)
-		GetTypeInferFn(template string) (InferTypeFn, bool)
+		GetTemplateInfo(template string) (TemplateInfo, bool)
 	}
 	// TypeEvalFn evaluates an expression and returns the ValueType for the expression.
 	TypeEvalFn func(string) (pb.ValueType, error)
 	// InferTypeFn does Type inference from the Constructor.params proto message.
 	InferTypeFn  func(interface{}, TypeEvalFn) (proto.Message, error)
 	templateRepo struct{}
+	TemplateInfo struct {
+		CnstrDefConfig proto.Message
+		InferTypeFn    InferTypeFn
+	}
 )
 
-func (t templateRepo) GetConstructorDefaultConfig(template string) (proto.Message, bool) {
-	if templateConstructorParamMap != nil {
-		if v, ok := templateConstructorParamMap[template]; ok {
-			return proto.Clone(v), true
-		}
-	}
-	return nil, false
-}
-
-func (t templateRepo) GetTypeInferFn(template string) (InferTypeFn, bool) {
-	if templateConstructorParamMap != nil {
-		if v, ok := templateInferTypeFnMapping[template]; ok {
+func (t templateRepo) GetTemplateInfo(template string) (TemplateInfo, bool) {
+	if templateInfos != nil {
+		if v, ok := templateInfos[template]; ok {
 			return v, true
 		}
 	}
-	return nil, false
+	return TemplateInfo{}, false
 }
 
 // NewTemplateRepository returns an implementation of Repository

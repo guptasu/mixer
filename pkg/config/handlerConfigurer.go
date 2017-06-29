@@ -108,12 +108,12 @@ func (h *handlerConfigurer) inferTypes(constructors map[string]*pb.Constructor) 
 	result := make(map[string]proto.Message)
 	for _, cnstr := range constructors {
 		tmplName := cnstr.GetTemplate()
-		fn, found := h.tmplRepo.GetTypeInferFn(tmplName)
+		tmplInfo, found := h.tmplRepo.GetTemplateInfo(tmplName)
 		if !found {
 			return nil, fmt.Errorf("template %s in constructor %v is not registered", tmplName, cnstr)
 		}
 
-		inferredType, err := fn(cnstr.GetParams(), func(expr string) (pbd.ValueType, error) {
+		inferredType, err := tmplInfo.InferTypeFn(cnstr.GetParams(), func(expr string) (pbd.ValueType, error) {
 			return h.typeChecker.EvalType(expr, h.attrDescFinder)
 		})
 		if err != nil {
