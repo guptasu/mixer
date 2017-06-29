@@ -40,7 +40,9 @@ func newFakeTmplRepo(inferError error, inferResult proto.Message, tmplFound bool
 }
 func (t fakeTmplRepo) GetTemplateInfo(template string) (tmpl.Info, bool) {
 	return tmpl.Info{
-		InferTypeFn:    func(proto.Message, tmpl.TypeEvalFn) (proto.Message, error) { return t.inferTypeResult, t.inferTypeError },
+		InferTypeFn: func(proto.Message, tmpl.TypeEvalFn) (proto.Message, error) {
+			return t.inferTypeResult, t.inferTypeError
+		},
 		CnstrDefConfig: nil,
 	}, t.tmptExists
 }

@@ -3,10 +3,11 @@ package template
 import (
 	"fmt"
 
+	"github.com/golang/protobuf/proto"
+
 	pb "istio.io/api/mixer/v1/config/descriptor"
 	adptConfig "istio.io/mixer/pkg/adapter/config"
 	sample_report "istio.io/mixer/pkg/template/sample/report"
-	"github.com/golang/protobuf/proto"
 )
 
 var (
@@ -51,7 +52,7 @@ func configureTypeForSampleReport(types interface{}, builder *adptConfig.Handler
 		return fmt.Errorf("cannot cast %v into %T", builder, x)
 	}
 	castedTypes := make(map[string]*sample_report.Type)
-	for k,v := range types.(map[string]proto.Message) {
+	for k, v := range types.(map[string]proto.Message) {
 		v1, ok := v.(*sample_report.Type)
 		if !ok {
 			return fmt.Errorf("cannot cast %v into %T", v1, sample_report.Type{})
