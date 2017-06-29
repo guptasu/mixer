@@ -61,7 +61,7 @@ func (t *instancesByTemplate) insertInstance(tmplName string, instName string) {
 	}
 }
 
-func newInstancesByTemplateMapping() instancesByTemplate {
+func newInstancesByTemplate() instancesByTemplate {
 	return instancesByTemplate{make(map[string][]string)}
 }
 
@@ -77,7 +77,7 @@ func (h *handlerConfigurer) groupHandlerInstancesByTemplate(actions []*pb.Action
 
 		instsByTmpl, alreadyPresent := result[hName]
 		if !alreadyPresent {
-			instsByTmpl = newInstancesByTemplateMapping()
+			instsByTmpl = newInstancesByTemplate()
 			result[hName] = instsByTmpl
 		}
 

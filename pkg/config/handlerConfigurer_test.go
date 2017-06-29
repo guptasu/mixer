@@ -225,7 +225,7 @@ func TestDedupeAndGroupInstances(t *testing.T) {
 				if err != nil {
 					t.Errorf("got err %v\nwant <nil>", err)
 				}
-				if !equals(tt.want, v) {
+				if !deepEquals(tt.want, v) {
 					t.Errorf("got %v\nwant %v", v, tt.want)
 				}
 			} else {
@@ -239,7 +239,7 @@ func TestDedupeAndGroupInstances(t *testing.T) {
 
 }
 
-func equals(expected map[string]instancesByTemplate, actual map[string]instancesByTemplate) bool {
+func deepEquals(expected map[string]instancesByTemplate, actual map[string]instancesByTemplate) bool {
 	if len(expected) != len(actual) {
 		return false
 	}
