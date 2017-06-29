@@ -27,7 +27,7 @@ func inferTypeForSampleReport(cp interface{}, tEvalFn TypeEvalFn) (proto.Message
 		return nil, fmt.Errorf("Constructor param %v is not of type %T", cp, cpb)
 	}
 
-	var infrdType = &sample_report.Type{}
+	infrdType := &sample_report.Type{}
 	if infrdType.Value, err = tEvalFn(cpb.Value); err != nil {
 		return nil, err
 	}

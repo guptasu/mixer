@@ -14,7 +14,7 @@ type (
 	// TypeEvalFn evaluates an expression and returns the ValueType for the expression.
 	TypeEvalFn func(string) (pb.ValueType, error)
 	// InferTypeFn does Type inference from the Constructor.params proto message.
-	InferTypeFn  func(interface{}, TypeEvalFn) (proto.Message, error)
+	InferTypeFn func(interface{}, TypeEvalFn) (proto.Message, error)
 	// Info contains all the information related a template like
 	// Default constructor params, type inference method etc.
 	Info struct {
@@ -26,10 +26,8 @@ type (
 )
 
 func (t templateRepo) GetTemplateInfo(template string) (Info, bool) {
-	if templateInfos != nil {
-		if v, ok := templateInfos[template]; ok {
-			return v, true
-		}
+	if v, ok := templateInfos[template]; ok {
+		return v, true
 	}
 	return Info{}, false
 }

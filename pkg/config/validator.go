@@ -544,7 +544,6 @@ func (p *validator) validate(cfg map[string]string) (rt *Validated, ce *adapter.
 	}
 
 	// everything is validated we can configure the handlers.
-	// TODO : Add validation of Constructors and Actions before this step
 	if re := p.buildHandlers(); re != nil {
 		return rt, ce.Extend(re)
 	}
@@ -559,6 +558,7 @@ func (p *validator) buildHandlers() (ce *adapter.ConfigErrors) {
 
 	for name, handlerBuilder := range p.handlerBuilderByName {
 		handlerInstance, err := (*handlerBuilder.handlerBuilder).Build(handlerBuilder.handlerCnfg.Params.(proto.Message))
+		// TODO Add validation to ensure handlerInstance support all the templates it claims to support.
 		if err != nil {
 			return ce.Appendf("handlerConfig: "+name, "failed to build a handler instance: %v", err)
 		}

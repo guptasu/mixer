@@ -169,14 +169,14 @@ func TestConfigValidatorError(t *testing.T) {
 			ok := tt.nerrors == 0
 
 			if ok != cok {
-				t.Fatalf("Expected %t Got %t", ok, cok)
+				t.Fatalf("got %t, want %t", cok, ok)
 			}
 			if ce == nil {
 				return
 			}
 
 			if len(ce.Multi.Errors) != tt.nerrors {
-				t.Fatalf("Expected: '%v' Got: %v", tt.cerr.Error(), ce.Error())
+				t.Fatalf("got %s, want %s", ce.Error(), tt.cerr.Error())
 			}
 		})
 	}
@@ -229,7 +229,7 @@ func TestConvertHandlerParamsErrors(t *testing.T) {
 				}, "myhandlerCnfgBlock", tt.params, true)
 
 			if !strings.Contains(ce.Error(), tt.errorStr) {
-				t.Errorf("Expected %s got %s\n", tt.errorStr, ce.Error())
+				t.Errorf("got %s, want %s\n", ce.Error(), tt.errorStr)
 			}
 		})
 	}
@@ -272,14 +272,14 @@ func TestHandlerConfigValidator(t *testing.T) {
 			ok := tt.nerrors == 0
 
 			if ok != cok {
-				t.Fatalf("Expected %t Got %t", ok, cok)
+				t.Fatalf("got %t, want %t", cok, ok)
 			}
 			if ce == nil {
 				return
 			}
 
 			if len(ce.Multi.Errors) != tt.nerrors {
-				t.Fatalf("Expected: '%v' Got: %v", tt.cerr.Error(), ce.Error())
+				t.Fatalf("got %s, want %s", ce.Error(), tt.cerr.Error())
 			}
 		})
 	}
@@ -323,18 +323,18 @@ handlers:
 			p := newValidator(mgr.FindAspectValidator, mgr.FindAdapterValidator, mgr.FindBuilderInfo, fakeConfigureHandler, nil,
 				mgr.AdapterToAspectMapperFunc, tt.strict, evaluator)
 			_ = p.validateHandlers(tt.cfg)
-			if tt.nerrors > 0 {
-				if _, ok := p.handlerBuilderByName["fooHandler"]; ok {
-					t.Fatalf("Expected: Handler '%s' not in validator.validated.handlerBuilderByName' Got: %v",
-						"fooHandler", p.handlerBuilderByName["fooHandler"])
-				}
-			} else {
-				if _, ok := p.handlerBuilderByName["fooHandler"]; !ok {
-					t.Fatalf("Expected: Handler '%s' present in validator.validated.handlerBuilderByName' Got: nil", "fooHandler")
-				}
-				if !reflect.DeepEqual(p.handlerBuilderByName["fooHandler"].supportedTemplates, []adapter.SupportedTemplates{testSupportedTemplate}) {
-					t.Fatalf("Expected: p.handlerBuilderByName[\"fooHandler\"]=%v. Got: %v",
-						[]adapter.SupportedTemplates{testSupportedTemplate}, p.handlerBuilderByName["fooHandler"].supportedTemplates)
+			v, ok := p.handlerBuilderByName["fooHandler"]
+			if tt.nerrors > 0 && ok {
+				t.Fatalf("got p.handlerBuilderByName[\"fooHandler\"] = %v, want: <nil>", v)
+
+			}
+			if tt.nerrors == 0 {
+				if !ok {
+					t.Fatalf("got p.handlerBuilderByName[\"fooHandler\"] = %v, want: <nil>", v)
+
+				} else if !reflect.DeepEqual(p.handlerBuilderByName["fooHandler"].supportedTemplates, []adapter.SupportedTemplates{testSupportedTemplate}) {
+					t.Fatalf("got p.handlerBuilderByName[\"fooHandler\"]: %v, Expected: =%v",
+						p.handlerBuilderByName["fooHandler"].supportedTemplates, []adapter.SupportedTemplates{testSupportedTemplate})
 				}
 			}
 		})
@@ -403,15 +403,15 @@ func TestBuildAndCacheHandlers(t *testing.T) {
 				if len(p.validated.handlerByName) == len(tt.handlerBuilderByName) {
 					for k := range tt.handlerBuilderByName {
 						if _, ok := p.validated.handlerByName[k]; !ok {
-							t.Fatalf("Expected: validated.handlerByName[%s] to be present. Got: Not present", k)
+							t.Fatalf("got validated.handlerByName[%s] = nil, want !nil", k)
 						}
 					}
 				} else {
-					t.Fatalf("Expected: validated.handlerByName '%v'. Got: %v", tt.handlerBuilderByName, p.validated.handlerByName)
+					t.Fatalf("got: validated.handlerByName %v, want: '%v'", p.validated.handlerByName, tt.handlerBuilderByName)
 				}
 			} else {
 				if !strings.Contains(err.Error(), tt.expectedError) {
-					t.Fatalf("Expected %s. Got %s", err.Error(), tt.expectedError)
+					t.Fatalf("got %s, want %s", tt.expectedError, err.Error())
 				}
 			}
 		})
@@ -579,17 +579,17 @@ action_rules:
 			ok := tt.nerrors == 0
 
 			if ok != cok {
-				t.Errorf("Expected %t Got %t", ok, cok)
+				t.Errorf("got %t, want %t", cok, ok)
 			}
 			if len(p.actions) != tt.nActions {
-				t.Errorf("Expected len(p.actions)=%d Got %d", tt.nActions, len(p.actions))
+				t.Errorf("got len(p.actions)=%d, want %d", len(p.actions), tt.nActions)
 			}
 			if ce == nil {
 				return
 			}
 
 			if !containErrors(ce.Multi.Errors, tt.cerr) {
-				t.Fatalf("Expected: '%v' Got: %v", tt.cerr, ce.Error())
+				t.Fatalf("got '%v' want %v", ce.Error(), tt.cerr)
 			}
 		})
 	}
@@ -686,14 +686,14 @@ constructors:
 			ok := tt.nerrors == 0
 
 			if ok != cok {
-				t.Errorf("Expected %t Got %t", ok, cok)
+				t.Errorf("got %t want %t ", cok, ok)
 			}
 			if ce == nil {
 				return
 			}
 
 			if !containErrors(ce.Multi.Errors, tt.cerr) {
-				t.Fatalf("Expected: '%v' Got: %v", tt.cerr, ce.Error())
+				t.Fatalf("got: %v, want: '%v' ", ce.Error(), tt.cerr)
 			}
 		})
 	}
@@ -770,7 +770,7 @@ func TestFullConfigValidator(tt *testing.T) {
 			cok := ce == nil
 			ok := ctx.cerr == nil
 			if ok != cok {
-				t.Fatalf("%d Expected %t Got %t", idx, ok, cok)
+				t.Fatalf("%d got %t, want %t ", idx, cok, ok)
 
 			}
 			if ce == nil {
@@ -1064,7 +1064,7 @@ func TestConvertAdapterParamsErrors(t *testing.T) {
 			}, "ABC", tt.params, true)
 
 			if !strings.Contains(ce.Error(), tt.cv.err) {
-				t.Errorf("Expected %s. Got %s", tt.cv.err, ce.Error())
+				t.Errorf("got %s, want %s. ", ce.Error(), tt.cv.err)
 			}
 		})
 	}
@@ -1127,7 +1127,7 @@ quotas:
 				if tt.err == "" {
 					t.Fatalf("validateDescriptors = '%s', wanted no err", err.Error())
 				} else if !strings.Contains(err.Error(), tt.err) {
-					t.Fatalf("Expected errors containing the string '%s', actual: '%s'", tt.err, err.Error())
+					t.Fatalf("got: '%s', want errors containing the string '%s', ", err.Error(), tt.err)
 				}
 			}
 		})

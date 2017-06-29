@@ -75,16 +75,15 @@ func (h *handlerConfigurer) groupHandlerInstancesByTemplate(actions []*pb.Action
 			return nil, fmt.Errorf("unable to find a configured handler with name '%s' referenced in action %v", hName, action)
 		}
 
-		instsByTmpl, alreadyPresent := result[hName]
-		if !alreadyPresent {
+		instsByTmpl, exists := result[hName]
+		if !exists {
 			instsByTmpl = newInstancesByTemplate()
 			result[hName] = instsByTmpl
 		}
 
 		for _, iName := range action.GetInstances() {
-			var cnstr *pb.Constructor
-			var ok bool
-			if cnstr, ok = constructors[iName]; !ok {
+			cnstr, ok := constructors[iName]
+			if !ok {
 				return nil, fmt.Errorf("unable to find an a constructor with instance name '%s' "+
 					"referenced in action %v", iName, action)
 			}
