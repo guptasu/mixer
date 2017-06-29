@@ -110,7 +110,7 @@ func newVfinder(ada map[string]adapter.ConfigValidator, asp map[Kind]AspectValid
 }
 
 func fakeConfigureHandler(actions []*pb.Action, constructors map[string]*pb.Constructor,
-	handlers map[string]*HandlerBuilderInfo) error {
+	handlers map[string]*HandlerBuilderInfo, tmplRepo template.Repository, expr expr.TypeChecker, df expr.AttributeDescriptorFinder) error {
 	return nil
 }
 
@@ -351,6 +351,12 @@ func (f fakeBadHandlerBuilder) Build(cnfg proto.Message) (config.Handler, error)
 	return nil, errors.New("build failed")
 }
 
+func getConfigureHandlerFn(err error) ConfigureHandler {
+	return func(actions []*pb.Action, constructors map[string]*pb.Constructor,
+		handlers map[string]*HandlerBuilderInfo, tmplRepo template.Repository, expr expr.TypeChecker, df expr.AttributeDescriptorFinder) error {
+		return err
+	}
+}
 func TestBuildAndCacheHandlers(t *testing.T) {
 	var hbgood config.HandlerBuilder = fakeGoodHandlerBuilder{}
 	var hbb config.HandlerBuilder = fakeBadHandlerBuilder{}
@@ -360,11 +366,7 @@ func TestBuildAndCacheHandlers(t *testing.T) {
 		expectedError        string
 	}{
 		{
-			func(actions []*pb.Action, constructors map[string]*pb.Constructor,
-				handlers map[string]*HandlerBuilderInfo) error {
-				// TODO For each handler, invoke configure for all the templates that it supports.
-				return nil
-			},
+			getConfigureHandlerFn(nil),
 			map[string]*HandlerBuilderInfo{
 				"foo": {
 					handlerBuilder: &hbgood, handlerCnfg: &pb.Handler{Params: &types.Empty{}},
@@ -373,10 +375,7 @@ func TestBuildAndCacheHandlers(t *testing.T) {
 			"",
 		},
 		{
-			func(actions []*pb.Action, constructors map[string]*pb.Constructor,
-				handlers map[string]*HandlerBuilderInfo) error {
-				return errors.New("some error during configuration")
-			},
+			getConfigureHandlerFn(errors.New("some error during configuration")),
 			map[string]*HandlerBuilderInfo{
 				"foo": {
 					handlerBuilder: &hbgood, handlerCnfg: &pb.Handler{Params: &types.Empty{}},
@@ -385,11 +384,7 @@ func TestBuildAndCacheHandlers(t *testing.T) {
 			"some error during configuration",
 		},
 		{
-			func(actions []*pb.Action, constructors map[string]*pb.Constructor,
-				handlers map[string]*HandlerBuilderInfo) error {
-				// TODO For each handler, invoke configure for all the templates that it supports.
-				return nil
-			},
+			getConfigureHandlerFn(nil),
 			map[string]*HandlerBuilderInfo{
 				"foo": {
 					handlerBuilder: &hbb, handlerCnfg: &pb.Handler{Params: &types.Empty{}},
@@ -430,6 +425,10 @@ type fakeTemplateRepo struct {
 func newFakeTemplateRepo(templateConstructorParamMap map[string]proto.Message) template.Repository {
 	return fakeTemplateRepo{templateConstructorParamMap: templateConstructorParamMap}
 }
+func (t fakeTemplateRepo) GetTypeInferFn(template string) (template.InferTypeFn, bool) {
+	return nil, false
+}
+
 func (t fakeTemplateRepo) GetConstructorDefaultConfig(template string) (proto.Message, bool) {
 	if t.templateConstructorParamMap == nil {
 		return nil, false
@@ -660,7 +659,7 @@ constructors:
 			sSvcConfigInvalidTemplate,
 			1,
 			newFakeTemplateRepo(map[string]proto.Message{"FooTemplate": &types.Empty{}}),
-			[]string{"is not a valid template"},
+			[]string{"is not a registered"},
 		},
 		{
 			sSvcConfigValidParams,

@@ -17,14 +17,32 @@ package config
 import (
 	"fmt"
 
+	"github.com/golang/protobuf/proto"
+
+	pbd "istio.io/api/mixer/v1/config/descriptor"
 	pb "istio.io/mixer/pkg/config/proto"
+	"istio.io/mixer/pkg/expr"
+	"istio.io/mixer/pkg/template"
 )
 
 func configureHandlers(actions []*pb.Action, constructors map[string]*pb.Constructor,
-	handlers map[string]*HandlerBuilderInfo) error {
-	_, err := groupHandlerInstancesByTemplate(actions, constructors, handlers)
-	// TODO Add type inference and dispatch to adapter code.
+	handlers map[string]*HandlerBuilderInfo, tmplRepo template.Repository, expr expr.TypeChecker, df expr.AttributeDescriptorFinder) error {
+	configurer := handlerConfigurer{tmplRepo: tmplRepo, typeChecker: expr, attrDescFinder: df}
+
+	_, err := configurer.inferTypes(constructors)
+	if err != nil {
+		return err
+	}
+	_, err = configurer.groupHandlerInstancesByTemplate(actions, constructors, handlers)
+
+	// TODO Add dispatch to adapter code.
 	return err
+}
+
+type handlerConfigurer struct {
+	tmplRepo       template.Repository
+	typeChecker    expr.TypeChecker
+	attrDescFinder expr.AttributeDescriptorFinder
 }
 
 type instancesByTemplate struct {
@@ -32,7 +50,6 @@ type instancesByTemplate struct {
 }
 
 func (t *instancesByTemplate) insertInstance(tmplName string, instName string) {
-	// TODO validate the tmplName and if handler supports the template
 	instsPerTmpl, alreadyPresent := t.instancesNamesByTemplate[tmplName]
 	if !alreadyPresent {
 		t.instancesNamesByTemplate[tmplName] = make([]string, 0)
@@ -48,7 +65,7 @@ func newInstancesByTemplateMapping() instancesByTemplate {
 	return instancesByTemplate{make(map[string][]string)}
 }
 
-func groupHandlerInstancesByTemplate(actions []*pb.Action, constructors map[string]*pb.Constructor,
+func (h *handlerConfigurer) groupHandlerInstancesByTemplate(actions []*pb.Action, constructors map[string]*pb.Constructor,
 	handlers map[string]*HandlerBuilderInfo) (map[string]instancesByTemplate, error) {
 	result := make(map[string]instancesByTemplate)
 
@@ -85,4 +102,24 @@ func contains(s []string, e string) bool {
 		}
 	}
 	return false
+}
+
+func (h *handlerConfigurer) inferTypes(constructors map[string]*pb.Constructor) (map[string]proto.Message, error) {
+	result := make(map[string]proto.Message)
+	for _, cnstr := range constructors {
+		tmplName := cnstr.GetTemplate()
+		fn, found := h.tmplRepo.GetTypeInferFn(tmplName)
+		if !found {
+			return nil, fmt.Errorf("template %s in constructor %v is not registered", tmplName, cnstr)
+		}
+
+		inferredType, err := fn(cnstr.GetParams(), func(expr string) (pbd.ValueType, error) {
+			return h.typeChecker.EvalType(expr, h.attrDescFinder)
+		})
+		if err != nil {
+			return nil, fmt.Errorf("cannot infer type information from params %v in constructor %s", cnstr.Params, cnstr.GetInstanceName())
+		}
+		result[cnstr.GetInstanceName()] = inferredType
+	}
+	return result, nil
 }

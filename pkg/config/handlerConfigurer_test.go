@@ -15,11 +15,94 @@
 package config
 
 import (
+	"fmt"
+	"reflect"
 	"strings"
 	"testing"
 
+	"github.com/golang/protobuf/proto"
+	"github.com/golang/protobuf/ptypes/wrappers"
+
 	pb "istio.io/mixer/pkg/config/proto"
+	"istio.io/mixer/pkg/expr"
+	tmpl "istio.io/mixer/pkg/template"
 )
+
+type fakeTmplRepo struct {
+	tmplFound   bool
+	inferError  error
+	inferResult proto.Message
+}
+
+func newFakeTmplRepo(inferError error, inferResult proto.Message, tmplFound bool) tmpl.Repository {
+	return fakeTmplRepo{inferError: inferError, inferResult: inferResult, tmplFound: tmplFound}
+}
+func (t fakeTmplRepo) GetTypeInferFn(template string) (tmpl.InferTypeFn, bool) {
+	return func(interface{}, tmpl.TypeEvalFn) (proto.Message, error) { return t.inferResult, t.inferError }, t.tmplFound
+}
+func (t fakeTmplRepo) GetConstructorDefaultConfig(template string) (proto.Message, bool) {
+	return nil, false
+}
+
+func TestInferTypes(t *testing.T) {
+	tests := []struct {
+		name         string
+		constructors map[string]*pb.Constructor
+		tmplRepo     tmpl.Repository
+		result       map[string]proto.Message
+		eError       string
+	}{
+		{
+			name:         "SingleCnstr",
+			constructors: map[string]*pb.Constructor{"inst1": {"inst1", "tpml1", nil}},
+			tmplRepo:     newFakeTmplRepo(nil, &wrappers.Int32Value{Value: 1}, true),
+			result:       map[string]proto.Message{"inst1": &wrappers.Int32Value{Value: 1}},
+			eError:       "",
+		},
+		{
+			name: "MultipleCnstr",
+			constructors: map[string]*pb.Constructor{"inst1": {"inst1", "tpml1", nil},
+				"inst2": {"inst2", "tpml1", nil}},
+			tmplRepo: newFakeTmplRepo(nil, &wrappers.Int32Value{Value: 1}, true),
+			result:   map[string]proto.Message{"inst1": &wrappers.Int32Value{Value: 1}, "inst2": &wrappers.Int32Value{Value: 1}},
+			eError:   "",
+		},
+		{
+			name:         "InvalidTmplInCnstr",
+			constructors: map[string]*pb.Constructor{"inst1": {"inst1", "INVALIDTMPLNAME", nil}},
+			tmplRepo:     newFakeTmplRepo(fmt.Errorf("invalid tmpl"), nil, false),
+			result:       nil,
+			eError:       "is not registered",
+		},
+		{
+			name:         "ErrorDuringTypeInfr",
+			constructors: map[string]*pb.Constructor{"inst1": {"inst1", "tpml1", nil}},
+			tmplRepo:     newFakeTmplRepo(fmt.Errorf("error during type infer"), nil, true),
+			result:       nil,
+			eError:       "cannot infer type information",
+		},
+	}
+	ex, _ := expr.NewCEXLEvaluator(expr.DefaultCacheSize)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			hc := handlerConfigurer{typeChecker: ex, tmplRepo: tt.tmplRepo}
+			v, err := hc.inferTypes(tt.constructors)
+			if tt.eError == "" {
+				if err != nil {
+					t.Errorf("got err %v\nwant <nil>", err)
+				}
+				if !reflect.DeepEqual(tt.result, v) {
+					t.Errorf("got %v\nwant %v", v, tt.result)
+				}
+			} else {
+				if err == nil || !strings.Contains(err.Error(), tt.eError) {
+					t.Errorf("got error %v\nwant %v", err, tt.eError)
+				}
+			}
+
+		})
+	}
+}
 
 func TestDedupeAndGroupInstances(t *testing.T) {
 	tests := []struct {
@@ -132,10 +215,12 @@ func TestDedupeAndGroupInstances(t *testing.T) {
 			eError: "",
 		},
 	}
-
+	ex, _ := expr.NewCEXLEvaluator(expr.DefaultCacheSize)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			v, err := groupHandlerInstancesByTemplate(tt.actions, tt.constructors, tt.handlers)
+
+			hc := handlerConfigurer{typeChecker: ex, tmplRepo: nil}
+			v, err := hc.groupHandlerInstancesByTemplate(tt.actions, tt.constructors, tt.handlers)
 			if tt.eError == "" {
 				if err != nil {
 					t.Errorf("got err %v\nwant <nil>", err)

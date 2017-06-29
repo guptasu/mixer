@@ -80,7 +80,7 @@ type (
 	// ConfigureHandler is used to configure handler implementation with Types associated with all the templates that
 	// it supports.
 	ConfigureHandler func(actions []*pb.Action, constructors map[string]*pb.Constructor,
-		handlers map[string]*HandlerBuilderInfo) error
+		handlers map[string]*HandlerBuilderInfo, tmplRepo template.Repository, expr expr.TypeChecker, df expr.AttributeDescriptorFinder) error
 )
 
 // newValidator returns a validator given component validators.
@@ -553,7 +553,7 @@ func (p *validator) validate(cfg map[string]string) (rt *Validated, ce *adapter.
 }
 
 func (p *validator) buildHandlers() (ce *adapter.ConfigErrors) {
-	if err := p.configureHandler(p.actions, p.constructorByName, p.handlerBuilderByName); err != nil {
+	if err := p.configureHandler(p.actions, p.constructorByName, p.handlerBuilderByName, p.templateRepo, p.typeChecker, p.descriptorFinder); err != nil {
 		return ce.Appendf("handlerConfig", "failed to configure handler: %v", err)
 	}
 
@@ -702,7 +702,7 @@ func convertConstructorParam(tf template.Repository, templateName string, params
 
 	var found bool
 	if cp, found = tf.GetConstructorDefaultConfig(templateName); !found {
-		return nil, ce.Appendf("template", "'%s' is not a valid template", templateName)
+		return nil, ce.Appendf("template", "'%s' is not a registered", templateName)
 	}
 
 	if err := decode(params, cp, strict); err != nil {
