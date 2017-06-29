@@ -46,17 +46,17 @@ func (t fakeTmplRepo) GetTemplateInfo(template string) (tmpl.Info, bool) {
 }
 
 type fakeTmplRepo2 struct {
-	retErr         error
-	actualCallInfo *[]interface{}
+	retErr        error
+	trackCallInfo *[]map[string]proto.Message
 }
 
-func newFakeTmplRepo2(retErr error, actualCallInfo *[]interface{}) fakeTmplRepo2 {
-	return fakeTmplRepo2{retErr: retErr, actualCallInfo: actualCallInfo}
+func newFakeTmplRepo2(retErr error, trackCallInfo *[]map[string]proto.Message) fakeTmplRepo2 {
+	return fakeTmplRepo2{retErr: retErr, trackCallInfo: trackCallInfo}
 }
 func (t fakeTmplRepo2) GetTemplateInfo(template string) (tmpl.Info, bool) {
 	return tmpl.Info{
 		ConfigureTypeFn: func(types interface{}, builder *config.HandlerBuilder) error {
-			(*t.actualCallInfo) = append(*(t.actualCallInfo), types)
+			(*t.trackCallInfo) = append(*(t.trackCallInfo), types.(map[string]proto.Message))
 			return t.retErr
 		},
 	}, true
@@ -70,7 +70,7 @@ func TestDispatchTypesToHandlers(t *testing.T) {
 		hndlrInstsByTmpls  map[string]instancesByTemplate
 		infrdTyps          map[string]proto.Message
 		wantErr            string
-		wantCallCount      int
+		wantCallInfo       []map[string]proto.Message
 	}{
 		{
 			name:               "simple",
@@ -79,16 +79,16 @@ func TestDispatchTypesToHandlers(t *testing.T) {
 			infrdTyps:          map[string]proto.Message{"inst1": nil},
 			hndlrInstsByTmpls:  map[string]instancesByTemplate{"hndlr": {map[string][]string{"any": {"inst1"}}}},
 			wantErr:            "",
-			wantCallCount:      1,
+			wantCallInfo:       []map[string]proto.Message{{"inst1": nil}},
 		},
 		{
 			name:               "MultiHandlerAndInsts",
 			tmplCnfgrMtdErrRet: nil,
 			handlers:           map[string]*HandlerBuilderInfo{"hndlr": {handlerBuilder: nil}, "hndlr2": {handlerBuilder: nil}},
-			infrdTyps:          map[string]proto.Message{"inst1": &wrappers.Int32Value{1}, "inst2": &wrappers.Int32Value{2}, "inst3": &wrappers.Int32Value{3}},
+			infrdTyps:          map[string]proto.Message{"inst1": nil, "inst2": nil, "inst3": nil},
 			hndlrInstsByTmpls:  map[string]instancesByTemplate{"hndlr": {map[string][]string{"any1": {"inst1", "inst2"}, "any2": {"inst3"}}}},
 			wantErr:            "",
-			wantCallCount:      2,
+			wantCallInfo:       []map[string]proto.Message{{"inst1": nil, "inst2": nil}, {"inst3": nil}},
 		},
 		{
 			name:               "badHandlerRef",
@@ -110,16 +110,16 @@ func TestDispatchTypesToHandlers(t *testing.T) {
 
 	ex, _ := expr.NewCEXLEvaluator(expr.DefaultCacheSize)
 	for _, tt := range tests {
-		actualCallInfo := make([]interface{}, 0)
-		tmplRepo := newFakeTmplRepo2(tt.tmplCnfgrMtdErrRet, &actualCallInfo)
+		trackCallInfo := make([]map[string]proto.Message, 0)
+		tmplRepo := newFakeTmplRepo2(tt.tmplCnfgrMtdErrRet, &trackCallInfo)
 		hc := handlerConfigurer{typeChecker: ex, tmplRepo: tmplRepo}
 		err := hc.dispatchTypesToHandlers(tt.infrdTyps, tt.hndlrInstsByTmpls, tt.handlers)
 		if tt.wantErr == "" {
 			if err != nil {
 				t.Errorf("got err %v\nwant <nil>", err)
 			}
-			if tt.wantCallCount != len(actualCallInfo) {
-				t.Errorf("got %v\nwant %v", len(actualCallInfo), tt.wantCallCount)
+			if !reflect.DeepEqual(tt.wantCallInfo, trackCallInfo) {
+				t.Errorf("got %v\nwant %v", trackCallInfo, tt.wantCallInfo)
 			}
 		} else {
 			if err == nil || !strings.Contains(err.Error(), tt.wantErr) {
