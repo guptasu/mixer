@@ -18,7 +18,6 @@ import (
 	"bytes"
 	"io/ioutil"
 	"os"
-	"reflect"
 	"testing"
 	"time"
 
@@ -36,7 +35,7 @@ import (
 	sample_report "istio.io/mixer/pkg/template/sample/report"
 )
 
-var globalActualHandlerCallInfoToValidate = make(map[string]interface{})
+var globalActualHandlerCallInfoToValidate map[string]interface{}
 
 type (
 	fakeHndlr     struct{}
@@ -128,6 +127,7 @@ func getCnfgs(srvcCnfg string) (declarativeSrvcCnfg *os.File, declaredGlobalCnfg
 }
 
 func testConfigFlow(t *testing.T, declarativeSrvcCnfgFilePath string, declaredGlobalCnfgFilePath string) {
+	globalActualHandlerCallInfoToValidate = make(map[string]interface{})
 	apiPoolSize := 1024
 	adapterPoolSize := 1024
 	identityAttribute := "target.service"
@@ -165,9 +165,12 @@ func testConfigFlow(t *testing.T, declarativeSrvcCnfgFilePath string, declaredGl
 	cnfgMgr.Start()
 
 	// validate globalActualHandlerCallInfoToValidate
-	expectedHandlerCallInfo := map[string]interface{}{}
-	if !reflect.DeepEqual(globalActualHandlerCallInfoToValidate, expectedHandlerCallInfo) {
-		t.Errorf("got %v\nwant %v", globalActualHandlerCallInfoToValidate, expectedHandlerCallInfo)
+	if len(globalActualHandlerCallInfoToValidate) != 2 {
+		t.Errorf("got call count %d\nwant %d", len(globalActualHandlerCallInfoToValidate), 2)
+	}
+
+	if globalActualHandlerCallInfoToValidate["ConfigureSample"] == nil || globalActualHandlerCallInfoToValidate["Build"] == nil {
+		t.Errorf("got call info as : %v. \nwant calls %s and %s to have been called", globalActualHandlerCallInfoToValidate, "ConfigureSample", "Build")
 	}
 }
 

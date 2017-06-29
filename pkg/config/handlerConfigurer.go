@@ -144,7 +144,7 @@ func (h *handlerConfigurer) inferTypes(constructors map[string]*pb.Constructor) 
 		}
 
 		// TODO: The validation on the correctness of the expression is done here. I think it is fine, pls double check.
-		inferredType, err := tmplInfo.InferTypeFn(cnstr.GetParams(), func(expr string) (pbd.ValueType, error) {
+		inferredType, err := tmplInfo.InferTypeFn(cnstr.GetParams().(proto.Message), func(expr string) (pbd.ValueType, error) {
 			return h.typeChecker.EvalType(expr, h.attrDescFinder)
 		})
 		if err != nil {

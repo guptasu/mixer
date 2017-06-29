@@ -3,11 +3,10 @@ package template
 import (
 	"fmt"
 
-	"github.com/golang/protobuf/proto"
-
 	pb "istio.io/api/mixer/v1/config/descriptor"
 	adptConfig "istio.io/mixer/pkg/adapter/config"
 	sample_report "istio.io/mixer/pkg/template/sample/report"
+	"github.com/golang/protobuf/proto"
 )
 
 var (
@@ -20,7 +19,7 @@ var (
 	}
 )
 
-func inferTypeForSampleReport(cp interface{}, tEvalFn TypeEvalFn) (proto.Message, error) {
+func inferTypeForSampleReport(cp proto.Message, tEvalFn TypeEvalFn) (proto.Message, error) {
 	cpb := &sample_report.ConstructorParam{}
 	var err error
 	var ok bool
@@ -51,11 +50,14 @@ func configureTypeForSampleReport(types interface{}, builder *adptConfig.Handler
 		var x sample_report.SampleProcessorBuilder
 		return fmt.Errorf("cannot cast %v into %T", builder, x)
 	}
-	//castedTypes := make(map[string]*sample_report.Type)
-
-	castedTypes, ok := types.(map[string]*sample_report.Type)
-	if !ok {
-		return fmt.Errorf("cannot cast %v into %T", types, map[string]*sample_report.Type{})
+	castedTypes := make(map[string]*sample_report.Type)
+	for k,v := range types.(map[string]proto.Message) {
+		v1, ok := v.(*sample_report.Type)
+		if !ok {
+			return fmt.Errorf("cannot cast %v into %T", v1, sample_report.Type{})
+		}
+		castedTypes[k] = v1
 	}
+
 	return castedBuilder.ConfigureSample(castedTypes)
 }
