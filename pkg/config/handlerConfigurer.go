@@ -137,10 +137,9 @@ func (h *handlerConfigurer) groupHandlerInstancesByTemplate(actions []*pb.Action
 func (h *handlerConfigurer) inferTypes(constructors map[string]*pb.Constructor) (map[string]proto.Message, error) {
 	result := make(map[string]proto.Message)
 	for _, cnstr := range constructors {
-		tmplName := cnstr.GetTemplate()
-		tmplInfo, found := h.tmplRepo.GetTemplateInfo(tmplName)
+		tmplInfo, found := h.tmplRepo.GetTemplateInfo(cnstr.GetTemplate())
 		if !found {
-			return nil, fmt.Errorf("template %s in constructor %v is not registered", tmplName, cnstr)
+			return nil, fmt.Errorf("template %s in constructor %v is not registered", cnstr.GetTemplate(), cnstr)
 		}
 
 		// TODO: The validation on the correctness of the expression is done here. I think it is fine, pls double check.

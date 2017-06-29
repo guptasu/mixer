@@ -35,6 +35,8 @@ import (
 	sample_report "istio.io/mixer/pkg/template/sample/report"
 )
 
+// The adapter implementation fills this data and test can verify what was called.
+// To use this variable across tests, every test should clean this variable value.
 var globalActualHandlerCallInfoToValidate map[string]interface{}
 
 type (
@@ -44,7 +46,8 @@ type (
 
 func (fakeHndlrBldr) Build(cnfg proto.Message) (config2.Handler, error) {
 	globalActualHandlerCallInfoToValidate["Build"] = cnfg
-	return fakeHandler{}, nil
+	fakeHndlrObj := fakeHndlr{}
+	return fakeHndlrObj, nil
 }
 func (fakeHndlrBldr) ConfigureSample(typeParams map[string]*sample_report.Type) error {
 	globalActualHandlerCallInfoToValidate["ConfigureSample"] = typeParams

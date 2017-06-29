@@ -50,7 +50,8 @@ func (t fakeTmplRepo) GetTemplateInfo(template string) (tmpl.Info, bool) {
 }
 
 type fakeTmplRepo2 struct {
-	retErr        error
+	retErr error
+	// used to track what is called and later verify in the test.
 	trackCallInfo *[][]string
 }
 
@@ -131,25 +132,6 @@ func TestDispatchTypesToHandlers(t *testing.T) {
 			if err == nil || !strings.Contains(err.Error(), tt.wantErr) {
 				t.Errorf("got error %v\nwant %v", err, tt.wantErr)
 			}
-		}
-	}
-}
-
-func ensureInterfacesInConfigCallsValid(t *testing.T, expectCallTrackInfo [][]string, actualCallTrackInfo [][]string) {
-	if len(expectCallTrackInfo) != len(actualCallTrackInfo) {
-		t.Errorf("got call info for dispatchTypesToHandlers = %v\nwant %v", actualCallTrackInfo, expectCallTrackInfo)
-	}
-	for _, v := range expectCallTrackInfo {
-		found := false
-		sort.Strings(v)
-		for _, m := range actualCallTrackInfo {
-			sort.Strings(m)
-			if reflect.DeepEqual(v, m) {
-				found = true
-			}
-		}
-		if !found {
-			t.Errorf("got call info for dispatchTypesToHandlers = %v\nwant %v", actualCallTrackInfo, expectCallTrackInfo)
 		}
 	}
 }
@@ -386,4 +368,23 @@ func deepEqualsOrderIndependent(expected map[string]instancesByTemplate, actual 
 		}
 	}
 	return true
+}
+
+func ensureInterfacesInConfigCallsValid(t *testing.T, expectCallTrackInfo [][]string, actualCallTrackInfo [][]string) {
+	if len(expectCallTrackInfo) != len(actualCallTrackInfo) {
+		t.Errorf("got call info for dispatchTypesToHandlers = %v\nwant %v", actualCallTrackInfo, expectCallTrackInfo)
+	}
+	for _, v := range expectCallTrackInfo {
+		found := false
+		sort.Strings(v)
+		for _, m := range actualCallTrackInfo {
+			sort.Strings(m)
+			if reflect.DeepEqual(v, m) {
+				found = true
+			}
+		}
+		if !found {
+			t.Errorf("got call info for dispatchTypesToHandlers = %v\nwant %v", actualCallTrackInfo, expectCallTrackInfo)
+		}
+	}
 }
