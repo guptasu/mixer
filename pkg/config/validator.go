@@ -167,6 +167,12 @@ type (
 		adapterName        string
 		supportedTemplates []adapter.SupportedTemplates
 	}
+
+	// HandlerBuilderInfo stores validated HandlerBuilders.
+	HandlerBuilderInfo struct {
+		handlerBuilder *config.HandlerBuilder
+		isBroken       bool
+	}
 )
 
 func copyDescriptors(m map[string]*pb.GlobalConfig) map[string]*pb.GlobalConfig {
