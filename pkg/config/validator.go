@@ -157,6 +157,7 @@ type (
 	// HandlerBuilderInfo stores validated HandlerBuilders..
 	HandlerBuilderInfo struct {
 		handlerBuilder     *config.HandlerBuilder
+		isBroken           bool
 		handlerCnfg        *pb.Handler
 		supportedTemplates []adapter.SupportedTemplates
 	}
@@ -166,12 +167,6 @@ type (
 		handlerInstance    *config.Handler
 		adapterName        string
 		supportedTemplates []adapter.SupportedTemplates
-	}
-
-	// HandlerBuilderInfo stores validated HandlerBuilders.
-	HandlerBuilderInfo struct {
-		handlerBuilder *config.HandlerBuilder
-		isBroken       bool
 	}
 )
 

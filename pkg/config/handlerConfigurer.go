@@ -38,7 +38,7 @@ type (
 
 // ConfigureHandlers identifies and invokes all the type configuration (per template) that needs
 // to be done on a handler.
-func ConfigureHandlers(actions []*pb.Action, constructors map[string]*pb.Constructor,
+func configureHandlers(actions []*pb.Action, constructors map[string]*pb.Constructor,
 	handlers map[string]*HandlerBuilderInfo, tmplRepo template.Repository, expr expr.TypeChecker, df expr.AttributeDescriptorFinder) error {
 	// Steps
 	// 1. For each handler, based on the actions it is referenced from, we first group all the
