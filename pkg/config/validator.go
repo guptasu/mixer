@@ -563,13 +563,27 @@ func (p *validator) buildHandlers() (ce *adapter.ConfigErrors) {
 		return ce.Appendf("handlerConfig", "failed to configure handler: %v", err)
 	}
 
-	for name, handlerBuilder := range p.handlerBuilderByName {
+	for handler, handlerBuilder := range p.handlerBuilderByName {
+		if handlerBuilder.isBroken {
+			// handler might be crashing, so we do not want to call build on it.
+			continue
+		}
+
+		defer func() {
+			if r := recover(); r != nil {
+				glog.Warningf("handler '%s' panicked with '%v' when trying to build it. Please remove the "+
+					"handler from your configuration to fix the issue. This handler will be skipped and will not" +
+					"receive any requests from the mixer.", handler, r)
+				handlerBuilder.isBroken = true
+			}
+		}()
+
 		handlerInstance, err := (*handlerBuilder.handlerBuilder).Build(handlerBuilder.handlerCnfg.Params.(proto.Message))
 		// TODO Add validation to ensure handlerInstance support all the templates it claims to support.
 		if err != nil {
-			return ce.Appendf("handlerConfig: "+name, "failed to build a handler instance: %v", err)
+			return ce.Appendf("handlerConfig: "+handler, "failed to build a handler instance: %v", err)
 		}
-		p.validated.handlerByName[name] = &HandlerInfo{
+		p.validated.handlerByName[handler] = &HandlerInfo{
 			adapterName:        handlerBuilder.handlerCnfg.GetAdapter(),
 			handlerInstance:    &handlerInstance,
 			supportedTemplates: handlerBuilder.supportedTemplates,
