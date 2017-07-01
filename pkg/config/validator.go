@@ -447,6 +447,7 @@ func (p *validator) validateRules(rules []*pb.Rule, path string, cnstrByName map
 
 // validateConstructors validates the constructors in the service configuration.
 func (p *validator) validateConstructors(constructors []*pb.Constructor) (ce *adapter.ConfigErrors) {
+	// TODO validate constructors have unique names.
 	for _, cnstr := range constructors {
 		if ccfg, err := convertConstructorParam(p.templateRepo, cnstr.GetTemplate(), cnstr.GetParams(), p.strict); err != nil {
 			ce = ce.Appendf(fmt.Sprintf("constructor:%s", cnstr.GetInstanceName()), "failed to parse params: %v", err)
@@ -627,6 +628,7 @@ func (p *validator) validateConstructorConfigs(pk rulesKey, cfg string) (ce *ada
 }
 
 func (p *validator) validateHandlers(cfg string) (ce *adapter.ConfigErrors) {
+	// TODO validate all handlers have unique names.
 	var ferr error
 	var data []byte
 
