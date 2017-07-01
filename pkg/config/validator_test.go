@@ -540,7 +540,7 @@ action_rules:
     - RequestCountByService
 `
 
-	const tmpl1 adapter.SupportedTemplates = "tmpl1"
+	const tmpl1 adapter.SupportedTemplates = "tmp1"
 	evaluator := newFakeExpr()
 	tests := []struct {
 		cfg        string
@@ -591,7 +591,7 @@ action_rules:
 			sSvcConfigNestedMissingHandler,
 			1,
 			map[string]*pb.Constructor{"RequestCountByService": {Template: "tmp1"}},
-			map[string]*HandlerBuilderInfo{"somehandler": {}},
+			map[string]*HandlerBuilderInfo{"somehandler": {supportedTemplates: []adapter.SupportedTemplates{tmpl1}}},
 			[]string{"handler not specified or is invalid"},
 			1,
 			evaluator,
@@ -600,17 +600,17 @@ action_rules:
 			sSvcConfigInvalidSelector,
 			1,
 			map[string]*pb.Constructor{"RequestCountByService": {Template: "tmp1"}},
-			map[string]*HandlerBuilderInfo{"somehandler": {}},
+			map[string]*HandlerBuilderInfo{"somehandler": {supportedTemplates: []adapter.SupportedTemplates{tmpl1}}},
 			[]string{"bad expression"},
 			1, /*even if the selector is wrong the action is correct*/
 			&fakeExpr{err: errors.New("bad expression")},
 		},
 		{
 			sSvcConfigValid,
-			0,
+			1,
 			map[string]*pb.Constructor{"RequestCountByService": {Template: "TemplateHandlerNotSupport"}},
-			map[string]*HandlerBuilderInfo{"somehandler": {}},
-			nil,
+			map[string]*HandlerBuilderInfo{"somehandler": {supportedTemplates: []adapter.SupportedTemplates{tmpl1}}},
+			[]string{"handler does not support the template"},
 			1,
 			evaluator,
 		},

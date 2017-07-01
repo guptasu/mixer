@@ -438,8 +438,6 @@ func (p *validator) validateRules(rules []*pb.Rule, path string, cnstrByName map
 						}
 					}
 				}
-
-				// TODO Validate if the cnstr's template is something that the handler supports.
 			}
 			if !hasError {
 				p.actions = append(p.actions, aa)
@@ -458,8 +456,7 @@ func (p *validator) validateRules(rules []*pb.Rule, path string, cnstrByName map
 
 func containsTmpl(s []adapter.SupportedTemplates, e string) bool {
 	for _, a := range s {
-		var a1 interface{} = a
-		if a1.(string) == e {
+		if a == adapter.SupportedTemplates(e) {
 			return true
 		}
 	}
