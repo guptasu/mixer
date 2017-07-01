@@ -84,39 +84,36 @@ func TestDispatchTypesToHandlers(t *testing.T) {
 		hndlrInstsByTmpls       map[string]instancesByTemplate
 		infrdTyps               map[string]proto.Message
 		wantErr                 string
-		expectCallTrackInfo     [][]string
+		wantCallTrackInfo       [][]string
 	}{
 		{
-			name:                "simple",
-			tmplCnfgrMtdErrRet:  nil,
-			handlers:            map[string]*HandlerBuilderInfo{"hndlr": {handlerBuilder: nil}},
-			infrdTyps:           map[string]proto.Message{"inst1": nil},
-			hndlrInstsByTmpls:   map[string]instancesByTemplate{"hndlr": map[string][]string{"any": {"inst1"}}},
-			wantErr:             "",
-			expectCallTrackInfo: [][]string{{"inst1"}},
+			name:               "simple",
+			tmplCnfgrMtdErrRet: nil,
+			handlers:           map[string]*HandlerBuilderInfo{"hndlr": {handlerBuilder: nil}},
+			infrdTyps:          map[string]proto.Message{"inst1": nil},
+			hndlrInstsByTmpls:  map[string]instancesByTemplate{"hndlr": map[string][]string{"any": {"inst1"}}},
+			wantCallTrackInfo:  [][]string{{"inst1"}},
 		},
 		{
-			name:                "MultiHandlerAndInsts",
-			tmplCnfgrMtdErrRet:  nil,
-			handlers:            map[string]*HandlerBuilderInfo{"hndlr": {handlerBuilder: nil}, "hndlr2": {handlerBuilder: nil}},
-			infrdTyps:           map[string]proto.Message{"inst1": nil, "inst2": nil, "inst3": nil},
-			hndlrInstsByTmpls:   map[string]instancesByTemplate{"hndlr": map[string][]string{"any1": {"inst1", "inst2"}, "any2": {"inst3"}}},
-			wantErr:             "",
-			expectCallTrackInfo: [][]string{{"inst1", "inst2"}, {"inst3"}},
+			name:               "MultiHandlerAndInsts",
+			tmplCnfgrMtdErrRet: nil,
+			handlers:           map[string]*HandlerBuilderInfo{"hndlr": {handlerBuilder: nil}, "hndlr2": {handlerBuilder: nil}},
+			infrdTyps:          map[string]proto.Message{"inst1": nil, "inst2": nil, "inst3": nil},
+			hndlrInstsByTmpls:  map[string]instancesByTemplate{"hndlr": map[string][]string{"any1": {"inst1", "inst2"}, "any2": {"inst3"}}},
+			wantCallTrackInfo:  [][]string{{"inst1", "inst2"}, {"inst3"}},
 		},
 		{
 			name:               "ErrorFromAdapterCode",
 			tmplCnfgrMtdErrRet: fmt.Errorf("error from adapter configure code"),
-			wantErr:            "error from adapter configure code",
 			handlers:           map[string]*HandlerBuilderInfo{"hndlr": {handlerBuilder: nil}},
 			infrdTyps:          map[string]proto.Message{"inst1": nil},
 			hndlrInstsByTmpls:  map[string]instancesByTemplate{"hndlr": map[string][]string{"any": {"inst1"}}},
+			wantErr:            "error from adapter configure code",
 		},
 		{
 			name:                    "PanicFromAdapterCodeRecovery",
 			tmplCnfgrMtdErrRet:      nil,
 			tmplCnfgrMtdShouldPanic: true,
-			wantErr:                 "",
 			handlers:                map[string]*HandlerBuilderInfo{"hndlr": {handlerBuilder: nil}},
 			infrdTyps:               map[string]proto.Message{"inst1": nil},
 			hndlrInstsByTmpls:       map[string]instancesByTemplate{"hndlr": map[string][]string{"any": {"inst1"}}},
@@ -138,7 +135,7 @@ func TestDispatchTypesToHandlers(t *testing.T) {
 			if err != nil {
 				t.Errorf("got err %v\nwant <nil>", err)
 			}
-			ensureInterfacesInConfigCallsValid(t, tt.expectCallTrackInfo, actualCallTrackInfo)
+			ensureInterfacesInConfigCallsValid(t, tt.wantCallTrackInfo, actualCallTrackInfo)
 		} else {
 			if err == nil || !strings.Contains(err.Error(), tt.wantErr) {
 				t.Errorf("got error %v\nwant %v", err, tt.wantErr)
@@ -160,7 +157,6 @@ func TestInferTypes(t *testing.T) {
 			constructors: map[string]*pb.Constructor{"inst1": {"inst1", "tpml1", &empty.Empty{}}},
 			tmplRepo:     newFakeTmplRepo(nil, &wrappers.Int32Value{Value: 1}, true),
 			want:         map[string]proto.Message{"inst1": &wrappers.Int32Value{Value: 1}},
-			wantError:    "",
 		},
 		{
 			name: "MultipleCnstr",

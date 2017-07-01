@@ -67,35 +67,45 @@ func (h *handlerFactory) dispatch(types map[string]proto.Message,
 	for handler, ibt := range instsByTmpls {
 		// handler will always be there because ibt will ensure reference are valid
 		hb := handlers[handler]
-
-		// ConfigureTypeFn calls into handler's configure code which can panic. If that happens, we will
-		// remove the handler from the list of handlers to configure.
-		defer func() {
-			if r := recover(); r != nil {
-				glog.Warningf("handler '%s' panicked with '%v' when trying to configure it. Please remove the "+
-					"handler or fix the configuration.", handler, r)
-				hb.isBroken = true
-			}
-		}()
-
-		for tmpl, insts := range ibt {
-			// tmpl will always be there because ibt will ensure reference are valid
-			ti, _ := h.tmplRepo.GetTemplateInfo(tmpl)
-
-			typsToCnfgr := make(map[string]proto.Message)
-			for _, inst := range insts {
-				// inst will always be there in types because ibt will ensure reference are valid
-				v := types[inst]
-				typsToCnfgr[inst] = v
-			}
-
-			if err := ti.ConfigureTypeFn(typsToCnfgr, hb.handlerBuilder); err != nil {
-				glog.Warningf("Cannot configure handler %s with types %v: %v", handler, typsToCnfgr, err)
-				return err
-			}
+		if err := h.dispatchToHandler(hb, handler, ibt, types); err != nil {
+			return err
 		}
 	}
 
+	return nil
+}
+
+// TODO : Ensure if the behaviour is fine
+// When the adapter returns error, we make it a config error and make the operator fix their config.
+// But when the adapter crashes, we log that we cannot configure the handler, mark it as broken but continue to
+// accept the config.
+func (h *handlerFactory) dispatchToHandler(hb *HandlerBuilderInfo, handler string, ibt instancesByTemplate, types map[string]proto.Message) error {
+	// ConfigureTypeFn calls into handler's configure code which can panic. If that happens, we will
+	// remove the handler from the list of handlers to configure.
+	defer func() {
+		if r := recover(); r != nil {
+			glog.Warningf("handler '%s' panicked with '%v' when trying to configure it. Please remove the "+
+				"handler or fix the configuration.", handler, r)
+			hb.isBroken = true
+		}
+	}()
+
+	for tmpl, insts := range ibt {
+		// tmpl will always be there because ibt will ensure reference are valid
+		ti, _ := h.tmplRepo.GetTemplateInfo(tmpl)
+
+		typsToCnfgr := make(map[string]proto.Message)
+		for _, inst := range insts {
+			// inst will always be there in types because ibt will ensure reference are valid
+			v := types[inst]
+			typsToCnfgr[inst] = v
+		}
+
+		if err := ti.ConfigureTypeFn(typsToCnfgr, hb.handlerBuilder); err != nil {
+			glog.Warningf("Cannot configure handler %s with types %v: %v", handler, typsToCnfgr, err)
+			return err
+		}
+	}
 	return nil
 }
 

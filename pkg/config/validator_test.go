@@ -257,6 +257,18 @@ func TestHandlerConfigValidator(t *testing.T) {
 			map[string]*adapter.BuilderInfo{ /*Empty lookup. Should cause error, Adapter not found*/ },
 			nil, 1, "service.name == “*”", false, ConstGlobalConfig,
 		},
+		{
+			nil,
+			nil,
+			map[string]*adapter.BuilderInfo{
+				"fooHandlerAdapter": {
+					DefaultConfig:          &types.Empty{},
+					ValidateConfig:         func(c proto.Message) error { return nil },
+					CreateHandlerBuilderFn: func() config.HandlerBuilder { return nil },
+				},
+			},
+			nil, 1, "service.name == “*”", false, duplicateCnstrs,
+		},
 	}
 
 	for idx, tt := range tests {
@@ -285,7 +297,7 @@ func TestHandlerConfigValidator(t *testing.T) {
 	}
 }
 
-func TestCacheValidatedHandlerBuilder(t *testing.T) {
+func TestCacheHandlerBuilder(t *testing.T) {
 	evaluator := newFakeExpr()
 
 	var globalConfig = `
@@ -351,19 +363,28 @@ func (f fakeBadHandlerBuilder) Build(cnfg proto.Message) (config.Handler, error)
 	return nil, errors.New("build failed")
 }
 
-func getConfigureHandlerFn(err error) ConfigureHandler {
+type fakePanicHandlerBuilder struct{}
+
+func (f fakePanicHandlerBuilder) Build(cnfg proto.Message) (config.Handler, error) {
+	panic("panic from handler Build method")
+}
+
+func getConfigureHandlerFn(err error) ConfigureHandlerFn {
 	return func(actions []*pb.Action, constructors map[string]*pb.Constructor,
 		handlers map[string]*HandlerBuilderInfo, tmplRepo tmpl.Repository, expr expr.TypeChecker, df expr.AttributeDescriptorFinder) error {
 		return err
 	}
 }
-func TestBuildAndCacheHandlers(t *testing.T) {
+
+func TestBuildHandlers(t *testing.T) {
 	var hbgood config.HandlerBuilder = fakeGoodHandlerBuilder{}
 	var hbb config.HandlerBuilder = fakeBadHandlerBuilder{}
+	var hpb config.HandlerBuilder = fakePanicHandlerBuilder{}
 	tests := []struct {
-		configureHandler     ConfigureHandler
+		configureHandler     ConfigureHandlerFn
 		handlerBuilderByName map[string]*HandlerBuilderInfo
 		expectedError        string
+		buildPanic           bool
 	}{
 		{
 			getConfigureHandlerFn(nil),
@@ -373,6 +394,7 @@ func TestBuildAndCacheHandlers(t *testing.T) {
 				},
 			},
 			"",
+			false,
 		},
 		{
 			getConfigureHandlerFn(errors.New("some error during configuration")),
@@ -382,6 +404,7 @@ func TestBuildAndCacheHandlers(t *testing.T) {
 				},
 			},
 			"some error during configuration",
+			false,
 		},
 		{
 			getConfigureHandlerFn(nil),
@@ -391,6 +414,17 @@ func TestBuildAndCacheHandlers(t *testing.T) {
 				},
 			},
 			"failed to build a handler instance",
+			false,
+		},
+		{
+			getConfigureHandlerFn(nil),
+			map[string]*HandlerBuilderInfo{
+				"foo": {
+					handlerBuilder: &hpb, handlerCnfg: &pb.Handler{Params: &types.Empty{}},
+				},
+			},
+			"",
+			true,
 		},
 	}
 
@@ -399,28 +433,34 @@ func TestBuildAndCacheHandlers(t *testing.T) {
 			p := newValidator(nil, nil, nil, tt.configureHandler, nil, nil, true, nil)
 			p.handlerBuilderByName = tt.handlerBuilderByName
 			err := p.buildHandlers()
-			if tt.expectedError == "" {
-				if len(p.validated.handlerByName) == len(tt.handlerBuilderByName) {
-					for k := range tt.handlerBuilderByName {
-						if _, ok := p.validated.handlerByName[k]; !ok {
-							t.Fatalf("got validated.handlerByName[%s] = nil, want !nil", k)
-						}
-					}
-				} else {
-					t.Fatalf("got: validated.handlerByName %v, want: '%v'", p.validated.handlerByName, tt.handlerBuilderByName)
+
+			if tt.buildPanic {
+				if !tt.handlerBuilderByName["foo"].isBroken {
+					t.Error("The handler should be marked as broken.")
 				}
 			} else {
-				if !strings.Contains(err.Error(), tt.expectedError) {
-					t.Fatalf("got %s, want %s", tt.expectedError, err.Error())
+				if tt.expectedError == "" {
+					if len(p.validated.handlerByName) == len(tt.handlerBuilderByName) {
+						for k := range tt.handlerBuilderByName {
+							if _, ok := p.validated.handlerByName[k]; !ok {
+								t.Fatalf("got validated.handlerByName[%s] = nil, want !nil", k)
+							}
+						}
+					} else {
+						t.Fatalf("got: validated.handlerByName %v, want: '%v'", p.validated.handlerByName, tt.handlerBuilderByName)
+					}
+				} else {
+					if !strings.Contains(err.Error(), tt.expectedError) {
+						t.Fatalf("got %s, want %s", tt.expectedError, err.Error())
+					}
 				}
 			}
+
 		})
 	}
 }
 
-type fakeTemplateRepo struct {
-	templateConstructorParamMap map[string]proto.Message
-}
+type fakeTemplateRepo struct{ templateConstructorParamMap map[string]proto.Message }
 
 func newFakeTemplateRepo(templateConstructorParamMap map[string]proto.Message) tmpl.Repository {
 	return fakeTemplateRepo{templateConstructorParamMap: templateConstructorParamMap}
@@ -500,6 +540,7 @@ action_rules:
     - RequestCountByService
 `
 
+	const tmpl1 adapter.SupportedTemplates = "tmpl1"
 	evaluator := newFakeExpr()
 	tests := []struct {
 		cfg        string
@@ -513,8 +554,8 @@ action_rules:
 		{
 			sSvcConfigValid,
 			0,
-			map[string]*pb.Constructor{"RequestCountByService": {}},
-			map[string]*HandlerBuilderInfo{"somehandler": {}},
+			map[string]*pb.Constructor{"RequestCountByService": {Template: "tmp1"}},
+			map[string]*HandlerBuilderInfo{"somehandler": {supportedTemplates: []adapter.SupportedTemplates{tmpl1}}},
 			nil,
 			1,
 			evaluator,
@@ -522,8 +563,8 @@ action_rules:
 		{
 			sSvcConfigNestedValid,
 			0,
-			map[string]*pb.Constructor{"RequestCountByService": {}},
-			map[string]*HandlerBuilderInfo{"somehandler": {}},
+			map[string]*pb.Constructor{"RequestCountByService": {Template: "tmp1"}},
+			map[string]*HandlerBuilderInfo{"somehandler": {supportedTemplates: []adapter.SupportedTemplates{tmpl1}}},
 			nil,
 			2,
 			evaluator,
@@ -540,7 +581,7 @@ action_rules:
 		{
 			sSvcConfigMissingHandler,
 			1,
-			map[string]*pb.Constructor{"RequestCountByService": {}},
+			map[string]*pb.Constructor{"RequestCountByService": {Template: "tmp1"}},
 			map[string]*HandlerBuilderInfo{"somehandler": {}},
 			[]string{"handler not specified or is invalid"},
 			0,
@@ -549,7 +590,7 @@ action_rules:
 		{
 			sSvcConfigNestedMissingHandler,
 			1,
-			map[string]*pb.Constructor{"RequestCountByService": {}},
+			map[string]*pb.Constructor{"RequestCountByService": {Template: "tmp1"}},
 			map[string]*HandlerBuilderInfo{"somehandler": {}},
 			[]string{"handler not specified or is invalid"},
 			1,
@@ -558,11 +599,20 @@ action_rules:
 		{
 			sSvcConfigInvalidSelector,
 			1,
-			map[string]*pb.Constructor{"RequestCountByService": {}},
+			map[string]*pb.Constructor{"RequestCountByService": {Template: "tmp1"}},
 			map[string]*HandlerBuilderInfo{"somehandler": {}},
 			[]string{"bad expression"},
 			1, /*even if the selector is wrong the action is correct*/
 			&fakeExpr{err: errors.New("bad expression")},
+		},
+		{
+			sSvcConfigValid,
+			0,
+			map[string]*pb.Constructor{"RequestCountByService": {Template: "TemplateHandlerNotSupport"}},
+			map[string]*HandlerBuilderInfo{"somehandler": {}},
+			nil,
+			1,
+			evaluator,
 		},
 	}
 
@@ -593,26 +643,6 @@ action_rules:
 			}
 		})
 	}
-}
-
-func containErrors(actualErrors []error, expectedErrorStrs []string) bool {
-	if len(actualErrors) != len(expectedErrorStrs) {
-		return false
-	}
-
-	for _, exp := range expectedErrorStrs {
-		match := false
-		for _, actualError := range actualErrors {
-			if strings.Contains(actualError.Error(), exp) {
-				match = true
-				break
-			}
-		}
-		if !match {
-			return false
-		}
-	}
-	return true
 }
 
 func TestValidateConstructorConfigs(t *testing.T) {
@@ -646,6 +676,17 @@ constructors:
     check_expression: src.ip
     blacklist: true
 `
+	const sSvcConfigDuplicateCnstrs = `
+subject: namespace:ns
+revision: "2022"
+constructors:
+- instanceName: RequestCountByService
+  template: FooTemplate
+  params:
+- instanceName: RequestCountByService
+  template: FooTemplate
+  params:
+`
 
 	evaluator := newFakeExpr()
 	tests := []struct {
@@ -671,6 +712,12 @@ constructors:
 			1,
 			newFakeTemplateRepo(map[string]proto.Message{"FooTemplate": &types.Empty{}}),
 			[]string{"failed to decode constructor params"},
+		},
+		{
+			sSvcConfigDuplicateCnstrs,
+			1,
+			newFakeTemplateRepo(map[string]proto.Message{"FooTemplate": &types.Empty{}}),
+			[]string{"duplicate constructors with same instanceNames "},
 		},
 	}
 
@@ -851,6 +898,16 @@ adapters:
 `
 const ConstGlobalConfig = ConstGlobalConfigValid + `
       unknown_field: true
+`
+
+var duplicateCnstrs = `
+subject: "namespace:ns"
+revision: "2022"
+handlers:
+  - name: fooHandler
+    adapter: fooHandlerAdapter
+  - name: fooHandler
+    adapter: fooHandlerAdapter
 `
 
 const sSvcConfig1 = `
@@ -1132,4 +1189,24 @@ quotas:
 			}
 		})
 	}
+}
+
+func containErrors(actualErrors []error, expectedErrorStrs []string) bool {
+	if len(actualErrors) != len(expectedErrorStrs) {
+		return false
+	}
+
+	for _, exp := range expectedErrorStrs {
+		match := false
+		for _, actualError := range actualErrors {
+			if strings.Contains(actualError.Error(), exp) {
+				match = true
+				break
+			}
+		}
+		if !match {
+			return false
+		}
+	}
+	return true
 }
