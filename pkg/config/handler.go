@@ -36,9 +36,9 @@ type (
 	instancesByTemplate map[string][]string
 )
 
-// ConfigureHandlers identifies and invokes all the type configuration (per template) that needs
+// SetupHandlers identifies and invokes all the type configuration (per template) that needs
 // to be done on a handler.
-func configureHandlers(actions []*pb.Action, constructors map[string]*pb.Constructor,
+func SetupHandlers(actions []*pb.Action, constructors map[string]*pb.Constructor,
 	handlers map[string]*HandlerBuilderInfo, tmplRepo template.Repository, expr expr.TypeChecker, df expr.AttributeDescriptorFinder) error {
 	// Steps
 	// 1. For each handler, based on the actions it is referenced from, we first group all the
@@ -48,18 +48,18 @@ func configureHandlers(actions []*pb.Action, constructors map[string]*pb.Constru
 	// constructors.
 	// 3. Using data from #1 and #2, for each handler and for each template within it, we call configure*TemplateName*
 	// with all the inferred types for all the instanceNames that belong to handler-template group.
-	configurer := handlerFactory{tmplRepo: tmplRepo, typeChecker: expr, attrDescFinder: df}
+	handlerFactory := handlerFactory{tmplRepo: tmplRepo, typeChecker: expr, attrDescFinder: df}
 
-	iTypes, err := configurer.inferTypes(constructors)
+	iTypes, err := handlerFactory.inferTypes(constructors)
 	if err != nil {
 		return err
 	}
-	grpHandlers, err := configurer.groupByTmpl(actions, constructors, handlers)
+	grpHandlers, err := handlerFactory.groupByTmpl(actions, constructors, handlers)
 	if err != nil {
 		return err
 	}
 
-	return configurer.dispatch(iTypes, grpHandlers, handlers)
+	return handlerFactory.dispatch(iTypes, grpHandlers, handlers)
 }
 
 func (h *handlerFactory) dispatch(types map[string]proto.Message,

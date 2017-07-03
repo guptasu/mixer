@@ -98,7 +98,7 @@ func NewManager(eval expr.Evaluator, aspectFinder AspectValidatorFinder, builder
 		identityAttribute:       identityAttribute,
 		identityAttributeDomain: identityAttributeDomain,
 		validate: func(cfg map[string]string) (*Validated, descriptor.Finder, *adapter.ConfigErrors) {
-			v := newValidator(aspectFinder, builderFinder, builderInfoFinder, configureHandlers, template.NewTemplateRepository(), findAspects, true, eval)
+			v := newValidator(aspectFinder, builderFinder, builderInfoFinder, SetupHandlers, template.NewTemplateRepository(), findAspects, true, eval)
 			rt, ce := v.validate(cfg)
 			return rt, v.descriptorFinder, ce
 		},
