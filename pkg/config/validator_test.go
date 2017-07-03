@@ -335,7 +335,7 @@ handlers:
 			p := newValidator(mgr.FindAspectValidator, mgr.FindAdapterValidator, mgr.FindBuilderInfo, fakeConfigureHandler, nil,
 				mgr.AdapterToAspectMapperFunc, tt.strict, evaluator)
 			_ = p.validateHandlers(tt.cfg)
-			v, ok := p.handlerBuilderByName["fooHandler"]
+			v, ok := p.hndlrBldrByName["fooHandler"]
 			if tt.nerrors > 0 && ok {
 				t.Fatalf("got p.handlerBuilderByName[\"fooHandler\"] = %v, want: <nil>", v)
 
@@ -344,9 +344,9 @@ handlers:
 				if !ok {
 					t.Fatalf("got p.handlerBuilderByName[\"fooHandler\"] = %v, want: <nil>", v)
 
-				} else if !reflect.DeepEqual(p.handlerBuilderByName["fooHandler"].supportedTemplates, []adapter.SupportedTemplates{testSupportedTemplate}) {
+				} else if !reflect.DeepEqual(p.hndlrBldrByName["fooHandler"].supportedTemplates, []adapter.SupportedTemplates{testSupportedTemplate}) {
 					t.Fatalf("got p.handlerBuilderByName[\"fooHandler\"]: %v, Expected: =%v",
-						p.handlerBuilderByName["fooHandler"].supportedTemplates, []adapter.SupportedTemplates{testSupportedTemplate})
+						p.hndlrBldrByName["fooHandler"].supportedTemplates, []adapter.SupportedTemplates{testSupportedTemplate})
 				}
 			}
 		})
@@ -431,7 +431,7 @@ func TestBuildHandlers(t *testing.T) {
 	for idx, tt := range tests {
 		t.Run(strconv.Itoa(idx), func(t *testing.T) {
 			p := newValidator(nil, nil, nil, tt.configureHandler, nil, nil, true, nil)
-			p.handlerBuilderByName = tt.handlerBuilderByName
+			p.hndlrBldrByName = tt.handlerBuilderByName
 			err := p.buildHandlers()
 
 			if tt.buildPanic {
@@ -623,8 +623,8 @@ action_rules:
 			var ce *adapter.ConfigErrors
 
 			p := newValidator(nil, nil, nil, nil, tdf, nil, true, tt.expr)
-			p.constructorByName = tt.cnstrMap
-			p.handlerBuilderByName = tt.handlerMap
+			p.cnstrByName = tt.cnstrMap
+			p.hndlrBldrByName = tt.handlerMap
 			ce = p.validateRulesConfig(globalRulesKey, tt.cfg)
 
 			cok := ce == nil

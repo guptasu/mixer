@@ -88,17 +88,17 @@ func newValidator(managerFinder AspectValidatorFinder, adapterFinder BuilderVali
 	builderInfoFinder BuilderInfoFinder, setupHandlerFn SetupHandlerFn, templateRepo template.Repository,
 	findAspects AdapterToAspectMapper, strict bool, typeChecker expr.TypeChecker) *validator {
 	return &validator{
-		managerFinder:        managerFinder,
-		adapterFinder:        adapterFinder,
-		builderInfoFinder:    builderInfoFinder,
-		setupHandler:         setupHandlerFn,
-		templateRepo:         templateRepo,
-		findAspects:          findAspects,
-		constructorByName:    make(map[string]*pb.Constructor),
-		actions:              make([]*pb.Action, 0),
-		strict:               strict,
-		typeChecker:          typeChecker,
-		handlerBuilderByName: make(map[string]*HandlerBuilderInfo),
+		managerFinder:   managerFinder,
+		adapterFinder:   adapterFinder,
+		bldrInfoFinder:  builderInfoFinder,
+		setupHandler:    setupHandlerFn,
+		tmplRepo:        templateRepo,
+		findAspects:     findAspects,
+		cnstrByName:     make(map[string]*pb.Constructor),
+		actions:         make([]*pb.Action, 0),
+		strict:          strict,
+		typeChecker:     typeChecker,
+		hndlrBldrByName: make(map[string]*HandlerBuilderInfo),
 		validated: &Validated{
 			adapterByName: make(map[adapterKey]*pb.Adapter),
 			handlerByName: make(map[string]*HandlerInfo),
@@ -113,19 +113,19 @@ func newValidator(managerFinder AspectValidatorFinder, adapterFinder BuilderVali
 type (
 	// validator is the Configuration validator.
 	validator struct {
-		managerFinder        AspectValidatorFinder
-		adapterFinder        BuilderValidatorFinder
-		builderInfoFinder    BuilderInfoFinder
-		setupHandler         SetupHandlerFn
-		templateRepo         template.Repository
-		findAspects          AdapterToAspectMapper
-		descriptorFinder     descriptor.Finder
-		handlerBuilderByName map[string]*HandlerBuilderInfo
-		constructorByName    map[string]*pb.Constructor
-		actions              []*pb.Action
-		strict               bool
-		typeChecker          expr.TypeChecker
-		validated            *Validated
+		managerFinder    AspectValidatorFinder
+		adapterFinder    BuilderValidatorFinder
+		bldrInfoFinder   BuilderInfoFinder
+		setupHandler     SetupHandlerFn
+		tmplRepo         template.Repository
+		findAspects      AdapterToAspectMapper
+		descriptorFinder descriptor.Finder
+		hndlrBldrByName  map[string]*HandlerBuilderInfo
+		cnstrByName      map[string]*pb.Constructor
+		actions          []*pb.Action
+		strict           bool
+		typeChecker      expr.TypeChecker
+		validated        *Validated
 	}
 
 	adapterKey struct {
@@ -164,9 +164,9 @@ type (
 
 	// HandlerInfo stores validated and configured Handlers.
 	HandlerInfo struct {
-		handlerInstance    *config.Handler
-		adapterName        string
-		supportedTemplates []adapter.SupportedTemplates
+		instance       *config.Handler
+		adapterName    string
+		supportedTmpls []adapter.SupportedTemplates
 	}
 )
 
@@ -418,13 +418,13 @@ func (p *validator) validateRules(rules []*pb.Rule, path string) (ce *adapter.Co
 		path = path + "/" + rule.GetSelector()
 		for idx, aa := range rule.GetActions() {
 			hasError := false
-			hndlr := p.handlerBuilderByName[aa.GetHandler()]
+			hndlr := p.hndlrBldrByName[aa.GetHandler()]
 			if hndlr == nil {
 				hasError = true
 				ce = ce.Appendf(fmt.Sprintf("%s[%d]", path, idx), "handler not specified or is invalid")
 			}
 			for _, instanceName := range aa.GetInstances() {
-				cnstr := p.constructorByName[instanceName]
+				cnstr := p.cnstrByName[instanceName]
 				if cnstr == nil {
 					hasError = true
 					ce = ce.Appendf(fmt.Sprintf("%s[%d]", path, idx), "instance '%s' is not defined.", instanceName)
@@ -466,16 +466,16 @@ func containsTmpl(s []adapter.SupportedTemplates, e string) bool {
 // validateConstructors validates the constructors in the service configuration.
 func (p *validator) validateConstructors(constructors []*pb.Constructor) (ce *adapter.ConfigErrors) {
 	for _, cnstr := range constructors {
-		if c, ok := p.constructorByName[cnstr.GetInstanceName()]; ok {
+		if c, ok := p.cnstrByName[cnstr.GetInstanceName()]; ok {
 			ce = ce.Appendf(fmt.Sprintf("constructor:%s", cnstr.GetInstanceName()), "duplicate constructors with same instanceNames %v and %v", *c, *cnstr)
 			continue
 		}
-		if ccfg, err := convertConstructorParam(p.templateRepo, cnstr.GetTemplate(), cnstr.GetParams(), p.strict); err != nil {
+		if ccfg, err := convertConstructorParam(p.tmplRepo, cnstr.GetTemplate(), cnstr.GetParams(), p.strict); err != nil {
 			ce = ce.Appendf(fmt.Sprintf("constructor:%s", cnstr.GetInstanceName()), "failed to parse params: %v", err)
 			continue
 		} else {
 			cnstr.Params = ccfg
-			p.constructorByName[cnstr.GetInstanceName()] = cnstr
+			p.cnstrByName[cnstr.GetInstanceName()] = cnstr
 		}
 	}
 	return ce
@@ -581,18 +581,18 @@ func (p *validator) validate(cfg map[string]string) (rt *Validated, ce *adapter.
 
 // TODO: What about partial failures. In the middle of building handlers,
 // adapter code might have made connections to the back-ends, should we
-// call close on built handlers in case there is an error after configuring few handlers.
+// call close on built handlers in case there is an error after building few handlers.
 func (p *validator) buildHandlers() (ce *adapter.ConfigErrors) {
-	if err := p.setupHandler(p.actions, p.constructorByName, p.handlerBuilderByName, p.templateRepo, p.typeChecker, p.descriptorFinder); err != nil {
+	if err := p.setupHandler(p.actions, p.cnstrByName, p.hndlrBldrByName, p.tmplRepo, p.typeChecker, p.descriptorFinder); err != nil {
 		return ce.Appendf("handlerConfig", "failed to configure handler: %v", err)
 	}
 
-	for handler, handlerBuilder := range p.handlerBuilderByName {
-		if handlerBuilder.isBroken {
+	for handler, builder := range p.hndlrBldrByName {
+		if builder.isBroken {
 			// handler is broken, we should not build and cache it.
 			continue
 		}
-		if err := p.buildHandler(handlerBuilder, handler); err != nil {
+		if err := p.buildHandler(builder, handler); err != nil {
 			return err
 		}
 	}
@@ -603,25 +603,25 @@ func (p *validator) buildHandlers() (ce *adapter.ConfigErrors) {
 // When the adapter returns error, we make it a config error and make the operator fix their config.
 // But when the adapter crashes, we log that we cannot configure the handler, mark it as broken but continue to
 // accept the config.
-func (p *validator) buildHandler(handlerBuilder *HandlerBuilderInfo, handler string) (ce *adapter.ConfigErrors) {
+func (p *validator) buildHandler(builder *HandlerBuilderInfo, handler string) (ce *adapter.ConfigErrors) {
 	defer func() {
 		if r := recover(); r != nil {
 			glog.Warningf("handler '%s' panicked with '%v' when trying to build it. Please remove the "+
 				"handler from your configuration to fix the issue. This handler will be skipped and will not"+
 				"receive any requests from the mixer.", handler, r)
-			handlerBuilder.isBroken = true
+			builder.isBroken = true
 		}
 	}()
 
-	handlerInstance, err := (*handlerBuilder.handlerBuilder).Build(handlerBuilder.handlerCnfg.Params.(proto.Message))
+	instance, err := (*builder.handlerBuilder).Build(builder.handlerCnfg.Params.(proto.Message))
 	// TODO Add validation to ensure handlerInstance support all the templates it claims to support.
 	if err != nil {
 		return ce.Appendf("handlerConfig: "+handler, "failed to build a handler instance: %v", err)
 	}
 	p.validated.handlerByName[handler] = &HandlerInfo{
-		adapterName:        handlerBuilder.handlerCnfg.GetAdapter(),
-		handlerInstance:    &handlerInstance,
-		supportedTemplates: handlerBuilder.supportedTemplates,
+		adapterName:    builder.handlerCnfg.GetAdapter(),
+		instance:       &instance,
+		supportedTmpls: builder.supportedTemplates,
 	}
 
 	return nil
@@ -694,11 +694,11 @@ func (p *validator) validateHandlers(cfg string) (ce *adapter.ConfigErrors) {
 	var err *adapter.ConfigErrors
 
 	for _, hh := range m.GetHandlers() {
-		if c, ok := p.handlerBuilderByName[hh.GetName()]; ok {
+		if c, ok := p.hndlrBldrByName[hh.GetName()]; ok {
 			ce = ce.Appendf(fmt.Sprintf("handler:%s", hh.GetName()), "duplicate handlers with same name %v and %v", *c, *hh)
 			continue
 		}
-		bi, found := p.builderInfoFinder(hh.Adapter)
+		bi, found := p.bldrInfoFinder(hh.Adapter)
 		if !found {
 			ce = ce.Appendf("handlerConfig", "Adapter %s referenced in Handler %s is not found", hh.GetAdapter(), hh.GetName())
 			continue
@@ -710,7 +710,7 @@ func (p *validator) validateHandlers(cfg string) (ce *adapter.ConfigErrors) {
 
 		hh.Params = hcfg
 		hb := bi.CreateHandlerBuilderFn()
-		p.handlerBuilderByName[hh.GetName()] = &HandlerBuilderInfo{handlerCnfg: hh, handlerBuilder: &hb, supportedTemplates: bi.SupportedTemplates}
+		p.hndlrBldrByName[hh.GetName()] = &HandlerBuilderInfo{handlerCnfg: hh, handlerBuilder: &hb, supportedTemplates: bi.SupportedTemplates}
 	}
 	return
 }
