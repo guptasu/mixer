@@ -369,7 +369,7 @@ func (f fakePanicHandlerBuilder) Build(cnfg proto.Message) (config.Handler, erro
 	panic("panic from handler Build method")
 }
 
-func getConfigureHandlerFn(err error) ConfigureHandlerFn {
+func getConfigureHandlerFn(err error) SetupHandlerFn {
 	return func(actions []*pb.Action, constructors map[string]*pb.Constructor,
 		handlers map[string]*HandlerBuilderInfo, tmplRepo tmpl.Repository, expr expr.TypeChecker, df expr.AttributeDescriptorFinder) error {
 		return err
@@ -381,7 +381,7 @@ func TestBuildHandlers(t *testing.T) {
 	var hbb config.HandlerBuilder = fakeBadHandlerBuilder{}
 	var hpb config.HandlerBuilder = fakePanicHandlerBuilder{}
 	tests := []struct {
-		configureHandler     ConfigureHandlerFn
+		configureHandler     SetupHandlerFn
 		handlerBuilderByName map[string]*HandlerBuilderInfo
 		expectedError        string
 		buildPanic           bool

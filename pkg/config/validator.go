@@ -77,21 +77,21 @@ type (
 	// BuilderInfoFinder is used to find specific handlers BuilderInfo for configuration.
 	BuilderInfoFinder func(name string) (*adapter.BuilderInfo, bool)
 
-	// ConfigureHandlerFn is used to configure handler implementation with Types associated with all the templates that
+	// SetupHandlerFn is used to configure handler implementation with Types associated with all the templates that
 	// it supports.
-	ConfigureHandlerFn func(actions []*pb.Action, constructors map[string]*pb.Constructor,
+	SetupHandlerFn func(actions []*pb.Action, constructors map[string]*pb.Constructor,
 		handlers map[string]*HandlerBuilderInfo, tmplRepo template.Repository, expr expr.TypeChecker, df expr.AttributeDescriptorFinder) error
 )
 
 // newValidator returns a validator given component validators.
 func newValidator(managerFinder AspectValidatorFinder, adapterFinder BuilderValidatorFinder,
-	builderInfoFinder BuilderInfoFinder, configureHandler ConfigureHandlerFn, templateRepo template.Repository,
+	builderInfoFinder BuilderInfoFinder, setupHandlerFn SetupHandlerFn, templateRepo template.Repository,
 	findAspects AdapterToAspectMapper, strict bool, typeChecker expr.TypeChecker) *validator {
 	return &validator{
 		managerFinder:        managerFinder,
 		adapterFinder:        adapterFinder,
 		builderInfoFinder:    builderInfoFinder,
-		configureHandler:     configureHandler,
+		setupHandler:         setupHandlerFn,
 		templateRepo:         templateRepo,
 		findAspects:          findAspects,
 		constructorByName:    make(map[string]*pb.Constructor),
@@ -116,7 +116,7 @@ type (
 		managerFinder        AspectValidatorFinder
 		adapterFinder        BuilderValidatorFinder
 		builderInfoFinder    BuilderInfoFinder
-		configureHandler     ConfigureHandlerFn
+		setupHandler         SetupHandlerFn
 		templateRepo         template.Repository
 		findAspects          AdapterToAspectMapper
 		descriptorFinder     descriptor.Finder
@@ -583,7 +583,7 @@ func (p *validator) validate(cfg map[string]string) (rt *Validated, ce *adapter.
 // adapter code might have made connections to the back-ends, should we
 // call close on built handlers in case there is an error after configuring few handlers.
 func (p *validator) buildHandlers() (ce *adapter.ConfigErrors) {
-	if err := p.configureHandler(p.actions, p.constructorByName, p.handlerBuilderByName, p.templateRepo, p.typeChecker, p.descriptorFinder); err != nil {
+	if err := p.setupHandler(p.actions, p.constructorByName, p.handlerBuilderByName, p.templateRepo, p.typeChecker, p.descriptorFinder); err != nil {
 		return ce.Appendf("handlerConfig", "failed to configure handler: %v", err)
 	}
 
