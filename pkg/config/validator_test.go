@@ -611,7 +611,7 @@ action_rules:
 			map[string]*pb.Constructor{"RequestCountByService": {Template: "TemplateHandlerNotSupport"}},
 			map[string]*HandlerBuilderInfo{"somehandler": {supportedTemplates: []adapter.SupportedTemplates{tmpl1}}},
 			[]string{"handler does not support the template"},
-			1,
+			0,
 			evaluator,
 		},
 	}
@@ -623,7 +623,9 @@ action_rules:
 			var ce *adapter.ConfigErrors
 
 			p := newValidator(nil, nil, nil, nil, tdf, nil, true, tt.expr)
-			ce = p.validateRulesConfig(globalRulesKey, tt.cfg, tt.cnstrMap, tt.handlerMap)
+			p.constructorByName = tt.cnstrMap
+			p.handlerBuilderByName = tt.handlerMap
+			ce = p.validateRulesConfig(globalRulesKey, tt.cfg)
 
 			cok := ce == nil
 			ok := tt.nerrors == 0
