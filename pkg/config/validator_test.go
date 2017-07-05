@@ -575,7 +575,7 @@ func TestConvertAdapterParamsErrors(t *testing.T) {
 			}, "ABC", tt.params, true)
 
 			if !strings.Contains(ce.Error(), tt.cv.err) {
-				t.Errorf("got %s, want %s. ", ce.Error(), tt.cv.err)
+				t.Errorf("got %s,\nwant %s.", ce.Error(), tt.cv.err)
 			}
 		})
 	}
@@ -638,36 +638,14 @@ quotas:
 				if tt.err == "" {
 					t.Fatalf("validateDescriptors = '%s', wanted no err", err.Error())
 				} else if !strings.Contains(err.Error(), tt.err) {
-					t.Fatalf("got: '%s', want errors containing the string '%s', ", err.Error(), tt.err)
+					t.Fatalf("got: '%s', want errors containing the string '%s'", err.Error(), tt.err)
 				}
 			}
 		})
 	}
 }
 
-func containErrors(actualErrors []error, expectedErrorStrs []string) bool {
-	if len(actualErrors) != len(expectedErrorStrs) {
-		return false
-	}
-
-	for _, exp := range expectedErrorStrs {
-		match := false
-		for _, actualError := range actualErrors {
-			if strings.Contains(actualError.Error(), exp) {
-				match = true
-				break
-			}
-		}
-		if !match {
-			return false
-		}
-	}
-	return true
-}
-
-
 func TestConvertHandlerParamsErrors(t *testing.T) {
-
 	tTable := []struct {
 		params         interface{}
 		defaultCnfg    proto.Message
@@ -1230,4 +1208,24 @@ constructors:
 			}
 		})
 	}
+}
+
+func containErrors(actualErrors []error, expectedErrorStrs []string) bool {
+	if len(actualErrors) != len(expectedErrorStrs) {
+		return false
+	}
+
+	for _, exp := range expectedErrorStrs {
+		match := false
+		for _, actualError := range actualErrors {
+			if strings.Contains(actualError.Error(), exp) {
+				match = true
+				break
+			}
+		}
+		if !match {
+			return false
+		}
+	}
+	return true
 }
