@@ -802,7 +802,7 @@ func convertAspectParams(f AspectValidatorFinder, name string, params interface{
 
 // decode interprets src interface{} as the specified proto message.
 // if strict is true returns error on unknown fields.
-// TODO dst at message CnstParam {Value string} fails to decode value: 1. Seems weird, investigate
+// TODO dst at message CnstParam {Value string} fails to decode `value: 1`. Seems weird, investigate
 // The constructorParams are all stringified for all ValueType items, so if a value field is meant to be
 // of ValueType, it's expression can be anything and we are suppose to infer type from it. To parse the
 // field we need a proto, which is our synthesized ConstructorParam from each template. Due to the limitation

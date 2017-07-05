@@ -182,6 +182,472 @@ func TestConfigValidatorError(t *testing.T) {
 	}
 }
 
+func TestFullConfigValidator(tt *testing.T) {
+	fe := newFakeExpr()
+	ctable := []struct {
+		cerr     *adapter.ConfigError
+		ada      map[string]adapter.ConfigValidator
+		asp      map[Kind]AspectValidator
+		selector string
+		strict   bool
+		cfg      string
+		exprErr  error
+	}{
+		{nil,
+			map[string]adapter.ConfigValidator{
+				"denyChecker": &lc{},
+				"metrics":     &lc{},
+				"listchecker": &lc{},
+			},
+			map[Kind]AspectValidator{
+				DenialsKind: &ac{},
+				MetricsKind: &ac{},
+				ListsKind:   &ac{},
+			},
+			"service.name == “*”", false, sSvcConfig2, nil},
+		{nil,
+			map[string]adapter.ConfigValidator{
+				"denyChecker": &lc{},
+				"metrics":     &lc{},
+				"listchecker": &lc{},
+			},
+			map[Kind]AspectValidator{
+				DenialsKind: &ac{},
+				MetricsKind: &ac{},
+				ListsKind:   &ac{},
+			},
+			"", false, sSvcConfig2, nil},
+		{&adapter.ConfigError{Field: "namedAdapter", Underlying: errors.New("lists//denychecker.2 not available")},
+			map[string]adapter.ConfigValidator{
+				"denyChecker": &lc{},
+				"metrics":     &lc{},
+				"listchecker": &lc{},
+			},
+			map[Kind]AspectValidator{
+				DenialsKind: &ac{},
+				MetricsKind: &ac{},
+				ListsKind:   &ac{},
+			},
+			"", false, sSvcConfig3, nil},
+		{&adapter.ConfigError{Field: ":Selector service.name == “*”", Underlying: errors.New("invalid expression")},
+			map[string]adapter.ConfigValidator{
+				"denyChecker": &lc{},
+				"metrics":     &lc{},
+				"listchecker": &lc{},
+			},
+			map[Kind]AspectValidator{
+				DenialsKind: &ac{},
+				MetricsKind: &ac{},
+				ListsKind:   &ac{},
+			},
+			"service.name == “*”", false, sSvcConfig1, errors.New("invalid expression")},
+	}
+	for idx, ctx := range ctable {
+		tt.Run(fmt.Sprintf("[%d]", idx), func(t *testing.T) {
+			mgr := newVfinder(ctx.ada, ctx.asp, nil)
+			fe.err = ctx.exprErr
+			p := newValidator(mgr.FindAspectValidator, mgr.FindAdapterValidator, nil, fakeConfigureHandler, nil,
+				mgr.AdapterToAspectMapperFunc, ctx.strict, fe)
+			// ConstGlobalConfig only defines 1 adapter: denyChecker
+			_, ce := p.validate(newFakeMap(ConstGlobalConfig, ctx.cfg))
+			cok := ce == nil
+			ok := ctx.cerr == nil
+			if ok != cok {
+				t.Fatalf("%d got %t, want %t ", idx, cok, ok)
+
+			}
+			if ce == nil {
+				return
+			}
+			if len(ce.Multi.Errors) < 2 {
+				t.Fatal("expected at least 2 errors reported")
+			}
+			if !strings.Contains(ce.Multi.Errors[1].Error(), ctx.cerr.Error()) {
+				t.Fatalf("%d got: %#v\nwant: %#v\n", idx, ce.Multi.Errors[1].Error(), ctx.cerr.Error())
+			}
+		})
+	}
+}
+
+// globalRulesKey this rule set applies to all requests
+// so we create a well known key for it
+var globalRulesKey = rulesKey{Scope: global, Subject: global}
+
+func TestConfigParseError(t *testing.T) {
+	mgr := &fakeVFinder{}
+	evaluator := newFakeExpr()
+	p := newValidator(mgr.FindAspectValidator, mgr.FindAdapterValidator, nil, fakeConfigureHandler, nil,
+		mgr.AdapterToAspectMapperFunc, false, evaluator)
+	ce := p.validateServiceConfig(globalRulesKey, "<config>  </config>", false)
+
+	if ce == nil || !strings.Contains(ce.Error(), "error unmarshaling") {
+		t.Error("Expected unmarshal Error", ce)
+	}
+	ce = p.validateAdapters("", "<config>  </config>")
+
+	if ce == nil || !strings.Contains(ce.Error(), "error unmarshaling") {
+		t.Error("Expected unmarshal Error", ce)
+	}
+
+	ce = p.validateHandlers("<config>  </config>")
+
+	if ce == nil || !strings.Contains(ce.Error(), "error unmarshaling") {
+		t.Error("Expected unmarshal Error", ce)
+	}
+
+	ce = p.validateDescriptors("", "<config>  </config>")
+
+	if ce == nil || !strings.Contains(ce.Error(), "error unmarshaling") {
+		t.Error("Expected unmarshal Error", ce)
+	}
+	_, ce = p.validate(map[string]string{
+		keyGlobalServiceConfig: "<config>  </config>",
+		keyAdapters:            "<config>  </config>",
+		keyDescriptors:         "<config>  </config>",
+		keyHandlers:            "<config>  </config>",
+	})
+	if ce == nil || !strings.Contains(ce.Error(), "error unmarshaling") {
+		t.Error("Expected unmarshal Error", ce)
+	}
+}
+
+func TestDecoderError(t *testing.T) {
+	err := decode(make(chan int), nil, true)
+	if err == nil {
+		t.Error("Expected json encode error")
+	}
+}
+
+const ConstGlobalConfigValid = `
+subject: "namespace:ns"
+revision: "2022"
+handlers:
+  - name: fooHandler
+    adapter: fooHandlerAdapter
+adapters:
+  - name: default
+    kind: denials
+    impl: denyChecker
+    params:
+      check_expression: src.ip
+      blacklist: true
+`
+const ConstGlobalConfig = ConstGlobalConfigValid + `
+      unknown_field: true
+`
+
+var duplicateCnstrs = `
+subject: "namespace:ns"
+revision: "2022"
+handlers:
+  - name: fooHandler
+    adapter: fooHandlerAdapter
+  - name: fooHandler
+    adapter: fooHandlerAdapter
+`
+
+const sSvcConfig1 = `
+subject: "namespace:ns"
+revision: "2022"
+rules:
+- selector: service.name == “*”
+  aspects:
+  - kind: metrics
+    params:
+      metrics:
+      - name: response_time_by_consumer
+        value: metric_response_time
+        metric_kind: DELTA
+        labels:
+        - key: target_consumer_id
+`
+const sSvcConfig2 = `
+subject: namespace:ns
+revision: "2022"
+rules:
+- selector: service.name == “*”
+  aspects:
+  - kind: lists
+    inputs: {}
+    params:
+`
+const sSvcConfig3 = `
+subject: namespace:ns
+revision: "2022"
+rules:
+- selector: service.name == “*”
+  aspects:
+  - kind: lists
+    inputs: {}
+    params:
+    adapter: denychecker.2
+`
+const sSvcConfig = `
+subject: namespace:ns
+revision: "2022"
+rules:
+- selector: %s
+  aspects:
+  - kind: metrics
+    adapter: ""
+    inputs: {}
+    params:
+      check_expression: src.ip
+      blacklist: true
+      unknown_field: true
+  rules:
+  - selector: src.name == "abc"
+    aspects:
+    - kind: quotas
+      adapter: ""
+      inputs: {}
+      params:
+        check_expression: src.ip
+        blacklist: true
+`
+
+type fakeExpr struct {
+	err error
+}
+
+// newFakeExpr returns the basic
+func newFakeExpr() *fakeExpr {
+	return &fakeExpr{}
+}
+
+func UnboundVariable(vname string) error {
+	return fmt.Errorf("unbound variable %s", vname)
+}
+
+// Eval evaluates given expression using the attribute bag
+func (e *fakeExpr) Eval(mapExpression string, attrs attribute.Bag) (interface{}, error) {
+	if v, found := attrs.Get(mapExpression); found {
+		return v, nil
+	}
+	return nil, UnboundVariable(mapExpression)
+}
+
+// EvalString evaluates given expression using the attribute bag to a string
+func (e *fakeExpr) EvalString(mapExpression string, attrs attribute.Bag) (string, error) {
+	v, found := attrs.Get(mapExpression)
+	if found {
+		return v.(string), nil
+	}
+	return "", UnboundVariable(mapExpression)
+}
+
+// EvalPredicate evaluates given predicate using the attribute bag
+func (e *fakeExpr) EvalPredicate(mapExpression string, attrs attribute.Bag) (bool, error) {
+	v, found := attrs.Get(mapExpression)
+	if found {
+		return v.(bool), nil
+	}
+	return false, UnboundVariable(mapExpression)
+}
+
+func (e *fakeExpr) EvalType(string, expr.AttributeDescriptorFinder) (dpb.ValueType, error) {
+	return dpb.VALUE_TYPE_UNSPECIFIED, e.err
+}
+func (e *fakeExpr) AssertType(string, expr.AttributeDescriptorFinder, dpb.ValueType) error {
+	return e.err
+}
+
+func TestValidated_Clone(t *testing.T) {
+	aa := map[adapterKey]*pb.Adapter{
+		{AccessLogsKind, "n1"}: {},
+	}
+
+	hh := map[string]*HandlerInfo{
+		"foo": nil,
+	}
+
+	rule := map[rulesKey]*pb.ServiceConfig{
+		{"global", "global"}: {},
+	}
+
+	shas := map[string][sha1.Size]byte{
+		keyGlobalServiceConfig: {},
+	}
+
+	adp := map[string]*pb.GlobalConfig{
+		keyAdapters: {},
+	}
+
+	desc := map[string]*pb.GlobalConfig{
+		keyDescriptors: {},
+	}
+
+	v := &Validated{
+		adapterByName: aa,
+		handlerByName: hh,
+		rule:          rule,
+		adapter:       adp,
+		descriptor:    desc,
+		numAspects:    1,
+		shas:          shas,
+	}
+
+	v1 := v.Clone()
+
+	if !reflect.DeepEqual(v, v1) {
+		t.Errorf("got %v\nwant %v", v1, v)
+	}
+}
+
+func TestParseConfigKey(t *testing.T) {
+	for _, tst := range []struct {
+		input string
+		key   *rulesKey
+	}{
+		{keyGlobalServiceConfig, &rulesKey{"global", "global"}},
+		{"/scopes/global/subjects/global", nil},
+		{"/SCOPES/global/subjects/global/rules", nil},
+		{"/scopes/global/SUBJECTS/global/rules", nil},
+	} {
+		t.Run(tst.input, func(t *testing.T) {
+			k := parseRulesKey(tst.input)
+			if !reflect.DeepEqual(k, tst.key) {
+				t.Errorf("got %s\nwant %s", k, tst.key)
+			}
+		})
+	}
+}
+
+func TestUnknownKind(t *testing.T) {
+	name := "DOESNOTEXITS"
+	want := unknownKind(name)
+	_, ce := convertAspectParams(nil, name, "abc", true, nil)
+	if ce == nil {
+		t.Errorf("got nil\nwant %s", want)
+	}
+	if !strings.Contains(ce.Error(), want.Error()) {
+		t.Errorf("got %s\nwant %s", ce, want)
+	}
+}
+
+type fakeCV struct {
+	err string
+	cfg adapter.Config
+}
+
+func (f *fakeCV) DefaultConfig() (c adapter.Config) { return f.cfg }
+
+// ValidateConfig determines whether the given configuration meets all correctness requirements.
+func (f *fakeCV) ValidateConfig(c adapter.Config) (ce *adapter.ConfigErrors) {
+	return ce.Appendf("abc", f.err)
+}
+
+func TestConvertAdapterParamsErrors(t *testing.T) {
+	for _, tt := range []struct {
+		params interface{}
+		cv     *fakeCV
+	}{{map[string]interface{}{
+		"check_expression": "src.ip",
+		"blacklist":        "true (this should be bool)",
+	}, &fakeCV{cfg: &listcheckerpb.ListsParams{},
+		err: "failed to decode"}},
+		{map[string]interface{}{
+			"check_expression": "src.ip",
+			"blacklist":        true,
+		}, &fakeCV{cfg: &listcheckerpb.ListsParams{}, err: "failed to unmarshal"}},
+	} {
+		t.Run(tt.cv.err, func(t *testing.T) {
+			_, ce := convertAdapterParams(func(name string) (adapter.ConfigValidator, bool) {
+				return tt.cv, true
+			}, "ABC", tt.params, true)
+
+			if !strings.Contains(ce.Error(), tt.cv.err) {
+				t.Errorf("got %s, want %s. ", ce.Error(), tt.cv.err)
+			}
+		})
+	}
+}
+
+func TestValidateDescriptors(t *testing.T) {
+	tests := []struct {
+		name string
+		in   string // string repr of config
+		err  string
+	}{
+		{"empty", "", ""},
+		{"valid", `
+metrics:
+  - name: request_count
+    kind: COUNTER
+    value: INT64
+    description: request count by source, target, service, and code
+    labels:
+      source: 1 # STRING
+      target: 1 # STRING
+      service: 1 # STRING
+      method: 1 # STRING
+      response_code: 2 # INT64
+quotas:
+  - name: RequestCount
+    rate_limit: true
+logs:
+  - name: accesslog.common
+    display_name: Apache Common Log Format
+    payload_format: TEXT
+    log_template: '{{.originIP}}'
+    labels:
+      originIp: 6 # IP_ADDRESS
+      sourceUser: 1 # STRING
+      timestamp: 5 # TIMESTAMP
+      method: 1 # STRING
+      url: 1 # STRING
+      protocol: 1 # STRING
+      responseCode: 2 # INT64
+      responseSize: 2 # INT64
+monitored_resources:
+  - name: pod
+    labels:
+      podName: 1
+principals:
+  - name: Bob
+    labels:
+      originIp: 6`, ""},
+		{"invalid name", `
+quotas:
+  - name:
+    rate_limit: true`, "name"},
+	}
+
+	for idx, tt := range tests {
+		t.Run(fmt.Sprintf("[%d] %s", idx, tt.name), func(t *testing.T) {
+			v := &validator{validated: &Validated{descriptor: make(map[string]*pb.GlobalConfig)}}
+			if err := v.validateDescriptors(tt.name, tt.in); err != nil || tt.err != "" {
+				if tt.err == "" {
+					t.Fatalf("validateDescriptors = '%s', wanted no err", err.Error())
+				} else if !strings.Contains(err.Error(), tt.err) {
+					t.Fatalf("got: '%s', want errors containing the string '%s', ", err.Error(), tt.err)
+				}
+			}
+		})
+	}
+}
+
+func containErrors(actualErrors []error, expectedErrorStrs []string) bool {
+	if len(actualErrors) != len(expectedErrorStrs) {
+		return false
+	}
+
+	for _, exp := range expectedErrorStrs {
+		match := false
+		for _, actualError := range actualErrors {
+			if strings.Contains(actualError.Error(), exp) {
+				match = true
+				break
+			}
+		}
+		if !match {
+			return false
+		}
+	}
+	return true
+}
+
+
 func TestConvertHandlerParamsErrors(t *testing.T) {
 
 	tTable := []struct {
@@ -746,469 +1212,4 @@ constructors:
 			}
 		})
 	}
-}
-
-func TestFullConfigValidator(tt *testing.T) {
-	fe := newFakeExpr()
-	ctable := []struct {
-		cerr     *adapter.ConfigError
-		ada      map[string]adapter.ConfigValidator
-		asp      map[Kind]AspectValidator
-		selector string
-		strict   bool
-		cfg      string
-		exprErr  error
-	}{
-		{nil,
-			map[string]adapter.ConfigValidator{
-				"denyChecker": &lc{},
-				"metrics":     &lc{},
-				"listchecker": &lc{},
-			},
-			map[Kind]AspectValidator{
-				DenialsKind: &ac{},
-				MetricsKind: &ac{},
-				ListsKind:   &ac{},
-			},
-			"service.name == “*”", false, sSvcConfig2, nil},
-		{nil,
-			map[string]adapter.ConfigValidator{
-				"denyChecker": &lc{},
-				"metrics":     &lc{},
-				"listchecker": &lc{},
-			},
-			map[Kind]AspectValidator{
-				DenialsKind: &ac{},
-				MetricsKind: &ac{},
-				ListsKind:   &ac{},
-			},
-			"", false, sSvcConfig2, nil},
-		{&adapter.ConfigError{Field: "namedAdapter", Underlying: errors.New("lists//denychecker.2 not available")},
-			map[string]adapter.ConfigValidator{
-				"denyChecker": &lc{},
-				"metrics":     &lc{},
-				"listchecker": &lc{},
-			},
-			map[Kind]AspectValidator{
-				DenialsKind: &ac{},
-				MetricsKind: &ac{},
-				ListsKind:   &ac{},
-			},
-			"", false, sSvcConfig3, nil},
-		{&adapter.ConfigError{Field: ":Selector service.name == “*”", Underlying: errors.New("invalid expression")},
-			map[string]adapter.ConfigValidator{
-				"denyChecker": &lc{},
-				"metrics":     &lc{},
-				"listchecker": &lc{},
-			},
-			map[Kind]AspectValidator{
-				DenialsKind: &ac{},
-				MetricsKind: &ac{},
-				ListsKind:   &ac{},
-			},
-			"service.name == “*”", false, sSvcConfig1, errors.New("invalid expression")},
-	}
-	for idx, ctx := range ctable {
-		tt.Run(fmt.Sprintf("[%d]", idx), func(t *testing.T) {
-			mgr := newVfinder(ctx.ada, ctx.asp, nil)
-			fe.err = ctx.exprErr
-			p := newValidator(mgr.FindAspectValidator, mgr.FindAdapterValidator, nil, fakeConfigureHandler, nil,
-				mgr.AdapterToAspectMapperFunc, ctx.strict, fe)
-			// ConstGlobalConfig only defines 1 adapter: denyChecker
-			_, ce := p.validate(newFakeMap(ConstGlobalConfig, ctx.cfg))
-			cok := ce == nil
-			ok := ctx.cerr == nil
-			if ok != cok {
-				t.Fatalf("%d got %t, want %t ", idx, cok, ok)
-
-			}
-			if ce == nil {
-				return
-			}
-			if len(ce.Multi.Errors) < 2 {
-				t.Fatal("expected at least 2 errors reported")
-			}
-			if !strings.Contains(ce.Multi.Errors[1].Error(), ctx.cerr.Error()) {
-				t.Fatalf("%d got: %#v\nwant: %#v\n", idx, ce.Multi.Errors[1].Error(), ctx.cerr.Error())
-			}
-		})
-	}
-}
-
-// globalRulesKey this rule set applies to all requests
-// so we create a well known key for it
-var globalRulesKey = rulesKey{Scope: global, Subject: global}
-
-func TestConfigParseError(t *testing.T) {
-	mgr := &fakeVFinder{}
-	evaluator := newFakeExpr()
-	p := newValidator(mgr.FindAspectValidator, mgr.FindAdapterValidator, nil, fakeConfigureHandler, nil,
-		mgr.AdapterToAspectMapperFunc, false, evaluator)
-	ce := p.validateServiceConfig(globalRulesKey, "<config>  </config>", false)
-
-	if ce == nil || !strings.Contains(ce.Error(), "error unmarshaling") {
-		t.Error("Expected unmarshal Error", ce)
-	}
-	ce = p.validateAdapters("", "<config>  </config>")
-
-	if ce == nil || !strings.Contains(ce.Error(), "error unmarshaling") {
-		t.Error("Expected unmarshal Error", ce)
-	}
-
-	ce = p.validateHandlers("<config>  </config>")
-
-	if ce == nil || !strings.Contains(ce.Error(), "error unmarshaling") {
-		t.Error("Expected unmarshal Error", ce)
-	}
-
-	ce = p.validateDescriptors("", "<config>  </config>")
-
-	if ce == nil || !strings.Contains(ce.Error(), "error unmarshaling") {
-		t.Error("Expected unmarshal Error", ce)
-	}
-	_, ce = p.validate(map[string]string{
-		keyGlobalServiceConfig: "<config>  </config>",
-		keyAdapters:            "<config>  </config>",
-		keyDescriptors:         "<config>  </config>",
-		keyHandlers:            "<config>  </config>",
-	})
-	if ce == nil || !strings.Contains(ce.Error(), "error unmarshaling") {
-		t.Error("Expected unmarshal Error", ce)
-	}
-}
-
-func TestDecoderError(t *testing.T) {
-	err := decode(make(chan int), nil, true)
-	if err == nil {
-		t.Error("Expected json encode error")
-	}
-}
-
-const ConstGlobalConfigValid = `
-subject: "namespace:ns"
-revision: "2022"
-handlers:
-  - name: fooHandler
-    adapter: fooHandlerAdapter
-adapters:
-  - name: default
-    kind: denials
-    impl: denyChecker
-    params:
-      check_expression: src.ip
-      blacklist: true
-`
-const ConstGlobalConfig = ConstGlobalConfigValid + `
-      unknown_field: true
-`
-
-var duplicateCnstrs = `
-subject: "namespace:ns"
-revision: "2022"
-handlers:
-  - name: fooHandler
-    adapter: fooHandlerAdapter
-  - name: fooHandler
-    adapter: fooHandlerAdapter
-`
-
-const sSvcConfig1 = `
-subject: "namespace:ns"
-revision: "2022"
-rules:
-- selector: service.name == “*”
-  aspects:
-  - kind: metrics
-    params:
-      metrics:
-      - name: response_time_by_consumer
-        value: metric_response_time
-        metric_kind: DELTA
-        labels:
-        - key: target_consumer_id
-`
-const sSvcConfig2 = `
-subject: namespace:ns
-revision: "2022"
-rules:
-- selector: service.name == “*”
-  aspects:
-  - kind: lists
-    inputs: {}
-    params:
-`
-const sSvcConfig3 = `
-subject: namespace:ns
-revision: "2022"
-rules:
-- selector: service.name == “*”
-  aspects:
-  - kind: lists
-    inputs: {}
-    params:
-    adapter: denychecker.2
-`
-const sSvcConfig = `
-subject: namespace:ns
-revision: "2022"
-rules:
-- selector: %s
-  aspects:
-  - kind: metrics
-    adapter: ""
-    inputs: {}
-    params:
-      check_expression: src.ip
-      blacklist: true
-      unknown_field: true
-  rules:
-  - selector: src.name == "abc"
-    aspects:
-    - kind: quotas
-      adapter: ""
-      inputs: {}
-      params:
-        check_expression: src.ip
-        blacklist: true
-`
-
-type fakeExpr struct {
-	err error
-}
-
-// newFakeExpr returns the basic
-func newFakeExpr() *fakeExpr {
-	return &fakeExpr{}
-}
-
-func UnboundVariable(vname string) error {
-	return fmt.Errorf("unbound variable %s", vname)
-}
-
-// Eval evaluates given expression using the attribute bag
-func (e *fakeExpr) Eval(mapExpression string, attrs attribute.Bag) (interface{}, error) {
-	if v, found := attrs.Get(mapExpression); found {
-		return v, nil
-	}
-	return nil, UnboundVariable(mapExpression)
-}
-
-// EvalString evaluates given expression using the attribute bag to a string
-func (e *fakeExpr) EvalString(mapExpression string, attrs attribute.Bag) (string, error) {
-	v, found := attrs.Get(mapExpression)
-	if found {
-		return v.(string), nil
-	}
-	return "", UnboundVariable(mapExpression)
-}
-
-// EvalPredicate evaluates given predicate using the attribute bag
-func (e *fakeExpr) EvalPredicate(mapExpression string, attrs attribute.Bag) (bool, error) {
-	v, found := attrs.Get(mapExpression)
-	if found {
-		return v.(bool), nil
-	}
-	return false, UnboundVariable(mapExpression)
-}
-
-func (e *fakeExpr) EvalType(string, expr.AttributeDescriptorFinder) (dpb.ValueType, error) {
-	return dpb.VALUE_TYPE_UNSPECIFIED, e.err
-}
-func (e *fakeExpr) AssertType(string, expr.AttributeDescriptorFinder, dpb.ValueType) error {
-	return e.err
-}
-
-func TestValidated_Clone(t *testing.T) {
-	aa := map[adapterKey]*pb.Adapter{
-		{AccessLogsKind, "n1"}: {},
-	}
-
-	hh := map[string]*HandlerInfo{
-		"foo": nil,
-	}
-
-	rule := map[rulesKey]*pb.ServiceConfig{
-		{"global", "global"}: {},
-	}
-
-	shas := map[string][sha1.Size]byte{
-		keyGlobalServiceConfig: {},
-	}
-
-	adp := map[string]*pb.GlobalConfig{
-		keyAdapters: {},
-	}
-
-	desc := map[string]*pb.GlobalConfig{
-		keyDescriptors: {},
-	}
-
-	v := &Validated{
-		adapterByName: aa,
-		handlerByName: hh,
-		rule:          rule,
-		adapter:       adp,
-		descriptor:    desc,
-		numAspects:    1,
-		shas:          shas,
-	}
-
-	v1 := v.Clone()
-
-	if !reflect.DeepEqual(v, v1) {
-		t.Errorf("got %v\nwant %v", v1, v)
-	}
-}
-
-func TestParseConfigKey(t *testing.T) {
-	for _, tst := range []struct {
-		input string
-		key   *rulesKey
-	}{
-		{keyGlobalServiceConfig, &rulesKey{"global", "global"}},
-		{"/scopes/global/subjects/global", nil},
-		{"/SCOPES/global/subjects/global/rules", nil},
-		{"/scopes/global/SUBJECTS/global/rules", nil},
-	} {
-		t.Run(tst.input, func(t *testing.T) {
-			k := parseRulesKey(tst.input)
-			if !reflect.DeepEqual(k, tst.key) {
-				t.Errorf("got %s\nwant %s", k, tst.key)
-			}
-		})
-	}
-}
-
-func TestUnknownKind(t *testing.T) {
-	name := "DOESNOTEXITS"
-	want := unknownKind(name)
-	_, ce := convertAspectParams(nil, name, "abc", true, nil)
-	if ce == nil {
-		t.Errorf("got nil\nwant %s", want)
-	}
-	if !strings.Contains(ce.Error(), want.Error()) {
-		t.Errorf("got %s\nwant %s", ce, want)
-	}
-}
-
-type fakeCV struct {
-	err string
-	cfg adapter.Config
-}
-
-func (f *fakeCV) DefaultConfig() (c adapter.Config) { return f.cfg }
-
-// ValidateConfig determines whether the given configuration meets all correctness requirements.
-func (f *fakeCV) ValidateConfig(c adapter.Config) (ce *adapter.ConfigErrors) {
-	return ce.Appendf("abc", f.err)
-}
-
-func TestConvertAdapterParamsErrors(t *testing.T) {
-	for _, tt := range []struct {
-		params interface{}
-		cv     *fakeCV
-	}{{map[string]interface{}{
-		"check_expression": "src.ip",
-		"blacklist":        "true (this should be bool)",
-	}, &fakeCV{cfg: &listcheckerpb.ListsParams{},
-		err: "failed to decode"}},
-		{map[string]interface{}{
-			"check_expression": "src.ip",
-			"blacklist":        true,
-		}, &fakeCV{cfg: &listcheckerpb.ListsParams{}, err: "failed to unmarshal"}},
-	} {
-		t.Run(tt.cv.err, func(t *testing.T) {
-			_, ce := convertAdapterParams(func(name string) (adapter.ConfigValidator, bool) {
-				return tt.cv, true
-			}, "ABC", tt.params, true)
-
-			if !strings.Contains(ce.Error(), tt.cv.err) {
-				t.Errorf("got %s, want %s. ", ce.Error(), tt.cv.err)
-			}
-		})
-	}
-}
-
-func TestValidateDescriptors(t *testing.T) {
-	tests := []struct {
-		name string
-		in   string // string repr of config
-		err  string
-	}{
-		{"empty", "", ""},
-		{"valid", `
-metrics:
-  - name: request_count
-    kind: COUNTER
-    value: INT64
-    description: request count by source, target, service, and code
-    labels:
-      source: 1 # STRING
-      target: 1 # STRING
-      service: 1 # STRING
-      method: 1 # STRING
-      response_code: 2 # INT64
-quotas:
-  - name: RequestCount
-    rate_limit: true
-logs:
-  - name: accesslog.common
-    display_name: Apache Common Log Format
-    payload_format: TEXT
-    log_template: '{{.originIP}}'
-    labels:
-      originIp: 6 # IP_ADDRESS
-      sourceUser: 1 # STRING
-      timestamp: 5 # TIMESTAMP
-      method: 1 # STRING
-      url: 1 # STRING
-      protocol: 1 # STRING
-      responseCode: 2 # INT64
-      responseSize: 2 # INT64
-monitored_resources:
-  - name: pod
-    labels:
-      podName: 1
-principals:
-  - name: Bob
-    labels:
-      originIp: 6`, ""},
-		{"invalid name", `
-quotas:
-  - name:
-    rate_limit: true`, "name"},
-	}
-
-	for idx, tt := range tests {
-		t.Run(fmt.Sprintf("[%d] %s", idx, tt.name), func(t *testing.T) {
-			v := &validator{validated: &Validated{descriptor: make(map[string]*pb.GlobalConfig)}}
-			if err := v.validateDescriptors(tt.name, tt.in); err != nil || tt.err != "" {
-				if tt.err == "" {
-					t.Fatalf("validateDescriptors = '%s', wanted no err", err.Error())
-				} else if !strings.Contains(err.Error(), tt.err) {
-					t.Fatalf("got: '%s', want errors containing the string '%s', ", err.Error(), tt.err)
-				}
-			}
-		})
-	}
-}
-
-func containErrors(actualErrors []error, expectedErrorStrs []string) bool {
-	if len(actualErrors) != len(expectedErrorStrs) {
-		return false
-	}
-
-	for _, exp := range expectedErrorStrs {
-		match := false
-		for _, actualError := range actualErrors {
-			if strings.Contains(actualError.Error(), exp) {
-				match = true
-				break
-			}
-		}
-		if !match {
-			return false
-		}
-	}
-	return true
 }

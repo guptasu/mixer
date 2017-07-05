@@ -93,6 +93,8 @@ manifests:
       response.count:
         value_type: INT64
 `
+	// TODO : If a value is a literal, does it have to be in quotes ?
+	// Seems like if I do not put in quotes, decoding this yaml fails.
 	srvConfig = `
 subject: namespace:ns
 action_rules:
@@ -106,7 +108,7 @@ constructors:
 - instance_name: fooInstance
   template: "istio.mixer.adapter.sample.report.Sample"
   params:
-    value: response.count
+    value: "2"
     dimensions:
       source: source.name
       target_ip: target.name
