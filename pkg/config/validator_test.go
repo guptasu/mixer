@@ -278,12 +278,27 @@ func TestConfigParseError(t *testing.T) {
 	evaluator := newFakeExpr()
 	p := newValidator(mgr.FindAspectValidator, mgr.FindAdapterValidator, nil, fakeConfigureHandler, nil,
 		mgr.AdapterToAspectMapperFunc, false, evaluator)
+
 	ce := p.validateServiceConfig(globalRulesKey, "<config>  </config>", false)
 
 	if ce == nil || !strings.Contains(ce.Error(), "error unmarshaling") {
 		t.Error("Expected unmarshal Error", ce)
 	}
+
+
 	ce = p.validateAdapters("", "<config>  </config>")
+
+	if ce == nil || !strings.Contains(ce.Error(), "error unmarshaling") {
+		t.Error("Expected unmarshal Error", ce)
+	}
+
+	ce = p.validateDescriptors("", "<config>  </config>")
+
+	if ce == nil || !strings.Contains(ce.Error(), "error unmarshaling") {
+		t.Error("Expected unmarshal Error", ce)
+	}
+
+	ce = p.validateRulesConfig("<config>  </config>")
 
 	if ce == nil || !strings.Contains(ce.Error(), "error unmarshaling") {
 		t.Error("Expected unmarshal Error", ce)
@@ -295,16 +310,19 @@ func TestConfigParseError(t *testing.T) {
 		t.Error("Expected unmarshal Error", ce)
 	}
 
-	ce = p.validateDescriptors("", "<config>  </config>")
+	ce = p.validateConstructorConfigs("<config>  </config>")
 
 	if ce == nil || !strings.Contains(ce.Error(), "error unmarshaling") {
 		t.Error("Expected unmarshal Error", ce)
 	}
+
 	_, ce = p.validate(map[string]string{
 		keyGlobalServiceConfig: "<config>  </config>",
 		keyAdapters:            "<config>  </config>",
 		keyDescriptors:         "<config>  </config>",
 		keyHandlers:            "<config>  </config>",
+		keyConstructorsConfig:  "<config>  </config>",
+		keyActionsConfig:       "<config>  </config>",
 	})
 	if ce == nil || !strings.Contains(ce.Error(), "error unmarshaling") {
 		t.Error("Expected unmarshal Error", ce)
@@ -1091,7 +1109,7 @@ action_rules:
 			p := newValidator(nil, nil, nil, nil, tdf, nil, true, tt.expr)
 			p.cnstrByName = tt.cnstrMap
 			p.hndlrBldrByName = tt.handlerMap
-			ce = p.validateRulesConfig(globalRulesKey, tt.cfg)
+			ce = p.validateRulesConfig(tt.cfg)
 
 			cok := ce == nil
 			ok := tt.nerrors == 0
@@ -1195,7 +1213,7 @@ constructors:
 			var ce *adapter.ConfigErrors
 
 			p := newValidator(nil, nil, nil, nil, tt.tdf, nil, true, evaluator)
-			ce = p.validateConstructorConfigs(globalRulesKey, tt.cfg)
+			ce = p.validateConstructorConfigs(tt.cfg)
 
 			cok := ce == nil
 			ok := tt.nerrors == 0

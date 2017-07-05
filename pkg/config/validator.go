@@ -556,7 +556,7 @@ func (p *validator) validate(cfg map[string]string) (rt *Validated, ce *adapter.
 		if ck == nil {
 			continue
 		}
-		if re := p.validateConstructorConfigs(*ck, cfg[kk]); re != nil {
+		if re := p.validateConstructorConfigs(cfg[kk]); re != nil {
 			return rt, ce.Appendf("serviceConfig", "failed validation").Extend(re)
 		}
 	}
@@ -566,7 +566,7 @@ func (p *validator) validate(cfg map[string]string) (rt *Validated, ce *adapter.
 		if ck == nil {
 			continue
 		}
-		if re := p.validateRulesConfig(*ck, cfg[kk]); re != nil {
+		if re := p.validateRulesConfig(cfg[kk]); re != nil {
 			return rt, ce.Appendf("serviceConfig", "failed validation").Extend(re)
 		}
 	}
@@ -647,7 +647,7 @@ func (p *validator) validateServiceConfig(pk rulesKey, cfg string, validatePrese
 	return nil
 }
 
-func (p *validator) validateRulesConfig(pk rulesKey, cfg string) (ce *adapter.ConfigErrors) {
+func (p *validator) validateRulesConfig(cfg string) (ce *adapter.ConfigErrors) {
 	var err error
 	m := &pb.ServiceConfig{}
 	if err = yaml.Unmarshal([]byte(cfg), m); err != nil {
@@ -661,7 +661,7 @@ func (p *validator) validateRulesConfig(pk rulesKey, cfg string) (ce *adapter.Co
 	return nil
 }
 
-func (p *validator) validateConstructorConfigs(pk rulesKey, cfg string) (ce *adapter.ConfigErrors) {
+func (p *validator) validateConstructorConfigs(cfg string) (ce *adapter.ConfigErrors) {
 	var err error
 	m := &pb.ServiceConfig{}
 	if err = yaml.Unmarshal([]byte(cfg), m); err != nil {
