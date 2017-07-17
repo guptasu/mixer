@@ -402,7 +402,7 @@ new_go_repository(
 
 new_go_repository(
     name = "com_google_cloud_go",
-    commit = "2e6a95edb1071d750f6d7db777bf66cd2997af6c",  # Mar 9, 2017 (v0.7.0)
+    commit = "a5913b3f7deecba45e98ff33cefbac4fd204ddd7",  # Jun 27, 2017 (v0.10.0)
     importpath = "cloud.google.com/go",
 )
 
@@ -468,7 +468,7 @@ new_go_repository(
 
 new_go_repository(
     name = "org_golang_google_api",
-    commit = "48e49d1645e228d1c50c3d54fb476b2224477303",  # Mar 27, 2017 (no release)
+    commit = "1faa39f42f12a54fa82ca5902a7ab642d5b09ad1",  # Jun 5, 2017 (no releases)
     importpath = "google.golang.org/api",
 )
 
@@ -482,6 +482,90 @@ new_go_repository(
     name = "org_golang_x_tools",
     commit = "e6cb469339aef5b7be0c89de730d5f3cc8e47e50",  # Jun 23, 2017 (no releases)
     importpath = "golang.org/x/tools",
+)
+
+new_go_repository(
+    name = "org_uber_go_zap",
+    commit = "9cabc84638b70e564c3dab2766efcb1ded2aac9f",  # Jun 8, 2017 (v1.4.1)
+    importpath = "go.uber.org/zap",
+)
+
+new_go_repository(
+    name = "org_uber_go_atomic",
+    commit = "4e336646b2ef9fc6e47be8e21594178f98e5ebcf",  # Apr 12, 2017 (v1.2.0)
+    importpath = "go.uber.org/atomic",
+)
+
+# bazel rule for fixing up cfg.pb.go relies on running goimports
+# we import it here as a git repository to allow projection of a
+# simple build rule that will build the binary for usage (and avoid
+# the need to project a more complicated BUILD file over the entire
+# tools repo.)
+new_git_repository(
+    name = "org_golang_x_tools_imports",
+    build_file = "BUILD.goimports",
+    commit = "e6cb469339aef5b7be0c89de730d5f3cc8e47e50",  # Jun 23, 2017 (no releases)
+    remote = "https://github.com/golang/tools.git",
+)
+
+##
+## Docker image build deps
+##
+
+git_repository(
+    name = "distroless",
+    commit = "3af69e6d50747bca265e9699fe7cc0c80f6ed1e3",  # Jun 27, 2017 (no releases)
+    remote = "https://github.com/GoogleCloudPlatform/distroless.git",
+)
+
+git_repository(
+    name = "runtimes_common",
+    commit = "3d73b4fecbd18de77588ab5eef712d50f34f601e",  # Jun 27, 2017 (no releases)
+    remote = "https://github.com/GoogleCloudPlatform/runtimes-common.git",
+)
+
+load(
+    "@distroless//package_manager:package_manager.bzl",
+    "package_manager_repositories",
+    "dpkg_src",
+    "dpkg",
+)
+
+package_manager_repositories()
+
+dpkg_src(
+    name = "debian_jessie",
+    arch = "amd64",
+    distro = "jessie",
+    url = "http://deb.debian.org",
+)
+
+dpkg_src(
+    name = "debian_jessie_backports",
+    arch = "amd64",
+    distro = "jessie-backports",
+    url = "http://deb.debian.org",
+)
+
+# For the glibc base image.
+dpkg(
+    name = "libc6",
+    source = "@debian_jessie//file:Packages.json",
+)
+
+dpkg(
+    name = "ca-certificates",
+    source = "@debian_jessie//file:Packages.json",
+)
+
+dpkg(
+    name = "openssl",
+    source = "@debian_jessie//file:Packages.json",
+)
+
+dpkg(
+    name = "libssl1.0.0",
+    source = "@debian_jessie//file:Packages.json",
 )
 
 ##
