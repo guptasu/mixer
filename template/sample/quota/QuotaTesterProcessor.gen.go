@@ -19,25 +19,25 @@ import (
 	"istio.io/mixer/pkg/adapter"
 )
 
-const TemplateName = "istio.mixer.adapter.sample.quota.Sample"
+const TemplateName = "istio.mixer.adapter.sample.quota.Quota"
 
-// Instance represent the runtime structure that will be passed to the CheckQuotaSample method in the handlers.
+// Instance represent the runtime structure that will be passed to the AllocQuota method in the handlers.
 type Instance struct {
 	Name       string
 	Dimensions map[string]interface{}
 }
 
-// SampleProcessorBuilder represent the Go interface that HandlerBuilder must implement if it wants to be server
-// template named `istio.mixer.adapter.sample.quota.Sample` and wants to be configured with configured Types
+// QuotaProcessorBuilder represent the Go interface that HandlerBuilder must implement if it wants to be server
+// template named `istio.mixer.adapter.sample.quota.Quota` and wants to be configured with configured Types
 // for that template.
-type SampleProcessorBuilder interface {
+type QuotaProcessorBuilder interface {
 	config.HandlerBuilder
-	ConfigureSample(map[string]*Type /*Constructor:instance_name to Type mapping. Note type name will not be passed at all*/) error
+	ConfigureQuota(map[string]*Type /*Constructor:instance_name to Type mapping. Note type name will not be passed at all*/) error
 }
 
-// SampleProcessor represent the Go interface that handlers must implement if it wants to process the template
-// named `istio.mixer.adapter.sample.quota.Sample`
-type SampleProcessor interface {
+// QuotaProcessor represent the Go interface that handlers must implement if it wants to process the template
+// named `istio.mixer.adapter.sample.quota.Quota`
+type QuotaProcessor interface {
 	config.Handler
-	CheckQuotaSample([]*Instance, adapter.QuotaArgs) (adapter.QuotaResult, error)
+	AllocQuota([]*Instance, adapter.QuotaRequestArgs) (adapter.QuotaResult, error)
 }
