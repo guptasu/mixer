@@ -15,17 +15,19 @@
 package bootstrapgen
 
 import (
+	"bytes"
+	"fmt"
+	"go/format"
+	"io/ioutil"
 	"os"
 	"text/template"
-	tmplPkg "istio.io/mixer/tools/codegen/pkg/bootstrapgen/template"
-	"github.com/gogo/protobuf/protoc-gen-gogo/descriptor"
-	"fmt"
-	"io/ioutil"
+
 	"github.com/gogo/protobuf/proto"
-	"istio.io/mixer/tools/codegen/pkg/modelgen"
-	"bytes"
+	"github.com/gogo/protobuf/protoc-gen-gogo/descriptor"
 	"golang.org/x/tools/imports"
-	"go/format"
+
+	tmplPkg "istio.io/mixer/tools/codegen/pkg/bootstrapgen/template"
+	"istio.io/mixer/tools/codegen/pkg/modelgen"
 )
 
 // Generator creates a Go file that will be build inside mixer framework. The generated file contains all the
@@ -38,7 +40,6 @@ type Generator struct {
 // Generate creates a Go file that will be build inside mixer framework. The generated file contains all the
 // template specific code that mixer needs to add support for different passed in templates.
 func (g *Generator) Generate(fdsFiles []string) error {
-
 
 	tmpl, err := template.New("ProcInterface").Parse(tmplPkg.InterfaceTemplate)
 	if err != nil {

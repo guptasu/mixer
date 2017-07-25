@@ -42,11 +42,11 @@ filegroup(
     name = "golden_files",
     testonly = True,
     srcs = [
+        "AllTemplates.golden.go",
         "ListTemplate.golden.go",
         "LogTemplate.golden.go",
         "MetricTemplate.golden.go",
         "QuotaTemplate.golden.go",
-        "AllTemplates.golden.go"
     ],
 )
 
@@ -100,7 +100,6 @@ proto_compile(
     ],
     protos = ["ErrorTemplate2.proto"],
 )
-
 
 filegroup(
     name = "error_test_files",

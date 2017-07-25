@@ -7,6 +7,15 @@ go_library(
     srcs = [
         "generator.go",
     ],
+    deps = [
+        "//tools/codegen/pkg/bootstrapgen/template:go_default_library",
+        "//tools/codegen/pkg/modelgen:go_default_library",
+        "@com_github_gogo_protobuf//proto:go_default_library",
+        "@com_github_gogo_protobuf//protoc-gen-gogo/descriptor:go_default_library",
+        "@com_github_googleapis_googleapis//:google/rpc",
+        "@com_github_hashicorp_go_multierror//:go_default_library",
+        "@org_golang_x_tools//imports:go_default_library",
+    ],
 )
 
 go_test(

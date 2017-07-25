@@ -16,12 +16,6 @@
 
 package template
 
-import (
-	adptConfig "istio.io/mixer/pkg/adapter/config"
-
-	"istio.io/mixer/template/sample/report" // XXXXXXXXXXX
-)
-
 /////////////////////// Start generated code for template List ///////////////////////
 func supportsListBuilder(hndlrBuilder adptConfig.HandlerBuilder) bool {
 	_, ok := hndlrBuilder.(foo_bar_mylistchecker.ListProcessorBuilder)

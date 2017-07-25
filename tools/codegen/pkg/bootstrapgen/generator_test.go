@@ -51,7 +51,7 @@ func TestGenerator_Generate(t *testing.T) {
 	}
 	for _, v := range tests {
 		t.Run(v.name, func(t *testing.T) {
-			outFile, err := os.Create("testdata/AllTemplates.gen.go")  //ioutil.TempFile("", v.name)
+			outFile, err := os.Create("testdata/AllTemplates.gen.go") //ioutil.TempFile("", v.name)
 			if err != nil {
 				t.Fatal(err)
 			}
