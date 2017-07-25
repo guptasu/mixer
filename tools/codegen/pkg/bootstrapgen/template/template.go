@@ -43,11 +43,33 @@ var InterfaceTemplate = `// Copyright 2017 Istio Authors
 
 package template
 
+var (
+	SupportedTmplInfo = map[string]template.Info{
+	{{range .}}
+		{{.PackageName}}.TemplateName: {
+			InferTypeFn:     inferTypeFor{{.Name}},
+			CnstrDefConfig:  &{{.PackageName}}.ConstructorParam{},
+			ConfigureTypeFn: configureTypeFor{{.Name}},
+		},
+
+	{{end}}
+	}
+)
+
 {{range .}}
 /////////////////////// Start generated code for template {{.Name}} ///////////////////////
 func supports{{.Name}}Builder(hndlrBuilder adptConfig.HandlerBuilder) bool {
 	_, ok := hndlrBuilder.({{.PackageName}}.{{.Name}}ProcessorBuilder)
 	return ok
+}
+func inferTypeFor{{.Name}}(cp proto.Message, tEvalFn template.TypeEvalFn) (proto.Message, error) {
+	var err error
+
+	cpb := cp.(*{{.PackageName}}.ConstructorParam)
+
+	infrdType := &{{.PackageName}}.Type{}
+
+	return infrdType, nil
 }
 /////////////////////// End generated code for template {{.Name}} ///////////////////////
 {{end}}
