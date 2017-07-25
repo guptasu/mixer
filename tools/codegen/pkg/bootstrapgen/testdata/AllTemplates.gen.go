@@ -16,14 +16,40 @@
 
 package template
 
+import (
+	adptConfig "istio.io/mixer/pkg/adapter/config"
+
+	"istio.io/mixer/template/sample/report" // XXXXXXXXXXX
+)
+
 /////////////////////// Start generated code for template List ///////////////////////
+func supportsListBuilder(hndlrBuilder adptConfig.HandlerBuilder) bool {
+	_, ok := hndlrBuilder.(foo_bar_mylistchecker.ListProcessorBuilder)
+	return ok
+}
+
 /////////////////////// End generated code for template List ///////////////////////
 
 /////////////////////// Start generated code for template Metric ///////////////////////
+func supportsMetricBuilder(hndlrBuilder adptConfig.HandlerBuilder) bool {
+	_, ok := hndlrBuilder.(istio_mixer_adapter_metric.MetricProcessorBuilder)
+	return ok
+}
+
 /////////////////////// End generated code for template Metric ///////////////////////
 
 /////////////////////// Start generated code for template Quota ///////////////////////
+func supportsQuotaBuilder(hndlrBuilder adptConfig.HandlerBuilder) bool {
+	_, ok := hndlrBuilder.(istio_mixer_adapter_quota.QuotaProcessorBuilder)
+	return ok
+}
+
 /////////////////////// End generated code for template Quota ///////////////////////
 
 /////////////////////// Start generated code for template Log ///////////////////////
+func supportsLogBuilder(hndlrBuilder adptConfig.HandlerBuilder) bool {
+	_, ok := hndlrBuilder.(istio_mixer_adapter_log.LogProcessorBuilder)
+	return ok
+}
+
 /////////////////////// End generated code for template Log ///////////////////////

@@ -8,3 +8,17 @@ go_library(
         "generator.go",
     ],
 )
+
+go_test(
+    name = "small_tests",
+    size = "small",
+    srcs = [
+        "generator_test.go",
+    ],
+    data = [
+        "//tools/codegen/pkg/bootstrapgen/testdata:descriptors",
+        "//tools/codegen/pkg/bootstrapgen/testdata:error_test_files",
+        "//tools/codegen/pkg/bootstrapgen/testdata:golden_files",
+    ],
+    library = ":go_default_library",
+)
