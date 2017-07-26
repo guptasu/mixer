@@ -79,9 +79,9 @@ func inferTypeFor{{.Name}}(cp proto.Message, tEvalFn template.TypeEvalFn) (proto
 var (
 	SupportedTmplInfo = map[string]template.Info{
 		istio_mixer_adapter_sample_reportXXXXX.TemplateName: {
-			InferTypeFn:     inferTypeForXXXX,
-			CnstrDefConfig:  &istio_mixer_adapter_sample_reportXXXXX.ConstructorParam{},
-			ConfigureTypeFn: configureTypeForXXXX,
+			InferType:     inferTypeForXXXX,
+			CtrCfg:  &istio_mixer_adapter_sample_reportXXXXX.ConstructorParam{},
+			ConfigureType: configureTypeForXXXX,
 		},
 	}
 )
