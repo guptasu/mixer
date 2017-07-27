@@ -3,7 +3,16 @@ package template
 import (
 	"github.com/golang/protobuf/proto"
 
+	"istio.io/api/mixer/v1/config/descriptor"
 	adptConfig "istio.io/mixer/pkg/adapter/config"
+
+	"istio.io/mixer/template/list"
+
+	"istio.io/mixer/template/log"
+
+	"istio.io/mixer/template/metric"
+
+	"istio.io/mixer/template/quota"
 )
 
 var (
