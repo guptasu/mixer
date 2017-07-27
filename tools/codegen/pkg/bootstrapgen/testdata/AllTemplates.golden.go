@@ -1,10 +1,10 @@
 package template
 
 import (
-	"github.com/gogo/protobuf/proto"
+	"github.com/golang/protobuf/proto"
 
-	pb "istio.io/api/mixer/v1/config/descriptor"
-	"istio.io/mixer/pkg/template"
+	"istio.io/api/mixer/v1/config/descriptor"
+	adptConfig "istio.io/mixer/pkg/adapter/config"
 
 	"istio.io/mixer/template/list"
 
@@ -16,7 +16,7 @@ import (
 )
 
 var (
-	SupportedTmplInfo = map[string]template.Info{
+	SupportedTmplInfo = map[string]Info{
 
 		istio_mixer_template_list.TemplateName: {
 			CtrCfg:   &istio_mixer_template_list.ConstructorParam{},
@@ -25,14 +25,15 @@ var (
 				_, ok := hndlrBuilder.(istio_mixer_template_list.ListProcessorBuilder)
 				return ok
 			},
-			InferType: func(cp proto.Message, tEvalFn template.TypeEvalFn) (proto.Message, error) {
-				var err error
+			InferType: func(cp proto.Message, tEvalFn TypeEvalFn) (proto.Message, error) {
+				var err error = nil
 				cpb := cp.(*istio_mixer_template_list.ConstructorParam)
 				infrdType := &istio_mixer_template_list.Type{}
 
 				infrdType.CheckExpression = istio_mixer_v1_config_descriptor.STRING
 
-				return infrdType, nil
+				_ = cpb
+				return infrdType, err
 			},
 			ConfigureType: func(types map[string]proto.Message, builder *adptConfig.HandlerBuilder) error {
 
@@ -54,19 +55,20 @@ var (
 				_, ok := hndlrBuilder.(istio_mixer_template_log.LogProcessorBuilder)
 				return ok
 			},
-			InferType: func(cp proto.Message, tEvalFn template.TypeEvalFn) (proto.Message, error) {
-				var err error
+			InferType: func(cp proto.Message, tEvalFn TypeEvalFn) (proto.Message, error) {
+				var err error = nil
 				cpb := cp.(*istio_mixer_template_log.ConstructorParam)
 				infrdType := &istio_mixer_template_log.Type{}
 
-				infrdType.Dimensions = make(map[string]pb.ValueType)
+				infrdType.Dimensions = make(map[string]istio_mixer_v1_config_descriptor.ValueType)
 				for k, v := range cpb.Dimensions {
 					if infrdType.Dimensions[k], err = tEvalFn(v); err != nil {
 						return nil, err
 					}
 				}
 
-				return infrdType, nil
+				_ = cpb
+				return infrdType, err
 			},
 			ConfigureType: func(types map[string]proto.Message, builder *adptConfig.HandlerBuilder) error {
 
@@ -88,8 +90,8 @@ var (
 				_, ok := hndlrBuilder.(istio_mixer_template_metric.MetricProcessorBuilder)
 				return ok
 			},
-			InferType: func(cp proto.Message, tEvalFn template.TypeEvalFn) (proto.Message, error) {
-				var err error
+			InferType: func(cp proto.Message, tEvalFn TypeEvalFn) (proto.Message, error) {
+				var err error = nil
 				cpb := cp.(*istio_mixer_template_metric.ConstructorParam)
 				infrdType := &istio_mixer_template_metric.Type{}
 
@@ -97,14 +99,15 @@ var (
 					return nil, err
 				}
 
-				infrdType.Dimensions = make(map[string]pb.ValueType)
+				infrdType.Dimensions = make(map[string]istio_mixer_v1_config_descriptor.ValueType)
 				for k, v := range cpb.Dimensions {
 					if infrdType.Dimensions[k], err = tEvalFn(v); err != nil {
 						return nil, err
 					}
 				}
 
-				return infrdType, nil
+				_ = cpb
+				return infrdType, err
 			},
 			ConfigureType: func(types map[string]proto.Message, builder *adptConfig.HandlerBuilder) error {
 
@@ -126,19 +129,20 @@ var (
 				_, ok := hndlrBuilder.(istio_mixer_template_quota.QuotaProcessorBuilder)
 				return ok
 			},
-			InferType: func(cp proto.Message, tEvalFn template.TypeEvalFn) (proto.Message, error) {
-				var err error
+			InferType: func(cp proto.Message, tEvalFn TypeEvalFn) (proto.Message, error) {
+				var err error = nil
 				cpb := cp.(*istio_mixer_template_quota.ConstructorParam)
 				infrdType := &istio_mixer_template_quota.Type{}
 
-				infrdType.Dimensions = make(map[string]pb.ValueType)
+				infrdType.Dimensions = make(map[string]istio_mixer_v1_config_descriptor.ValueType)
 				for k, v := range cpb.Dimensions {
 					if infrdType.Dimensions[k], err = tEvalFn(v); err != nil {
 						return nil, err
 					}
 				}
 
-				return infrdType, nil
+				_ = cpb
+				return infrdType, err
 			},
 			ConfigureType: func(types map[string]proto.Message, builder *adptConfig.HandlerBuilder) error {
 
