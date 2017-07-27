@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package foo.bar.mylistchecker;
+package istio.mixer.template.list;
 
 import "pkg/adapter/template/TemplateExtensions.proto";
 

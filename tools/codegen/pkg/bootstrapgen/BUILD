@@ -14,6 +14,7 @@ go_library(
         "@com_github_gogo_protobuf//protoc-gen-gogo/descriptor:go_default_library",
         "@com_github_googleapis_googleapis//:google/rpc",
         "@com_github_hashicorp_go_multierror//:go_default_library",
+        "@com_github_istio_api//:mixer/v1/config/descriptor",
         "@org_golang_x_tools//imports:go_default_library",
     ],
 )

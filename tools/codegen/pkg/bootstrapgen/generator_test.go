@@ -34,19 +34,19 @@ func TestGenerator_Generate(t *testing.T) {
 	}
 
 	tests := []struct {
-		name        string
-		descriptors []string
-		want        string
+		name     string
+		fdsFiles map[string]string // FDS and their package import paths
+		want     string
 	}{
 		//{"Metrics", []string{"testdata/metric_template_library_proto.descriptor_set"}, "testdata/MetricTemplate.golden.go"},
 		//{"Quota", []string{"testdata/quota_template_library_proto.descriptor_set"}, "testdata/QuotaTemplate.golden.go"},
 		//{"Logs", []string{"testdata/log_template_library_proto.descriptor_set"}, "testdata/LogTemplate.golden.go"},
 		//{"Lists", []string{"testdata/list_template_library_proto.descriptor_set"}, "testdata/ListTemplate.golden.go"},
-		{"AllTemplates", []string{
-			"testdata/list_template_library_proto.descriptor_set",
-			"testdata/metric_template_library_proto.descriptor_set",
-			"testdata/quota_template_library_proto.descriptor_set",
-			"testdata/log_template_library_proto.descriptor_set"},
+		{"AllTemplates", map[string]string{
+			"testdata/list_template_library_proto.descriptor_set":   "istio.io/mixer/template/list",
+			"testdata/metric_template_library_proto.descriptor_set": "istio.io/mixer/template/metric",
+			"testdata/quota_template_library_proto.descriptor_set":  "istio.io/mixer/template/quota",
+			"testdata/log_template_library_proto.descriptor_set":    "istio.io/mixer/template/log"},
 			"testdata/AllTemplates.golden.go"},
 	}
 	for _, v := range tests {
@@ -62,8 +62,8 @@ func TestGenerator_Generate(t *testing.T) {
 			}()
 
 			g := Generator{OutFilePath: outFile.Name(), ImportMapping: importmap}
-			if err := g.Generate(v.descriptors); err != nil {
-				t.Fatalf("Generate(%s) produced an error: %v", v.descriptors, err)
+			if err := g.Generate(v.fdsFiles); err != nil {
+				t.Fatalf("Generate(%s) produced an error: %v", v.fdsFiles, err)
 			}
 
 			if same := fileCompare(outFile.Name(), v.want, t.Errorf); !same {

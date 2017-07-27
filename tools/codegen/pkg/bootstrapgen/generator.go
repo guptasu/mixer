@@ -20,12 +20,15 @@ import (
 	"go/format"
 	"io/ioutil"
 	"os"
+	"sort"
+	"strings"
 	"text/template"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/protoc-gen-gogo/descriptor"
 	"golang.org/x/tools/imports"
 
+	"istio.io/api/mixer/v1/config/descriptor"
 	tmplPkg "istio.io/mixer/tools/codegen/pkg/bootstrapgen/template"
 	"istio.io/mixer/tools/codegen/pkg/modelgen"
 )
@@ -37,24 +40,56 @@ type Generator struct {
 	ImportMapping map[string]string
 }
 
+const fullGoNameOfValueTypeMessage = "istio_mixer_v1_config_descriptor."
+
+var primitiveToValueType = map[string]string{
+	"string":  fullGoNameOfValueTypeMessage + istio_mixer_v1_config_descriptor.STRING.String(),
+	"bool":    fullGoNameOfValueTypeMessage + istio_mixer_v1_config_descriptor.BOOL.String(),
+	"int64":   fullGoNameOfValueTypeMessage + istio_mixer_v1_config_descriptor.INT64.String(),
+	"float64": fullGoNameOfValueTypeMessage + istio_mixer_v1_config_descriptor.DOUBLE.String(),
+}
+
 // Generate creates a Go file that will be build inside mixer framework. The generated file contains all the
 // template specific code that mixer needs to add support for different passed in templates.
-func (g *Generator) Generate(fdsFiles []string) error {
+func (g *Generator) Generate(fdsFiles map[string]string) error {
 
-	tmpl, err := template.New("ProcInterface").Parse(tmplPkg.InterfaceTemplate)
+	tmpl, err := template.New("MixerBootstrap").Funcs(
+		template.FuncMap{
+			"isPrimitiveValueType": func(goTypeName string) bool {
+				// Is this a primitive type from all types that can be represented as ValueType
+				_, ok := primitiveToValueType[goTypeName]
+				return ok
+			},
+			"primitiveToValueType": func(goTypeName string) string {
+				return primitiveToValueType[goTypeName]
+			},
+			"isValueType": func(goTypeName string) bool {
+				return goTypeName == fullGoNameOfValueTypeMessage+"ValueType"
+			},
+			"isStringValueTypeMap": func(goTypeName string) bool {
+				return strings.Replace(goTypeName, " ", "", -1) == "map[string]"+fullGoNameOfValueTypeMessage+"ValueType"
+			},
+		}).Parse(tmplPkg.InterfaceTemplate)
 	if err != nil {
 		return fmt.Errorf("cannot load template: %v", err)
 	}
 
 	models := make([]*modelgen.Model, 0)
-	for _, fdsFile := range fdsFiles {
-		fds, err := getFileDescSet(fdsFile)
+	var fdss []string
+	for k := range fdsFiles {
+		fdss = append(fdss, k)
+	}
+	sort.Strings(fdss)
+
+	for _, fdsPath := range fdss {
+		fds, err := getFileDescSet(fdsPath)
 		if err != nil {
-			return fmt.Errorf("cannot parse file '%s' as a FileDescriptorSetProto. %v", fdsFile, err)
+			return fmt.Errorf("cannot parse file '%s' as a FileDescriptorSetProto. %v", fds, err)
 		}
-		parser, err := modelgen.CreateFileDescriptorSetParser(fds, g.ImportMapping)
+		// TODO take packageImportPath from a parameter
+		parser, err := modelgen.CreateFileDescriptorSetParser(fds, g.ImportMapping, fdsFiles[fdsPath])
 		if err != nil {
-			return fmt.Errorf("cannot parse file '%s' as a FileDescriptorSetProto. %v", fdsFile, err)
+			return fmt.Errorf("cannot parse file '%s' as a FileDescriptorSetProto. %v", fds, err)
 		}
 
 		model, err := modelgen.Create(parser)
@@ -76,7 +111,7 @@ func (g *Generator) Generate(fdsFiles []string) error {
 
 	imports.LocalPrefix = "istio.io"
 	// OutFilePath provides context for import path. We rely on the supplied bytes for content.
-	imptd, err := imports.Process(g.OutFilePath, fmtd, nil)
+	imptd, err := imports.Process(g.OutFilePath, fmtd, &imports.Options{FormatOnly: true})
 	if err != nil {
 		return fmt.Errorf("could not fix imports for generated code: %v", err)
 	}

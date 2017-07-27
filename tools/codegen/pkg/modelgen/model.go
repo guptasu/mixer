@@ -24,6 +24,7 @@ import (
 	tmpl "istio.io/mixer/pkg/adapter/template"
 )
 
+const fullGoNameOfValueTypeMessage = "istio_mixer_v1_config_descriptor.ValueType"
 const fullProtoNameOfValueTypeEnum = "istio.mixer.v1.config.descriptor.ValueType"
 
 type (
@@ -64,7 +65,7 @@ func Create(parser *FileDescriptorSetParser) (*Model, error) {
 
 	templateProto, diags := getTmplFileDesc(parser.allFiles)
 	if len(diags) != 0 {
-		return nil, createGoError(diags)
+		return nil, createError(diags)
 	}
 
 	// set the current generated code package to the package of the
@@ -76,13 +77,13 @@ func Create(parser *FileDescriptorSetParser) (*Model, error) {
 
 	model.fillModel(templateProto, parser)
 	if len(model.diags) > 0 {
-		return nil, createGoError(model.diags)
+		return nil, createError(model.diags)
 	}
 
 	return model, nil
 }
 
-func createGoError(diags []diag) error {
+func createError(diags []diag) error {
 	return fmt.Errorf("errors during parsing:\n%s", stringifyDiags(diags))
 }
 
@@ -92,7 +93,7 @@ func (m *Model) fillModel(templateProto *FileDescriptor, parser *FileDescriptorS
 
 	m.addTopLevelFields(templateProto)
 	// ensure Template is present
-	if tmplDesc, ok := getRequiredTmplMsg(templateProto); !ok {
+	if tmplDesc, ok := getRequiredMsg(templateProto, "Template"); !ok {
 		m.addError(templateProto.GetName(), unknownLine, "message 'Template' not defined")
 	} else {
 		m.addTemplateMessage(parser, templateProto, tmplDesc)
@@ -121,13 +122,7 @@ func (m *Model) addTemplateMessage(parser *FileDescriptorSetParser, templateProt
 				templateProto.getLineNumber(getPathForField(tmplDesc, i)),
 				err.Error())
 		}
-		m.TemplateMessage.Fields = append(m.TemplateMessage.Fields, fieldInfo{
-			Name:   fieldName,
-			GoName: camelCase(fieldName),
-			GoType: parser.goType(tmplDesc.DescriptorProto, fieldDesc),
-			Type:   typename,
-			Number: strconv.FormatInt(int64(fieldDesc.GetNumber()), 10),
-		})
+		m.TemplateMessage.Fields = append(m.TemplateMessage.Fields, fieldInfo{Name: fieldName, GoName: camelCase(fieldName), GoType: parser.goType(tmplDesc.DescriptorProto, fieldDesc), Type: typename, Number: strconv.FormatInt(int64(fieldDesc.GetNumber()), 10)})
 	}
 }
 
@@ -144,14 +139,14 @@ func getTmplFileDesc(fds []*FileDescriptor) (*FileDescriptor, []diag) {
 		}
 
 		if !proto.HasExtension(fd.GetOptions(), tmpl.E_TemplateName) || !proto.HasExtension(fd.GetOptions(), tmpl.E_TemplateVariety) {
-			diags = append(diags, createError(fd.GetName(), unknownLine,
+			diags = append(diags, createDiag(errorDiag, fd.GetName(), unknownLine,
 				"Contains only one of the following two options %s and %s. Both options are required.",
 				[]interface{}{tmpl.E_TemplateVariety.Name, tmpl.E_TemplateName.Name}))
 			continue
 		}
 
 		if templateDescriptorProto != nil {
-			diags = append(diags, createError(fd.GetName(), unknownLine,
+			diags = append(diags, createDiag(errorDiag, fd.GetName(), unknownLine,
 				"Proto files %s and %s, both have the options %s and %s. Only one proto file is allowed with those options",
 				[]interface{}{fd.GetName(), templateDescriptorProto.Name, tmpl.E_TemplateVariety.Name, tmpl.E_TemplateName.Name}))
 			continue
@@ -161,7 +156,7 @@ func getTmplFileDesc(fds []*FileDescriptor) (*FileDescriptor, []diag) {
 	}
 
 	if templateDescriptorProto == nil {
-		diags = append(diags, createError(unknownFile, unknownLine, "There has to be one proto file that has both extensions %s and %s",
+		diags = append(diags, createDiag(errorDiag, unknownFile, unknownLine, "There has to be one proto file that has both extensions %s and %s",
 			[]interface{}{tmpl.E_TemplateVariety.Name, tmpl.E_TemplateVariety.Name}))
 	}
 
@@ -207,10 +202,10 @@ func (m *Model) addTopLevelFields(fd *FileDescriptor) {
 	}
 }
 
-func getRequiredTmplMsg(fdp *FileDescriptor) (*Descriptor, bool) {
+func getRequiredMsg(fdp *FileDescriptor, msgName string) (*Descriptor, bool) {
 	var cstrDesc *Descriptor
 	for _, desc := range fdp.desc {
-		if desc.GetName() == "Template" {
+		if desc.GetName() == msgName {
 			cstrDesc = desc
 			break
 		}

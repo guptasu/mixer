@@ -14,15 +14,6 @@
 
 package template
 
-import (
-	"github.com/golang/protobuf/proto"
-
-	pb "istio.io/api/mixer/v1/config/descriptor"
-	adptConfig "istio.io/mixer/pkg/adapter/config"
-	template "istio.io/mixer/pkg/template"
-	istio_mixer_adapter_sample_reportXXXXX "istio.io/mixer/template/sample/report" // XXXXXXXXXXX
-)
-
 // InterfaceTemplate defines the template used to generate the adapter
 // interfaces for Mixer for a given aspect.
 var InterfaceTemplate = `// Copyright 2017 Istio Authors
@@ -43,90 +34,68 @@ var InterfaceTemplate = `// Copyright 2017 Istio Authors
 
 package template
 
-var (
-	SupportedTmplInfo = map[string]template.Info{
-	{{range .}}
-		{{.PackageName}}.TemplateName: {
-			InferTypeFn:     inferTypeFor{{.Name}},
-			CnstrDefConfig:  &{{.PackageName}}.ConstructorParam{},
-			ConfigureTypeFn: configureTypeFor{{.Name}},
-		},
+import (
+	"github.com/gogo/protobuf/proto"
+	pb "istio.io/api/mixer/v1/config/descriptor"
+	adptConfig "istio.io/mixer/pkg/adapter/config"
+	"istio.io/mixer/pkg/template"
+    {{range .}}
+		"{{.PackageImportPath}}"
+	{{end}}
+)
 
+var (
+	SupportedTmplInfo = map[string]template.Info {
+	{{range .}}
+		{{.GoPackageName}}.TemplateName: {
+		    CtrCfg:  &{{.GoPackageName}}.ConstructorParam{},
+		    BldrName:  "{{.PackageImportPath}}.{{.Name}}ProcessorBuilder",
+			SupportsTemplate: func(hndlrBuilder adptConfig.HandlerBuilder) bool {
+	            _, ok := hndlrBuilder.({{.GoPackageName}}.{{.Name}}ProcessorBuilder)
+	            return ok
+            },
+	        InferType: func(cp proto.Message, tEvalFn template.TypeEvalFn) (proto.Message, error) {
+	            var err error
+	            cpb := cp.(*{{.GoPackageName}}.ConstructorParam)
+			    infrdType := &{{.GoPackageName}}.Type{}
+
+                {{range .TemplateMessage.Fields}}
+                    {{if isPrimitiveValueType .GoType}}
+	            	    infrdType.{{.GoName}} = {{primitiveToValueType .GoType}}
+	            	{{end}}
+                    {{if isValueType .GoType}}
+	                    if infrdType.{{.GoName}}, err = tEvalFn(cpb.{{.GoName}}); err != nil {
+	                    	return nil, err
+	                    }
+	            	{{end}}
+                    {{if isStringValueTypeMap .GoType}}
+	                    infrdType.{{.GoName}} = make(map[string]pb.ValueType)
+	                    for k, v := range cpb.{{.GoName}} {
+	                    	if infrdType.{{.GoName}}[k], err = tEvalFn(v); err != nil {
+	                    		return nil, err
+	                    	}
+	                    }
+	            	{{end}}
+	            {{end}}
+
+	            return infrdType, nil
+            },
+			ConfigureType: func(types map[string]proto.Message, builder *adptConfig.HandlerBuilder) error {
+	            // Mixer framework should have ensured the type safety.
+	            castedBuilder := (*builder).({{.GoPackageName}}.{{.Name}}ProcessorBuilder)
+	            castedTypes := make(map[string]*{{.GoPackageName}}.Type)
+	            for k, v := range types {
+		            // Mixer framework should have ensured the type safety.
+		            v1 := v.(*{{.GoPackageName}}.Type)
+		            castedTypes[k] = v1
+	            }
+	            return castedBuilder.Configure{{.Name}}(castedTypes)
+            },
+		},
 	{{end}}
 	}
 )
-
 {{range .}}
-/////////////////////// Start generated code for template {{.Name}} ///////////////////////
-func supports{{.Name}}Builder(hndlrBuilder adptConfig.HandlerBuilder) bool {
-	_, ok := hndlrBuilder.({{.PackageName}}.{{.Name}}ProcessorBuilder)
-	return ok
-}
-func inferTypeFor{{.Name}}(cp proto.Message, tEvalFn template.TypeEvalFn) (proto.Message, error) {
-	var err error
-
-	cpb := cp.(*{{.PackageName}}.ConstructorParam)
-
-	infrdType := &{{.PackageName}}.Type{}
-
-	return infrdType, nil
-}
-/////////////////////// End generated code for template {{.Name}} ///////////////////////
 {{end}}
 
 `
-
-var (
-	SupportedTmplInfo = map[string]template.Info{
-		istio_mixer_adapter_sample_reportXXXXX.TemplateName: {
-			InferType:     inferTypeForXXXX,
-			CtrCfg:  &istio_mixer_adapter_sample_reportXXXXX.ConstructorParam{},
-			ConfigureType: configureTypeForXXXX,
-		},
-	}
-)
-
-/////////////////////// Start generated code for template XXXX ///////////////////////
-func supportsXXXXBuilder(hndlrBuilder adptConfig.HandlerBuilder) bool {
-	_, ok := hndlrBuilder.(istio_mixer_adapter_sample_reportXXXXX.SampleProcessorBuilder)
-	return ok
-}
-
-func inferTypeForXXXX(cp proto.Message, tEvalFn template.TypeEvalFn) (proto.Message, error) {
-	var err error
-
-	// Mixer framework should have ensured the type safety.
-	cpb := cp.(*istio_mixer_adapter_sample_reportXXXXX.ConstructorParam)
-
-	infrdType := &istio_mixer_adapter_sample_reportXXXXX.Type{}
-
-	if infrdType.Value, err = tEvalFn(cpb.Value); err != nil {
-		return nil, err
-	}
-
-	infrdType.Dimensions = make(map[string]pb.ValueType)
-	for k, v := range cpb.Dimensions {
-		if infrdType.Dimensions[k], err = tEvalFn(v); err != nil {
-			return nil, err
-		}
-	}
-
-	return infrdType, nil
-}
-
-func configureTypeForXXXX(types map[string]proto.Message, builder *adptConfig.HandlerBuilder) error {
-
-	// Mixer framework should have ensured the type safety.
-	castedBuilder := (*builder).(istio_mixer_adapter_sample_reportXXXXX.SampleProcessorBuilder)
-
-	castedTypes := make(map[string]*istio_mixer_adapter_sample_reportXXXXX.Type)
-	for k, v := range types {
-		// Mixer framework should have ensured the type safety.
-		v1 := v.(*istio_mixer_adapter_sample_reportXXXXX.Type)
-		castedTypes[k] = v1
-	}
-
-	return castedBuilder.ConfigureSample(castedTypes)
-}
-
-/////////////////////// End generated code for template XXXX ///////////////////////

@@ -39,7 +39,7 @@ type Generator struct {
 }
 
 const fullProtoNameOfValueTypeEnum = "istio.mixer.v1.config.descriptor.ValueType"
-const fullGoNameOfValueTypeEnum = "istio_mixer_v1_config_descriptor.ValueType"
+const fullGoNameOfValueTypeMessage = "istio_mixer_v1_config_descriptor.ValueType"
 
 // Generate creates a Go interfaces for adapters to implement for a given Template.
 func (g *Generator) Generate(fdsFile string) error {
@@ -47,7 +47,7 @@ func (g *Generator) Generate(fdsFile string) error {
 	intfaceTmpl, err := template.New("ProcInterface").Funcs(
 		template.FuncMap{
 			"replaceGoValueTypeToInterface": func(typeName string) string {
-				return strings.Replace(typeName, fullGoNameOfValueTypeEnum, "interface{}", 1)
+				return strings.Replace(typeName, fullGoNameOfValueTypeMessage, "interface{}", 1)
 			},
 		}).Parse(tmpl.InterfaceTemplate)
 	if err != nil {
@@ -118,7 +118,7 @@ func (g *Generator) Generate(fdsFile string) error {
 	if err != nil {
 		return err
 	}
-	defer func() { _ = f1.Close() }()
+	defer f1.Close()
 
 	if _, err = f1.Write(imptd); err != nil {
 		_ = f1.Close()
@@ -130,7 +130,7 @@ func (g *Generator) Generate(fdsFile string) error {
 	if err != nil {
 		return err
 	}
-	defer func() { _ = f2.Close() }()
+	defer f2.Close()
 	if _, err = f2.Write(tmplBuf.Bytes()); err != nil {
 		_ = f2.Close()
 		_ = os.Remove(f2.Name())

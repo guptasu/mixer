@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package istio.mixer.adapter.metric;
+package istio.mixer.template.metric;
 
 import "mixer/v1/config/descriptor/value_type.proto";
 import "pkg/adapter/template/TemplateExtensions.proto";
