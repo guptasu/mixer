@@ -18,7 +18,7 @@ package template
 // interfaces for Mixer for a given aspect.
 var InterfaceTemplate = `// Copyright 2017 Istio Authors
 //
-// Licensed under the Apache License, Version 2.0 (the "License");
+// Licensed under the Apache License, Version 2.0 (the);
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //

@@ -40,8 +40,10 @@ type Generator struct {
 	ImportMapping map[string]string
 }
 
-const fullGoNameOfValueTypePkgName = "istio_mixer_v1_config_descriptor."
-const fullGoNameOfValueTypeMessageName = "istio_mixer_v1_config_descriptor.ValueType"
+const (
+	fullGoNameOfValueTypePkgName     = "istio_mixer_v1_config_descriptor."
+	fullGoNameOfValueTypeMessageName = "istio_mixer_v1_config_descriptor.ValueType"
+)
 
 var primitiveToValueType = map[string]string{
 	"string":  fullGoNameOfValueTypePkgName + istio_mixer_v1_config_descriptor.STRING.String(),
