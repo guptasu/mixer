@@ -91,15 +91,18 @@ func (g *Generator) Generate(fdsFiles map[string]string) error {
 		if err != nil {
 			return fmt.Errorf("cannot parse file '%s' as a FileDescriptorSetProto. %v", fds, err)
 		}
-		parser, err := modelgen.CreateFileDescriptorSetParser(fds, g.ImportMapping, fdsFiles[fdsPath])
+
+		var parser *modelgen.FileDescriptorSetParser
+		parser, err = modelgen.CreateFileDescriptorSetParser(fds, g.ImportMapping, fdsFiles[fdsPath])
 		if err != nil {
 			return fmt.Errorf("cannot parse file '%s' as a FileDescriptorSetProto. %v", fds, err)
 		}
 
-		model, err := modelgen.Create(parser)
-		if err != nil {
+		var model *modelgen.Model
+		if model, err = modelgen.Create(parser); err != nil {
 			return err
 		}
+
 		// TODO validate there is no ambiguity in template names.
 		models = append(models, model)
 	}
@@ -116,7 +119,7 @@ func (g *Generator) Generate(fdsFiles map[string]string) error {
 
 	imports.LocalPrefix = "istio.io"
 	// OutFilePath provides context for import path. We rely on the supplied bytes for content.
-	imptd, err := imports.Process(g.OutFilePath, fmtd, &imports.Options{FormatOnly: true})
+	imptd, err := imports.Process(g.OutFilePath, fmtd, &imports.Options{FormatOnly: true, Comments: true})
 	if err != nil {
 		return fmt.Errorf("could not fix imports for generated code: %v", err)
 	}
