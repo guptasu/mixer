@@ -41,7 +41,6 @@ import (
     {{range .}}
 		"{{.PackageImportPath}}"
 	{{end}}
-	// foo
 )
 
 var (
