@@ -28,8 +28,8 @@ const TemplateName = "{{.PackageName}}.{{.Name}}"
 
 type Instance struct {
   Name string
-  {{range .TemplateMessage.Fields}}
-  {{.GoName}} {{replaceGoValueTypeToInterface .GoType}}
+  {{range .InstanceStruct.Fields}}
+  {{.Name}} {{.Type.Name}}
   {{end}}
 }
 

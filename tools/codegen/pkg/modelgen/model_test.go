@@ -72,32 +72,57 @@ func TestBasicTopLevelFields(t *testing.T) {
 	}
 }
 
+func TestInstanceFields(t *testing.T) {
+	testFilename := "testdata/simple_template.descriptor_set"
+	model, _ := createTestModel(t,
+		testFilename)
+
+	if len(model.InstanceStruct.Fields) != 3 {
+		t.Fatalf("len(CreateModel(%s).InstanceStruct.Fields) = %v, wanted %d", testFilename, len(model.InstanceStruct.Fields), 3)
+	}
+	testField(t, testFilename, model.InstanceStruct.Fields, "Blacklist", "bool")
+	testField(t, testFilename, model.InstanceStruct.Fields, "Val", "interface{}")
+	testField(t, testFilename, model.InstanceStruct.Fields, "Dimensions", "map[string]interface{}")
+}
+
 func TestTypeFields(t *testing.T) {
 	testFilename := "testdata/simple_template.descriptor_set"
 	model, _ := createTestModel(t,
 		testFilename)
 
-	if len(model.TemplateMessage.Fields) != 3 {
-		t.Fatalf("len(CreateModel(%s).TypeMessage.Fields) = %v, wanted %d", testFilename, len(model.TemplateMessage.Fields), 3)
+	if len(model.TypeMessage.Fields) != 3 {
+		t.Fatalf("len(CreateModel(%s).TypeMessage.Fields) = %v, wanted %d", testFilename, len(model.TypeMessage.Fields), 3)
 	}
-	testField(t, testFilename, model.TemplateMessage.Fields, "blacklist", "bool", "Blacklist", "bool")
-	testField(t, testFilename, model.TemplateMessage.Fields, "val", "istio.mixer.v1.config.descriptor.ValueType", "Val", "istio_mixer_v1_config_descriptor.ValueType")
-	testField(t, testFilename, model.TemplateMessage.Fields, "dimensions", "map<string, istio.mixer.v1.config.descriptor.ValueType>", "Dimensions", "map[string]istio_mixer_v1_config_descriptor.ValueType")
+	testField(t, testFilename, model.TypeMessage.Fields, "blacklist", fullProtoNameOfValueTypeEnum)
+	testField(t, testFilename, model.TypeMessage.Fields, "val", fullProtoNameOfValueTypeEnum)
+	testField(t, testFilename, model.TypeMessage.Fields, "dimensions", fmt.Sprintf("map<string, %s>", fullProtoNameOfValueTypeEnum))
 }
 
-func testField(t *testing.T, testFilename string, fields []fieldInfo, wantProtoFldName string, wantProtoFldType string, wantGoFldName string, wantGoFldType string) {
+func TestConstructorParamFields(t *testing.T) {
+	testFilename := "testdata/simple_template.descriptor_set"
+	model, _ := createTestModel(t,
+		testFilename)
+
+	if len(model.ConstructorParamMessage.Fields) != 3 {
+		t.Fatalf("len(CreateModel(%s).ConstructorParamMessage.Fields) = %v, wanted %d", testFilename, len(model.ConstructorParamMessage.Fields), 3)
+	}
+	testField(t, testFilename, model.ConstructorParamMessage.Fields, "blacklist", "bool")
+	testField(t, testFilename, model.ConstructorParamMessage.Fields, "val", "string")
+	testField(t, testFilename, model.ConstructorParamMessage.Fields, "dimensions", "map<string, string>")
+}
+
+func testField(t *testing.T, testFilename string, fields []fieldInfo, fldName string, expectedFldType string) {
 	found := false
 	for _, cf := range fields {
-		if cf.Name == wantProtoFldName {
+		if cf.Name == fldName {
 			found = true
-			if cf.GoName != wantGoFldName || cf.Type != wantProtoFldType || cf.GoType != wantGoFldType {
-				t.Fatalf("Got CreateModel(%s).TemplateMessage.Fields[%s] = GoName:%s, Type:%s, GoType:%s, \nwanted GoName:%s, Type:%s, GoType:%s",
-					testFilename, wantProtoFldName, cf.GoName, cf.Type, cf.GoType, wantGoFldName, wantProtoFldType, wantGoFldType)
+			if cf.Type.Name != expectedFldType {
+				t.Fatalf("CreateModel(%s).ConstructorFields[%s] = %s, wanted %s", testFilename, fldName, cf.Type.Name, expectedFldType)
 			}
 		}
 	}
 	if !found {
-		t.Fatalf("CreateModel(%s).TemplateMessage = %v, wanted to contain field with name '%s'", testFilename, fields, wantProtoFldName)
+		t.Fatalf("CreateModel(%s).ConstructorFields = %v, wanted to contain field with name '%s'", testFilename, fields, fldName)
 	}
 }
 
@@ -108,7 +133,7 @@ func createTestModel(t *testing.T, inputFDS string) (*Model, error) {
 
 	}
 
-	parser, _ := CreateFileDescriptorSetParser(fds, map[string]string{}, "")
+	parser, _ := CreateFileDescriptorSetParser(fds, map[string]string{})
 	return Create(parser)
 }
 
