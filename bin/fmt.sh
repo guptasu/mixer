@@ -9,7 +9,7 @@ source $SCRIPTPATH/use_bazel_go.sh
 ROOTDIR=$SCRIPTPATH/..
 cd $ROOTDIR
 
-GO_FILES=$(find adapter cmd example tools/codegen pkg -type f -name '*.go')
+GO_FILES=$(find adapter cmd example tools/codegen pkg -type f -name '*.go' -not -path "pkg/template/template.gen.go")
 
 UX=$(uname)
 
@@ -22,6 +22,7 @@ for fl in ${GO_FILES}; do
 	fi
 done
 gofmt -s -w ${GO_FILES}
+echo $GO_FILES
 goimports -w -local istio.io ${GO_FILES}
 buildifier -mode=fix $(find . -name BUILD -type f)
 buildifier -mode=fix ./BUILD.api
