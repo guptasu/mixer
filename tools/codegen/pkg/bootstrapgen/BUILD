@@ -27,7 +27,6 @@ go_test(
     ],
     data = [
         "//tools/codegen/pkg/bootstrapgen/testdata:descriptors",
-        "//tools/codegen/pkg/bootstrapgen/testdata:error_test_files",
         "//tools/codegen/pkg/bootstrapgen/testdata:golden_files",
     ],
     library = ":go_default_library",
