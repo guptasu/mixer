@@ -35,17 +35,16 @@ var InterfaceTemplate = `// Copyright 2017 Istio Authors
 package template
 
 import (
-	"github.com/gogo/protobuf/proto"
-	pb "istio.io/api/mixer/v1/config/descriptor"
+    "github.com/golang/protobuf/proto"
+	"istio.io/api/mixer/v1/config/descriptor"
 	adptConfig "istio.io/mixer/pkg/adapter/config"
-	"istio.io/mixer/pkg/template"
     {{range .}}
 		"{{.PackageImportPath}}"
 	{{end}}
 )
 
 var (
-	SupportedTmplInfo = map[string]template.Info {
+	SupportedTmplInfo = map[string]Info {
 	{{range .}}
 		{{.GoPackageName}}.TemplateName: {
 		    CtrCfg:  &{{.GoPackageName}}.ConstructorParam{},
@@ -54,8 +53,8 @@ var (
 	            _, ok := hndlrBuilder.({{.GoPackageName}}.{{.Name}}ProcessorBuilder)
 	            return ok
             },
-	        InferType: func(cp proto.Message, tEvalFn template.TypeEvalFn) (proto.Message, error) {
-	            var err error
+	        InferType: func(cp proto.Message, tEvalFn TypeEvalFn) (proto.Message, error) {
+	            var err error = nil
 	            cpb := cp.(*{{.GoPackageName}}.ConstructorParam)
 			    infrdType := &{{.GoPackageName}}.Type{}
 
@@ -69,7 +68,7 @@ var (
 	                    }
 	            	{{end}}
                     {{if isStringValueTypeMap .GoType}}
-	                    infrdType.{{.GoName}} = make(map[string]pb.ValueType)
+	                    infrdType.{{.GoName}} = make(map[string]istio_mixer_v1_config_descriptor.ValueType)
 	                    for k, v := range cpb.{{.GoName}} {
 	                    	if infrdType.{{.GoName}}[k], err = tEvalFn(v); err != nil {
 	                    		return nil, err
@@ -77,8 +76,8 @@ var (
 	                    }
 	            	{{end}}
 	            {{end}}
-
-	            return infrdType, nil
+                _ = cpb
+	            return infrdType, err
             },
 			ConfigureType: func(types map[string]proto.Message, builder *adptConfig.HandlerBuilder) error {
 	            // Mixer framework should have ensured the type safety.
