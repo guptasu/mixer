@@ -40,13 +40,14 @@ type Generator struct {
 	ImportMapping map[string]string
 }
 
-const fullGoNameOfValueTypeMessage = "istio_mixer_v1_config_descriptor."
+const fullGoNameOfValueTypePkgName = "istio_mixer_v1_config_descriptor."
+const fullGoNameOfValueTypeMessageName = "istio_mixer_v1_config_descriptor.ValueType"
 
 var primitiveToValueType = map[string]string{
-	"string":  fullGoNameOfValueTypeMessage + istio_mixer_v1_config_descriptor.STRING.String(),
-	"bool":    fullGoNameOfValueTypeMessage + istio_mixer_v1_config_descriptor.BOOL.String(),
-	"int64":   fullGoNameOfValueTypeMessage + istio_mixer_v1_config_descriptor.INT64.String(),
-	"float64": fullGoNameOfValueTypeMessage + istio_mixer_v1_config_descriptor.DOUBLE.String(),
+	"string":  fullGoNameOfValueTypePkgName + istio_mixer_v1_config_descriptor.STRING.String(),
+	"bool":    fullGoNameOfValueTypePkgName + istio_mixer_v1_config_descriptor.BOOL.String(),
+	"int64":   fullGoNameOfValueTypePkgName + istio_mixer_v1_config_descriptor.INT64.String(),
+	"float64": fullGoNameOfValueTypePkgName + istio_mixer_v1_config_descriptor.DOUBLE.String(),
 }
 
 // Generate creates a Go file that will be build inside mixer framework. The generated file contains all the
@@ -64,12 +65,13 @@ func (g *Generator) Generate(fdsFiles map[string]string) error {
 				return primitiveToValueType[goTypeName]
 			},
 			"isValueType": func(goTypeName string) bool {
-				return goTypeName == fullGoNameOfValueTypeMessage+"ValueType"
+				return goTypeName == fullGoNameOfValueTypeMessageName
 			},
 			"isStringValueTypeMap": func(goTypeName string) bool {
-				return strings.Replace(goTypeName, " ", "", -1) == "map[string]"+fullGoNameOfValueTypeMessage+"ValueType"
+				return strings.Replace(goTypeName, " ", "", -1) == "map[string]"+fullGoNameOfValueTypeMessageName
 			},
 		}).Parse(tmplPkg.InterfaceTemplate)
+
 	if err != nil {
 		return fmt.Errorf("cannot load template: %v", err)
 	}
@@ -87,7 +89,6 @@ func (g *Generator) Generate(fdsFiles map[string]string) error {
 		if err != nil {
 			return fmt.Errorf("cannot parse file '%s' as a FileDescriptorSetProto. %v", fds, err)
 		}
-		// TODO take packageImportPath from a parameter
 		parser, err := modelgen.CreateFileDescriptorSetParser(fds, g.ImportMapping, fdsFiles[fdsPath])
 		if err != nil {
 			return fmt.Errorf("cannot parse file '%s' as a FileDescriptorSetProto. %v", fds, err)
@@ -97,6 +98,7 @@ func (g *Generator) Generate(fdsFiles map[string]string) error {
 		if err != nil {
 			return err
 		}
+		// TODO validate there is no ambiguity in template names.
 		models = append(models, model)
 	}
 
@@ -117,14 +119,14 @@ func (g *Generator) Generate(fdsFiles map[string]string) error {
 		return fmt.Errorf("could not fix imports for generated code: %v", err)
 	}
 
-	f1, err := os.Create(g.OutFilePath)
+	f, err := os.Create(g.OutFilePath)
 	if err != nil {
 		return err
 	}
-	defer func() { _ = f1.Close() }()
-	if _, err = f1.Write(imptd); err != nil {
-		_ = f1.Close()
-		_ = os.Remove(f1.Name())
+	defer func() { _ = f.Close() }()
+	if _, err = f.Write(imptd); err != nil {
+		_ = f.Close()
+		_ = os.Remove(f.Name())
 		return err
 	}
 

@@ -17,9 +17,9 @@ package bootstrapgen
 import (
 	"bytes"
 	"io"
+	"io/ioutil"
 	"os"
 	"testing"
-	"io/ioutil"
 )
 
 type logFn func(string, ...interface{})
@@ -69,7 +69,6 @@ func TestGenerator_Generate(t *testing.T) {
 		})
 	}
 }
-
 
 const chunkSize = 64000
 
