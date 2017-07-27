@@ -42,10 +42,6 @@ filegroup(
     name = "golden_files",
     testonly = True,
     srcs = [
-        "AllTemplates.golden.go",
-        "ListTemplate.golden.go",
-        "LogTemplate.golden.go",
-        "MetricTemplate.golden.go",
-        "QuotaTemplate.golden.go",
+        "AllTemplates.go.golden",
     ],
 )
