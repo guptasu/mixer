@@ -79,7 +79,8 @@ var (
 				}
 				return castedBuilder.ConfigureSample(castedTypes)
 			},
-			ProcessCheck: func(allCnstrs map[string]proto.Message, attrs attribute.Bag, mapper expr.Evaluator, handler adptConfig.Handler) (rpc.Status, config.CacheabilityInfo) {
+			ProcessCheck: func(allCnstrs map[string]proto.Message, attrs attribute.Bag, mapper expr.Evaluator,
+				handler adptConfig.Handler) (rpc.Status, config.CacheabilityInfo) {
 				var found bool
 				var err error
 

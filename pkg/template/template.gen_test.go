@@ -293,14 +293,17 @@ dimensions:
 					t.Errorf("got err %v\nwant <nil>", cerr)
 				}
 				if tst.expectedValueType != cv.(*sample_report.Type).Value {
-					t.Errorf("got inferTypeForSampleReport(\n%s\n).value=%v\nwant %v", tst.cnstrCnfg, cv.(*sample_report.Type).Value, tst.expectedValueType)
+					t.Errorf("got inferTypeForSampleReport(\n%s\n).value=%v\nwant %v",
+						tst.cnstrCnfg, cv.(*sample_report.Type).Value, tst.expectedValueType)
 				}
 				if len(tst.expectedDimensionsType) != len(cv.(*sample_report.Type).Dimensions) {
-					t.Errorf("got len ( inferTypeForSampleReport(\n%s\n).dimensions) =%v \n want %v", tst.cnstrCnfg, len(cv.(*sample_report.Type).Dimensions), len(tst.expectedDimensionsType))
+					t.Errorf("got len ( inferTypeForSampleReport(\n%s\n).dimensions) =%v \n want %v",
+						tst.cnstrCnfg, len(cv.(*sample_report.Type).Dimensions), len(tst.expectedDimensionsType))
 				}
 				for a, b := range tst.expectedDimensionsType {
 					if cv.(*sample_report.Type).Dimensions[a] != b {
-						t.Errorf("got inferTypeForSampleReport(\n%s\n).dimensions[%s] =%v \n want %v", tst.cnstrCnfg, a, cv.(*sample_report.Type).Dimensions[a], b)
+						t.Errorf("got inferTypeForSampleReport(\n%s\n).dimensions[%s] =%v \n want %v",
+							tst.cnstrCnfg, a, cv.(*sample_report.Type).Dimensions[a], b)
 					}
 				}
 			} else {
@@ -482,11 +485,13 @@ dimensions:
 					t.Errorf("got err %v\nwant <nil>", cerr)
 				}
 				if len(tst.expectedDimensionsType) != len(cv.(*sample_quota.Type).Dimensions) {
-					t.Errorf("got len ( inferTypeForSampleReport(\n%s\n).dimensions) =%v \n want %v", tst.cnstrCnfg, len(cv.(*sample_quota.Type).Dimensions), len(tst.expectedDimensionsType))
+					t.Errorf("got len ( inferTypeForSampleReport(\n%s\n).dimensions) =%v \n want %v",
+						tst.cnstrCnfg, len(cv.(*sample_quota.Type).Dimensions), len(tst.expectedDimensionsType))
 				}
 				for a, b := range tst.expectedDimensionsType {
 					if cv.(*sample_quota.Type).Dimensions[a] != b {
-						t.Errorf("got inferTypeForSampleReport(\n%s\n).dimensions[%s] =%v \n want %v", tst.cnstrCnfg, a, cv.(*sample_quota.Type).Dimensions[a], b)
+						t.Errorf("got inferTypeForSampleReport(\n%s\n).dimensions[%s] =%v \n want %v",
+							tst.cnstrCnfg, a, cv.(*sample_quota.Type).Dimensions[a], b)
 					}
 				}
 
@@ -622,7 +627,8 @@ func TestProcessCheck(t *testing.T) {
 			} else {
 				v := (*h).(*checkHandler).procCallInput
 				if !cmp(v, tst.wantCallInstance) || !reflect.DeepEqual(tst.wantCacheInfo, cInfo) {
-					t.Errorf("SupportedTmplInfo[sample_check.TemplateName].CheckSample(%v) handler invoked value = %v,%v want %v,%v", tst.ctrs, v, cInfo, tst.wantCallInstance, tst.wantCacheInfo)
+					t.Errorf("SupportedTmplInfo[sample_check.TemplateName].CheckSample(%v) handler " +
+						"invoked value = %v,%v want %v,%v", tst.ctrs, v, cInfo, tst.wantCallInstance, tst.wantCacheInfo)
 				}
 			}
 		})
@@ -679,7 +685,8 @@ func TestProcessQuota(t *testing.T) {
 			} else {
 				v := (*h).(*quotaHandler).procCallInput
 				if !reflect.DeepEqual(v, tst.wantCallInstance) || !reflect.DeepEqual(tst.wantCacheInfo, cInfo) || !reflect.DeepEqual(tst.wantQuotaRes, qr) {
-					t.Errorf("SupportedTmplInfo[sample_quota.TemplateName].AllocQuota(%v) handler invoked value = %v,%v,%v  want %v,%v,%v", tst.ctrs, v, cInfo, qr, tst.wantCallInstance, tst.wantCacheInfo, tst.wantQuotaRes)
+					t.Errorf("SupportedTmplInfo[sample_quota.TemplateName].AllocQuota(%v) " +
+						"handler invoked value = %v,%v,%v  want %v,%v,%v", tst.ctrs, v, cInfo, qr, tst.wantCallInstance, tst.wantCacheInfo, tst.wantQuotaRes)
 				}
 			}
 		})
