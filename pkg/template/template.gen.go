@@ -160,41 +160,40 @@ var (
 				return castedBuilder.ConfigureQuota(castedTypes)
 			},
 			ProcessQuota: func(quotaName string, cnstr proto.Message, attrs attribute.Bag, mapper expr.Evaluator, handler adptConfig.Handler,
-				qma adapter.QuotaRequestArgs) (rpc.Status, adapter.QuotaResult) {
+				qma adapter.QuotaRequestArgs) (rpc.Status,  config.CacheabilityInfo, adapter.QuotaResult) {
 				castedCnstr := cnstr.(*istio_mixer_adapter_sample_quota.ConstructorParam)
 
 				dimensions, err := evalAll(castedCnstr.Dimensions, attrs, mapper)
 				if err != nil {
 					msg := fmt.Sprintf("failed to eval dimensions for constructor '%s': %v", quotaName, err)
 					glog.Error(msg)
-					return status.WithInvalidArgument(msg), adapter.QuotaResult{}
+					return status.WithInvalidArgument(msg), config.CacheabilityInfo{}, adapter.QuotaResult{}
 				}
 
-
-
-				var qr adapter.QuotaResult
 				instance := &istio_mixer_adapter_sample_quota.Instance {
 					Name:       quotaName,
 					Dimensions: dimensions,
 				}
 
+				var qr adapter.QuotaResult
+				var cacheInfo config.CacheabilityInfo
 
-				if _,_, err := handler.(istio_mixer_adapter_sample_quota.QuotaProcessor).AllocQuota(instance, qma); err != nil {
+				if qr, cacheInfo, err = handler.(istio_mixer_adapter_sample_quota.QuotaProcessor).AllocQuota(instance, qma); err != nil {
 					glog.Errorf("Quota allocation failed: %v", err)
-					return status.WithError(err), adapter.QuotaResult{}
+					return status.WithError(err), config.CacheabilityInfo{}, adapter.QuotaResult{}
 				}
 
 				if qr.Amount == 0 {
 					msg := fmt.Sprintf("Unable to allocate %v units from quota %s", qma.QuotaAmount, quotaName)
 					glog.Warning(msg)
-					return status.WithResourceExhausted(msg), adapter.QuotaResult{}
+					return status.WithResourceExhausted(msg), config.CacheabilityInfo{}, adapter.QuotaResult{}
 				}
 
 				if glog.V(2) {
 					glog.Infof("Allocated %v units from quota %s", qma.QuotaAmount, quotaName)
 				}
 
-				return status.OK, qr
+				return status.OK, cacheInfo, qr
 			},
 			ProcessCheck:  nil,
 			ProcessReport: nil,
@@ -254,7 +253,6 @@ var (
 				}
 
 				for name, md := range castedCnstrs {
-
 					value, err := mapper.Eval(md.Value, attrs)
 					if err != nil {
 						result = multierror.Append(result, fmt.Errorf("failed to eval value for constructor '%s': %v", name, err))

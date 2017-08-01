@@ -51,7 +51,7 @@ type (
 
 	// ProcessQuotaFn instantiates the instance object and dispatches them to the handler.
 	ProcessQuotaFn func(quotaName string, cnstr proto.Message, attrs attribute.Bag, mapper expr.Evaluator, handler adptConfig.Handler,
-		args adapter.QuotaRequestArgs) (rpc.Status, adapter.QuotaResult)
+		args adapter.QuotaRequestArgs) (rpc.Status, config.CacheabilityInfo, adapter.QuotaResult)
 
 	// SupportsTemplateFn check if the handlerBuilder supports template.
 	SupportsTemplateFn func(hndlrBuilder adptConfig.HandlerBuilder) bool
