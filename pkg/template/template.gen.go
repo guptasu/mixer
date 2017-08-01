@@ -162,8 +162,6 @@ var (
 			ProcessQuota: func(quotaName string, cnstr proto.Message, attrs attribute.Bag, mapper expr.Evaluator, handler adptConfig.Handler,
 				qma adapter.QuotaRequestArgs) (rpc.Status, adapter.QuotaResult) {
 				castedCnstr := cnstr.(*istio_mixer_adapter_sample_quota.ConstructorParam)
-				// castedCnstrs := map[string]*istio_mixer_adapter_sample_quota.ConstructorParam {quotaName:castedCnstr}
-				var instances []*istio_mixer_adapter_sample_quota.Instance
 
 				dimensions, err := evalAll(castedCnstr.Dimensions, attrs, mapper)
 				if err != nil {
@@ -172,13 +170,16 @@ var (
 					return status.WithInvalidArgument(msg), adapter.QuotaResult{}
 				}
 
-				instances = append(instances, &istio_mixer_adapter_sample_quota.Instance{
-					Name:       quotaName,
-					Dimensions: dimensions,
-				})
+
 
 				var qr adapter.QuotaResult
-				if err := handler.(istio_mixer_adapter_sample_quota.QuotaProcessor).ReportQuota(instances); err != nil {
+				instance := &istio_mixer_adapter_sample_quota.Instance {
+					Name:       quotaName,
+					Dimensions: dimensions,
+				}
+
+
+				if _,_, err := handler.(istio_mixer_adapter_sample_quota.QuotaProcessor).AllocQuota(instance, qma); err != nil {
 					glog.Errorf("Quota allocation failed: %v", err)
 					return status.WithError(err), adapter.QuotaResult{}
 				}

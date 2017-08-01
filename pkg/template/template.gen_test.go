@@ -24,10 +24,13 @@ import (
 	"github.com/ghodss/yaml"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/empty"
+	rpc "github.com/googleapis/googleapis/google/rpc"
 
 	pb "istio.io/api/mixer/v1/config/descriptor"
+	"istio.io/mixer/pkg/adapter"
 	adptConfig "istio.io/mixer/pkg/adapter/config"
 	adpTmpl "istio.io/mixer/pkg/adapter/template"
+	"istio.io/mixer/pkg/expr"
 	sample_check "istio.io/mixer/template/sample/check"
 	sample_quota "istio.io/mixer/template/sample/quota"
 	sample_report "istio.io/mixer/template/sample/report"
@@ -86,41 +89,55 @@ func (h badHandler) Close() error                                         { retu
 func (h badHandler) Build(cnfg proto.Message) (adptConfig.Handler, error) { return nil, nil }
 
 type reportHandler struct {
+	adptConfig.Handler
 	cnfgCallInput interface{}
+	procCallInput interface{}
 }
 
-func (h reportHandler) Close() error                                           { return nil }
-func (h reportHandler) ReportSample(instances []*sample_report.Instance) error { return nil }
-func (h reportHandler) Build(cnfg proto.Message) (adptConfig.Handler, error)   { return nil, nil }
-func (h* reportHandler) ConfigureSample(t map[string]*sample_report.Type) error   {
+func (h *reportHandler) Close() error { return nil }
+func (h *reportHandler) ReportSample(instances []*sample_report.Instance) error {
+	h.procCallInput = instances
+	return nil
+}
+func (h *reportHandler) Build(cnfg proto.Message) (adptConfig.Handler, error) { return nil, nil }
+func (h *reportHandler) ConfigureSample(t map[string]*sample_report.Type) error {
 	h.cnfgCallInput = t
 	return nil
 }
 
-type checkHandler struct{
+type checkHandler struct {
+	adptConfig.Handler
 	cnfgCallInput interface{}
+	procCallInput interface{}
 }
 
-func (h checkHandler) Close() error { return nil }
-func (h checkHandler) CheckSample(instance []*sample_check.Instance) (bool, adptConfig.CacheabilityInfo, error) {
+func (h *checkHandler) Close() error { return nil }
+func (h *checkHandler) CheckSample(instance []*sample_check.Instance) (bool, adptConfig.CacheabilityInfo, error) {
+	h.procCallInput = instance
 	return true, adptConfig.CacheabilityInfo{}, nil
 }
-func (h checkHandler) Build(cnfg proto.Message) (adptConfig.Handler, error) { return nil, nil }
-func (h *checkHandler) ConfigureSample(t map[string]*sample_check.Type) error  {
+func (h *checkHandler) Build(cnfg proto.Message) (adptConfig.Handler, error) { return nil, nil }
+func (h *checkHandler) ConfigureSample(t map[string]*sample_check.Type) error {
 	h.cnfgCallInput = t
 	return nil
 }
 
-type quotaHandler struct{
+type quotaHandler struct {
+	adptConfig.Handler
 	cnfgCallInput interface{}
+	procCallInput interface{}
 }
 
-func (h quotaHandler) Close() error                                           { return nil }
-func (h quotaHandler) ReportSample(instances []*sample_report.Instance) error { return nil }
-func (h quotaHandler) Build(cnfg proto.Message) (adptConfig.Handler, error)   { return nil, nil }
-func (h *quotaHandler) ConfigureQuota(t map[string]*sample_quota.Type) error     {
+func (h *quotaHandler) Close() error { return nil }
+func (h *quotaHandler) AllocQuota(instance *sample_quota.Instance, qra adapter.QuotaRequestArgs) (adapter.QuotaResult, adptConfig.CacheabilityInfo, error) {
+	h.procCallInput = instance
+	return adapter.QuotaResult{}, adptConfig.CacheabilityInfo{}, nil
+}
+func (h *quotaHandler) Build(cnfg proto.Message) (adptConfig.Handler, error) { return nil, nil }
+func (h *quotaHandler) ConfigureQuota(t map[string]*sample_quota.Type) error {
 	h.cnfgCallInput = t
-	return nil }
+	return nil
+}
 
 func TestHandlerSupportsTemplate(t *testing.T) {
 	for _, tst := range []struct {
@@ -135,7 +152,7 @@ func TestHandlerSupportsTemplate(t *testing.T) {
 		},
 		{
 			tmplName: sample_report.TemplateName,
-			hndlr:    reportHandler{},
+			hndlr:    &reportHandler{},
 			result:   true,
 		},
 		{
@@ -145,7 +162,7 @@ func TestHandlerSupportsTemplate(t *testing.T) {
 		},
 		{
 			tmplName: sample_check.TemplateName,
-			hndlr:    checkHandler{},
+			hndlr:    &checkHandler{},
 			result:   true,
 		},
 		{
@@ -155,7 +172,7 @@ func TestHandlerSupportsTemplate(t *testing.T) {
 		},
 		{
 			tmplName: sample_quota.TemplateName,
-			hndlr:    quotaHandler{},
+			hndlr:    &quotaHandler{},
 			result:   true,
 		},
 	} {
@@ -181,7 +198,7 @@ func TestBuilderSupportsTemplate(t *testing.T) {
 		},
 		{
 			tmplName:  sample_report.TemplateName,
-			hndlrBldr: reportHandler{},
+			hndlrBldr: &reportHandler{},
 			result:    true,
 		},
 		{
@@ -191,7 +208,7 @@ func TestBuilderSupportsTemplate(t *testing.T) {
 		},
 		{
 			tmplName:  sample_check.TemplateName,
-			hndlrBldr: checkHandler{},
+			hndlrBldr: &checkHandler{},
 			result:    true,
 		},
 		{
@@ -201,7 +218,7 @@ func TestBuilderSupportsTemplate(t *testing.T) {
 		},
 		{
 			tmplName:  sample_quota.TemplateName,
-			hndlrBldr: quotaHandler{},
+			hndlrBldr: &quotaHandler{},
 			result:    true,
 		},
 	} {
@@ -279,7 +296,6 @@ dimensions:
 						t.Errorf("got inferTypeForSampleReport(\n%s\n).dimensions[%s] =%v \n want %v", tst.cnstrCnfg, a, cv.(*sample_report.Type).Dimensions[a], b)
 					}
 				}
-
 			} else {
 				if cerr == nil || !strings.Contains(cerr.Error(), tst.expectedErr) {
 					t.Errorf("got error %v\nwant %v", cerr, tst.expectedErr)
@@ -354,6 +370,37 @@ check_expression: response.size
 	}
 }
 
+type ProcessTest struct {
+	name         string
+	ctrs         map[string]proto.Message
+	hdlr         adptConfig.Handler
+	result       rpc.Status
+	wantInstName string
+}
+
+func TestProcessReport(t *testing.T) {
+	for _, tst := range []ProcessTest{
+		{
+			name: "SimpleReport",
+			ctrs: map[string]proto.Message{
+				"foo": &sample_report.ConstructorParam{Value: "1", Dimensions: map[string]string{"s": "2"}},
+			},
+			hdlr:         &reportHandler{},
+			wantInstName: "foo",
+		},
+	} {
+		t.Run(tst.name, func(t *testing.T) {
+			h := &tst.hdlr
+			ev, _ := expr.NewCEXLEvaluator(expr.DefaultCacheSize)
+			s := SupportedTmplInfo[sample_report.TemplateName].ProcessReport(tst.ctrs, nil, ev, *h)
+			v := (*h).(*reportHandler).procCallInput.([]*sample_report.Instance)
+			if s.Code != tst.result.Code || s.Message != tst.result.Message || v[0].Name != tst.wantInstName {
+				t.Errorf("SupportedTmplInfo[sample_report.TemplateName].ProcessReport(%v) handler invoked value = %v,%v, want %v,%v", tst.ctrs, s, v[0].Name, tst.result, tst.wantInstName)
+			}
+		})
+	}
+}
+
 type ConfigureTypeTest struct {
 	name     string
 	tmpl     string
@@ -363,29 +410,29 @@ type ConfigureTypeTest struct {
 }
 
 func TestConfigureType(t *testing.T) {
-	for _, tst := range []ConfigureTypeTest {
+	for _, tst := range []ConfigureTypeTest{
 		{
-			name :    "SimpleReport",
+			name:     "SimpleReport",
 			tmpl:     sample_report.TemplateName,
-			types:    map[string]proto.Message{"foo":&sample_report.Type{}},
+			types:    map[string]proto.Message{"foo": &sample_report.Type{}},
 			hdlrBldr: &reportHandler{},
-			want:     map[string]*sample_report.Type{"foo": &sample_report.Type{}},
+			want:     map[string]*sample_report.Type{"foo": {}},
 		},
 		{
-			name :    "SimpleCheck",
+			name:     "SimpleCheck",
 			tmpl:     sample_check.TemplateName,
-			types:    map[string]proto.Message{"foo":&sample_check.Type{}},
+			types:    map[string]proto.Message{"foo": &sample_check.Type{}},
 			hdlrBldr: &checkHandler{},
-			want:     map[string]*sample_check.Type{"foo": &sample_check.Type{}},
+			want:     map[string]*sample_check.Type{"foo": {}},
 		},
 		{
-			name :    "SimpleQuota",
+			name:     "SimpleQuota",
 			tmpl:     sample_quota.TemplateName,
-			types:    map[string]proto.Message{"foo":&sample_quota.Type{}},
+			types:    map[string]proto.Message{"foo": &sample_quota.Type{}},
 			hdlrBldr: &quotaHandler{},
-			want:     map[string]*sample_quota.Type{"foo": &sample_quota.Type{}},
+			want:     map[string]*sample_quota.Type{"foo": {}},
 		},
-	}{
+	} {
 		t.Run(tst.name, func(t *testing.T) {
 			hb := &tst.hdlrBldr
 			SupportedTmplInfo[tst.tmpl].ConfigureType(tst.types, hb)
