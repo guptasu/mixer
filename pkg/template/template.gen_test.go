@@ -85,28 +85,42 @@ type badHandler struct{}
 func (h badHandler) Close() error                                         { return nil }
 func (h badHandler) Build(cnfg proto.Message) (adptConfig.Handler, error) { return nil, nil }
 
-type reportHandler struct{}
+type reportHandler struct {
+	cnfgCallInput interface{}
+}
 
 func (h reportHandler) Close() error                                           { return nil }
 func (h reportHandler) ReportSample(instances []*sample_report.Instance) error { return nil }
 func (h reportHandler) Build(cnfg proto.Message) (adptConfig.Handler, error)   { return nil, nil }
-func (h reportHandler) ConfigureSample(map[string]*sample_report.Type) error   { return nil }
+func (h* reportHandler) ConfigureSample(t map[string]*sample_report.Type) error   {
+	h.cnfgCallInput = t
+	return nil
+}
 
-type checkHandler struct{}
+type checkHandler struct{
+	cnfgCallInput interface{}
+}
 
 func (h checkHandler) Close() error { return nil }
 func (h checkHandler) CheckSample(instance []*sample_check.Instance) (bool, adptConfig.CacheabilityInfo, error) {
 	return true, adptConfig.CacheabilityInfo{}, nil
 }
 func (h checkHandler) Build(cnfg proto.Message) (adptConfig.Handler, error) { return nil, nil }
-func (h checkHandler) ConfigureSample(map[string]*sample_check.Type) error  { return nil }
+func (h *checkHandler) ConfigureSample(t map[string]*sample_check.Type) error  {
+	h.cnfgCallInput = t
+	return nil
+}
 
-type quotaHandler struct{}
+type quotaHandler struct{
+	cnfgCallInput interface{}
+}
 
 func (h quotaHandler) Close() error                                           { return nil }
 func (h quotaHandler) ReportSample(instances []*sample_report.Instance) error { return nil }
 func (h quotaHandler) Build(cnfg proto.Message) (adptConfig.Handler, error)   { return nil, nil }
-func (h quotaHandler) ConfigureQuota(map[string]*sample_quota.Type) error     { return nil }
+func (h *quotaHandler) ConfigureQuota(t map[string]*sample_quota.Type) error     {
+	h.cnfgCallInput = t
+	return nil }
 
 func TestHandlerSupportsTemplate(t *testing.T) {
 	for _, tst := range []struct {
@@ -335,6 +349,57 @@ check_expression: response.size
 				if cerr == nil || !strings.Contains(cerr.Error(), tst.expectedErr) {
 					t.Errorf("got error %v\nwant %v", cerr, tst.expectedErr)
 				}
+			}
+		})
+	}
+}
+
+type ConfigureTypeTest struct {
+	name     string
+	tmpl     string
+	types    map[string]proto.Message
+	hdlrBldr adptConfig.HandlerBuilder
+	want     interface{}
+}
+
+func TestConfigureType(t *testing.T) {
+	for _, tst := range []ConfigureTypeTest {
+		{
+			name :    "SimpleReport",
+			tmpl:     sample_report.TemplateName,
+			types:    map[string]proto.Message{"foo":&sample_report.Type{}},
+			hdlrBldr: &reportHandler{},
+			want:     map[string]*sample_report.Type{"foo": &sample_report.Type{}},
+		},
+		{
+			name :    "SimpleCheck",
+			tmpl:     sample_check.TemplateName,
+			types:    map[string]proto.Message{"foo":&sample_check.Type{}},
+			hdlrBldr: &checkHandler{},
+			want:     map[string]*sample_check.Type{"foo": &sample_check.Type{}},
+		},
+		{
+			name :    "SimpleQuota",
+			tmpl:     sample_quota.TemplateName,
+			types:    map[string]proto.Message{"foo":&sample_quota.Type{}},
+			hdlrBldr: &quotaHandler{},
+			want:     map[string]*sample_quota.Type{"foo": &sample_quota.Type{}},
+		},
+	}{
+		t.Run(tst.name, func(t *testing.T) {
+			hb := &tst.hdlrBldr
+			SupportedTmplInfo[tst.tmpl].ConfigureType(tst.types, hb)
+
+			var c interface{}
+			if tst.tmpl == sample_report.TemplateName {
+				c = tst.hdlrBldr.(*reportHandler).cnfgCallInput
+			} else if tst.tmpl == sample_check.TemplateName {
+				c = tst.hdlrBldr.(*checkHandler).cnfgCallInput
+			} else if tst.tmpl == sample_quota.TemplateName {
+				c = tst.hdlrBldr.(*quotaHandler).cnfgCallInput
+			}
+			if !reflect.DeepEqual(c, tst.want) {
+				t.Errorf("SupportedTmplInfo[%s].ConfigureType(%v) handler invoked value = %v, want %v", tst.tmpl, tst.types, c, tst.want)
 			}
 		})
 	}
