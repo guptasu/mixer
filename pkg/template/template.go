@@ -23,7 +23,9 @@ import (
 
 	pb "istio.io/api/mixer/v1/config/descriptor"
 	"istio.io/mixer/pkg/adapter"
+	"istio.io/mixer/pkg/adapter/config"
 	adptConfig "istio.io/mixer/pkg/adapter/config"
+	adptTmpl "istio.io/mixer/pkg/adapter/template"
 	"istio.io/mixer/pkg/attribute"
 	"istio.io/mixer/pkg/expr"
 )
@@ -45,25 +47,32 @@ type (
 	ProcessReportFn func(allCnstrs map[string]proto.Message, attrs attribute.Bag, mapper expr.Evaluator, handler adptConfig.Handler) rpc.Status
 
 	// ProcessCheckFn instantiates the instance object and dispatches them to the handler.
-	ProcessCheckFn func(allCnstrs map[string]proto.Message, attrs attribute.Bag, mapper expr.Evaluator, handler adptConfig.Handler) rpc.Status
+	ProcessCheckFn func(allCnstrs map[string]proto.Message, attrs attribute.Bag, mapper expr.Evaluator, handler adptConfig.Handler) (rpc.Status, config.CacheabilityInfo)
 
 	// ProcessQuotaFn instantiates the instance object and dispatches them to the handler.
-	ProcessQuotaFn func(allCnstrs map[string]proto.Message, attrs attribute.Bag, mapper expr.Evaluator, handler adptConfig.Handler,
+	ProcessQuotaFn func(quotaName string, cnstr proto.Message, attrs attribute.Bag, mapper expr.Evaluator, handler adptConfig.Handler,
 		args adapter.QuotaRequestArgs) (rpc.Status, adapter.QuotaResult)
 
 	// SupportsTemplateFn check if the handlerBuilder supports template.
 	SupportsTemplateFn func(hndlrBuilder adptConfig.HandlerBuilder) bool
+
+	// HandlerSupportsTemplateFn check if the handler supports template.
+	HandlerSupportsTemplateFn func(hndlr adptConfig.Handler) bool
+
 	// Info contains all the information related a template like
 	// Default constructor params, type inference method etc.
 	Info struct {
-		CtrCfg           proto.Message
-		InferType        InferTypeFn
-		ConfigureType    ConfigureTypeFn
-		SupportsTemplate SupportsTemplateFn
-		BldrName         string
-		ProcessReport    ProcessReportFn
-		ProcessCheck     ProcessCheckFn
-		ProcessQuota     ProcessQuotaFn
+		CtrCfg                  proto.Message
+		InferType               InferTypeFn
+		ConfigureType           ConfigureTypeFn
+		SupportsTemplate        SupportsTemplateFn
+		HandlerSupportsTemplate HandlerSupportsTemplateFn
+		BldrName                string
+		HndlrName               string
+		Variety                 adptTmpl.TemplateVariety
+		ProcessReport           ProcessReportFn
+		ProcessCheck            ProcessCheckFn
+		ProcessQuota            ProcessQuotaFn
 	}
 	// templateRepo implements Repository
 	repo struct {

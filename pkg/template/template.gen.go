@@ -23,6 +23,7 @@ import (
 
 	"istio.io/mixer/template/sample/check"
 
+	"github.com/golang/glog"
 	"istio.io/mixer/template/sample/quota"
 
 	"fmt"
@@ -33,6 +34,10 @@ import (
 	"istio.io/mixer/pkg/expr"
 	"istio.io/mixer/pkg/status"
 	"istio.io/mixer/template/sample/report"
+
+	"istio.io/mixer/pkg/adapter/config"
+	adptTmpl "istio.io/mixer/pkg/adapter/template"
+	"istio.io/mixer/pkg/adapter"
 )
 
 var (
@@ -40,9 +45,16 @@ var (
 
 		istio_mixer_adapter_sample_check.TemplateName: {
 			CtrCfg:   &istio_mixer_adapter_sample_check.ConstructorParam{},
+			Variety: adptTmpl.TEMPLATE_VARIETY_CHECK,
 			BldrName: "istio.io/mixer/template/sample/check.SampleProcessorBuilder",
+			HndlrName: "istio.io/mixer/template/sample/check.SampleProcessor",
+
 			SupportsTemplate: func(hndlrBuilder adptConfig.HandlerBuilder) bool {
 				_, ok := hndlrBuilder.(istio_mixer_adapter_sample_check.SampleProcessorBuilder)
+				return ok
+			},
+			HandlerSupportsTemplate: func(hndlr adptConfig.Handler) bool {
+				_, ok := hndlr.(istio_mixer_adapter_sample_check.SampleProcessor)
 				return ok
 			},
 			InferType: func(cp proto.Message, tEvalFn TypeEvalFn) (proto.Message, error) {
@@ -55,6 +67,7 @@ var (
 				_ = cpb
 				return infrdType, err
 			},
+
 			ConfigureType: func(types map[string]proto.Message, builder *adptConfig.HandlerBuilder) error {
 				// Mixer framework should have ensured the type safety.
 				castedBuilder := (*builder).(istio_mixer_adapter_sample_check.SampleProcessorBuilder)
@@ -66,13 +79,57 @@ var (
 				}
 				return castedBuilder.ConfigureSample(castedTypes)
 			},
+			ProcessCheck: func(allCnstrs map[string]proto.Message, attrs attribute.Bag, mapper expr.Evaluator, handler adptConfig.Handler) (rpc.Status, config.CacheabilityInfo) {
+				var found bool
+				var err error
+
+				var instances []*istio_mixer_adapter_sample_check.Instance
+
+				castedCnstrs := make(map[string]*istio_mixer_adapter_sample_check.ConstructorParam)
+				for k, v := range allCnstrs {
+					v1 := v.(*istio_mixer_adapter_sample_check.ConstructorParam)
+					castedCnstrs[k] = v1
+				}
+
+				for name, md := range castedCnstrs {
+					var value string
+					value, err = mapper.EvalString(md.CheckExpression, attrs)
+					if err != nil {
+						return status.WithError(err), config.CacheabilityInfo{}
+					}
+
+					instances = append(instances, &istio_mixer_adapter_sample_check.Instance{
+						CheckExpression: value,
+						Name:            name,
+					})
+				}
+
+				var cacheInfo config.CacheabilityInfo
+				if found, cacheInfo, err = handler.(istio_mixer_adapter_sample_check.SampleProcessor).CheckSample(instances); err != nil {
+					return status.WithError(err), config.CacheabilityInfo{}
+				}
+
+				if found {
+					return status.OK, cacheInfo
+				}
+
+				return status.WithPermissionDenied(fmt.Sprintf("%s rejected", instances)), config.CacheabilityInfo{}
+			},
+			ProcessReport: nil,
+			ProcessQuota:  nil,
 		},
 
 		istio_mixer_adapter_sample_quota.TemplateName: {
 			CtrCfg:   &istio_mixer_adapter_sample_quota.ConstructorParam{},
+			Variety: adptTmpl.TEMPLATE_VARIETY_QUOTA,
 			BldrName: "istio.io/mixer/template/sample/quota.QuotaProcessorBuilder",
+			HndlrName: "istio.io/mixer/template/sample/quota.QuotaProcessor",
 			SupportsTemplate: func(hndlrBuilder adptConfig.HandlerBuilder) bool {
 				_, ok := hndlrBuilder.(istio_mixer_adapter_sample_quota.QuotaProcessorBuilder)
+				return ok
+			},
+			HandlerSupportsTemplate: func(hndlr adptConfig.Handler) bool {
+				_, ok := hndlr.(istio_mixer_adapter_sample_quota.QuotaProcessor)
 				return ok
 			},
 			InferType: func(cp proto.Message, tEvalFn TypeEvalFn) (proto.Message, error) {
@@ -90,6 +147,7 @@ var (
 				_ = cpb
 				return infrdType, err
 			},
+
 			ConfigureType: func(types map[string]proto.Message, builder *adptConfig.HandlerBuilder) error {
 				// Mixer framework should have ensured the type safety.
 				castedBuilder := (*builder).(istio_mixer_adapter_sample_quota.QuotaProcessorBuilder)
@@ -101,13 +159,57 @@ var (
 				}
 				return castedBuilder.ConfigureQuota(castedTypes)
 			},
+			ProcessQuota: func(quotaName string, cnstr proto.Message, attrs attribute.Bag, mapper expr.Evaluator, handler adptConfig.Handler,
+				qma adapter.QuotaRequestArgs) (rpc.Status, adapter.QuotaResult) {
+				castedCnstr := cnstr.(*istio_mixer_adapter_sample_quota.ConstructorParam)
+				// castedCnstrs := map[string]*istio_mixer_adapter_sample_quota.ConstructorParam {quotaName:castedCnstr}
+				var instances []*istio_mixer_adapter_sample_quota.Instance
+
+				dimensions, err := evalAll(castedCnstr.Dimensions, attrs, mapper)
+				if err != nil {
+					msg := fmt.Sprintf("failed to eval dimensions for constructor '%s': %v", quotaName, err)
+					glog.Error(msg)
+					return status.WithInvalidArgument(msg), adapter.QuotaResult{}
+				}
+
+				instances = append(instances, &istio_mixer_adapter_sample_quota.Instance{
+					Name:       quotaName,
+					Dimensions: dimensions,
+				})
+
+				var qr adapter.QuotaResult
+				if err := handler.(istio_mixer_adapter_sample_quota.QuotaProcessor).ReportQuota(instances); err != nil {
+					glog.Errorf("Quota allocation failed: %v", err)
+					return status.WithError(err), adapter.QuotaResult{}
+				}
+
+				if qr.Amount == 0 {
+					msg := fmt.Sprintf("Unable to allocate %v units from quota %s", qma.QuotaAmount, quotaName)
+					glog.Warning(msg)
+					return status.WithResourceExhausted(msg), adapter.QuotaResult{}
+				}
+
+				if glog.V(2) {
+					glog.Infof("Allocated %v units from quota %s", qma.QuotaAmount, quotaName)
+				}
+
+				return status.OK, qr
+			},
+			ProcessCheck:  nil,
+			ProcessReport: nil,
 		},
 
 		istio_mixer_adapter_sample_report.TemplateName: {
+			Variety: adptTmpl.TEMPLATE_VARIETY_REPORT,
 			CtrCfg:   &istio_mixer_adapter_sample_report.ConstructorParam{},
 			BldrName: "istio.io/mixer/template/sample/report.SampleProcessorBuilder",
+			HndlrName: "istio.io/mixer/template/sample/report.SampleProcessor",
 			SupportsTemplate: func(hndlrBuilder adptConfig.HandlerBuilder) bool {
 				_, ok := hndlrBuilder.(istio_mixer_adapter_sample_report.SampleProcessorBuilder)
+				return ok
+			},
+			HandlerSupportsTemplate: func(hndlr adptConfig.Handler) bool {
+				_, ok := hndlr.(istio_mixer_adapter_sample_report.SampleProcessor)
 				return ok
 			},
 			InferType: func(cp proto.Message, tEvalFn TypeEvalFn) (proto.Message, error) {
@@ -167,6 +269,7 @@ var (
 					instances = append(instances, &istio_mixer_adapter_sample_report.Instance{
 						Dimensions: dimensions,
 						Value:      value,
+						Name:       name,
 					})
 				}
 

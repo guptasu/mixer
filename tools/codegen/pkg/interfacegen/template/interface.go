@@ -41,7 +41,7 @@ type {{.Name}}ProcessorBuilder interface {
 type {{.Name}}Processor interface {
   config.Handler
   {{if eq .VarietyName "TEMPLATE_VARIETY_CHECK" -}}
-    Check{{.Name}}(instance *Instance) (bool, config.CacheabilityInfo, error)
+    Check{{.Name}}(instance []*Instance) (bool, config.CacheabilityInfo, error)
   {{else -}}
     Report{{.Name}}(instances []*Instance) error
   {{end}}

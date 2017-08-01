@@ -11,6 +11,7 @@ go_library(
     deps = [
         "//pkg/adapter:go_default_library",
         "//pkg/adapter/config:go_default_library",
+        "//pkg/adapter/template:go_default_library",
         "//pkg/attribute:go_default_library",
         "//pkg/expr:go_default_library",
         "//pkg/status:go_default_library",
@@ -18,6 +19,7 @@ go_library(
         "//template/sample/quota:go_default_library",
         "//template/sample/report:go_default_library",
         "@com_github_gogo_protobuf//jsonpb:go_default_library",
+        "@com_github_golang_glog//:go_default_library",
         "@com_github_golang_protobuf//proto:go_default_library",
         "@com_github_googleapis_googleapis//:google/rpc",
         "@com_github_hashicorp_go_multierror//:go_default_library",
