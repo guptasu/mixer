@@ -414,7 +414,7 @@ func TestConfigureType(t *testing.T) {
 	} {
 		t.Run(tst.name, func(t *testing.T) {
 			hb := &tst.hdlrBldr
-			SupportedTmplInfo[tst.tmpl].ConfigureType(tst.types, hb)
+			_ = SupportedTmplInfo[tst.tmpl].ConfigureType(tst.types, hb)
 
 			var c interface{}
 			if tst.tmpl == sample_report.TemplateName {
@@ -627,7 +627,7 @@ func TestProcessCheck(t *testing.T) {
 			} else {
 				v := (*h).(*checkHandler).procCallInput
 				if !cmp(v, tst.wantCallInstance) || !reflect.DeepEqual(tst.wantCacheInfo, cInfo) {
-					t.Errorf("SupportedTmplInfo[sample_check.TemplateName].CheckSample(%v) handler " +
+					t.Errorf("SupportedTmplInfo[sample_check.TemplateName].CheckSample(%v) handler "+
 						"invoked value = %v,%v want %v,%v", tst.ctrs, v, cInfo, tst.wantCallInstance, tst.wantCacheInfo)
 				}
 			}
@@ -685,7 +685,7 @@ func TestProcessQuota(t *testing.T) {
 			} else {
 				v := (*h).(*quotaHandler).procCallInput
 				if !reflect.DeepEqual(v, tst.wantCallInstance) || !reflect.DeepEqual(tst.wantCacheInfo, cInfo) || !reflect.DeepEqual(tst.wantQuotaRes, qr) {
-					t.Errorf("SupportedTmplInfo[sample_quota.TemplateName].AllocQuota(%v) " +
+					t.Errorf("SupportedTmplInfo[sample_quota.TemplateName].AllocQuota(%v) "+
 						"handler invoked value = %v,%v,%v  want %v,%v,%v", tst.ctrs, v, cInfo, qr, tst.wantCallInstance, tst.wantCacheInfo, tst.wantQuotaRes)
 				}
 			}
