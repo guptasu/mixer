@@ -30,6 +30,7 @@ import (
 	"istio.io/mixer/pkg/expr"
 	"istio.io/mixer/pkg/pool"
 	"istio.io/mixer/pkg/status"
+	template2 "istio.io/mixer/pkg/template"
 )
 
 // TODO: there are several hard-coded but end-user-configurable things in this file we need to work to eliminiate:
@@ -53,7 +54,7 @@ func newAccessLogsManager() ReportManager {
 	return accessLogsManager{}
 }
 
-func (m accessLogsManager) NewReportExecutor(c *cpb.Combined, createAspect CreateAspectFunc, env adapter.Env, df descriptor.Finder) (ReportExecutor, error) {
+func (m accessLogsManager) NewReportExecutor(c *cpb.Combined, createAspect CreateAspectFunc, env adapter.Env, df descriptor.Finder, _ template2.Repository) (ReportExecutor, error) {
 	cfg := c.Aspect.Params.(*aconfig.AccessLogsParams)
 
 	// validation ensures both that the descriptor exists and that its template is parsable by the template library.

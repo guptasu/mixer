@@ -126,7 +126,7 @@ func TestQuotasManager_NewAspect(t *testing.T) {
 	}
 
 	f, _ := FromBuilder(builder, config.QuotasKind)
-	if _, err := newQuotasManager().NewQuotaExecutor(conf, f, atest.NewEnv(t), df); err != nil {
+	if _, err := newQuotasManager().NewQuotaExecutor(conf, f, atest.NewEnv(t), df, nil); err != nil {
 		t.Fatalf("NewExecutor(conf, builder, test.NewEnv(t)) = _, %v; wanted no err", err)
 	}
 }
@@ -143,7 +143,7 @@ func TestQuotasManager_NewAspect_PropagatesError(t *testing.T) {
 			return nil, errors.New(errString)
 		}}
 	f, _ := FromBuilder(builder, config.QuotasKind)
-	_, err := newQuotasManager().NewQuotaExecutor(conf, f, atest.NewEnv(t), nil)
+	_, err := newQuotasManager().NewQuotaExecutor(conf, f, atest.NewEnv(t), nil, nil)
 	if err == nil {
 		t.Error("newQuotasManager().NewExecutor(conf, builder, test.NewEnv(t)) = _, nil; wanted err")
 	}
