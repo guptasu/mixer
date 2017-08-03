@@ -34,6 +34,7 @@ import (
 	"istio.io/mixer/pkg/expr"
 	"istio.io/mixer/pkg/pool"
 	"istio.io/mixer/pkg/status"
+	template2 "istio.io/mixer/pkg/template"
 )
 
 type (
@@ -71,7 +72,7 @@ func newApplicationLogsManager() ReportManager {
 	return applicationLogsManager{}
 }
 
-func (applicationLogsManager) NewReportExecutor(c *cpb.Combined, createAspect CreateAspectFunc, env adapter.Env, df descriptor.Finder) (ReportExecutor, error) {
+func (applicationLogsManager) NewReportExecutor(c *cpb.Combined, createAspect CreateAspectFunc, env adapter.Env, df descriptor.Finder, _ template2.Repository) (ReportExecutor, error) {
 	// TODO: look up actual descriptors by name and build an array
 	cfg := c.Aspect.Params.(*aconfig.ApplicationLogsParams)
 	metadata := make(map[string]*logInfo)

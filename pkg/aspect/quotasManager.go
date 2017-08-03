@@ -29,6 +29,7 @@ import (
 	cpb "istio.io/mixer/pkg/config/proto"
 	"istio.io/mixer/pkg/expr"
 	"istio.io/mixer/pkg/status"
+	"istio.io/mixer/pkg/template"
 )
 
 type (
@@ -52,7 +53,7 @@ func newQuotasManager() QuotaManager {
 	return &quotasManager{}
 }
 
-func (m *quotasManager) NewQuotaExecutor(c *cpb.Combined, createAspect CreateAspectFunc, env adapter.Env, df descriptor.Finder) (QuotaExecutor, error) {
+func (m *quotasManager) NewQuotaExecutor(c *cpb.Combined, createAspect CreateAspectFunc, env adapter.Env, df descriptor.Finder, _ template.Repository) (QuotaExecutor, error) {
 	params := c.Aspect.Params.(*aconfig.QuotasParams)
 
 	metadata := make(map[string]*quotaInfo, len(params.Quotas))

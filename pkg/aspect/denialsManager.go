@@ -26,6 +26,7 @@ import (
 	"istio.io/mixer/pkg/config/descriptor"
 	cpb "istio.io/mixer/pkg/config/proto"
 	"istio.io/mixer/pkg/expr"
+	"istio.io/mixer/pkg/template"
 )
 
 type (
@@ -42,7 +43,7 @@ func newDenialsManager() CheckManager {
 }
 
 // NewCheckExecutor creates a denyChecker aspect.
-func (denialsManager) NewCheckExecutor(cfg *cpb.Combined, createAspect CreateAspectFunc, env adapter.Env, df descriptor.Finder) (CheckExecutor, error) {
+func (denialsManager) NewCheckExecutor(cfg *cpb.Combined, createAspect CreateAspectFunc, env adapter.Env, df descriptor.Finder, _ template.Repository) (CheckExecutor, error) {
 	out, err := createAspect(env, cfg.Builder.Params.(config.AspectParams))
 	if err != nil {
 		return nil, err

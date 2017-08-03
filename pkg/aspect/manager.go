@@ -29,6 +29,7 @@ import (
 	"istio.io/mixer/pkg/config/descriptor"
 	cpb "istio.io/mixer/pkg/config/proto"
 	"istio.io/mixer/pkg/expr"
+	"istio.io/mixer/pkg/template"
 )
 
 type (
@@ -50,7 +51,7 @@ type (
 		Manager
 
 		// NewCheckExecutor creates a new aspect executor given configuration.
-		NewCheckExecutor(cfg *cpb.Combined, createAspect CreateAspectFunc, env adapter.Env, df descriptor.Finder) (CheckExecutor, error)
+		NewCheckExecutor(cfg *cpb.Combined, createAspect CreateAspectFunc, env adapter.Env, df descriptor.Finder, repository template.Repository) (CheckExecutor, error)
 	}
 
 	// ReportManager take care of aspects used to implement the Report API method
@@ -58,7 +59,7 @@ type (
 		Manager
 
 		// NewReportExecutor creates a new aspect executor given configuration.
-		NewReportExecutor(cfg *cpb.Combined, createAspect CreateAspectFunc, env adapter.Env, df descriptor.Finder) (ReportExecutor, error)
+		NewReportExecutor(cfg *cpb.Combined, createAspect CreateAspectFunc, env adapter.Env, df descriptor.Finder, repository template.Repository) (ReportExecutor, error)
 	}
 
 	// QuotaManager take care of aspects used to implement the Quota API method
@@ -66,7 +67,7 @@ type (
 		Manager
 
 		// NewQuotaExecutor creates a new aspect executor given configuration.
-		NewQuotaExecutor(cfg *cpb.Combined, createAspect CreateAspectFunc, env adapter.Env, df descriptor.Finder) (QuotaExecutor, error)
+		NewQuotaExecutor(cfg *cpb.Combined, createAspect CreateAspectFunc, env adapter.Env, df descriptor.Finder, repo template.Repository) (QuotaExecutor, error)
 	}
 
 	// A PreprocessManager handles adapter execution for pre-processing of
