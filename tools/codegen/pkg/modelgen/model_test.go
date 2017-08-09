@@ -117,12 +117,12 @@ func testField(t *testing.T, fields []fieldInfo, protoFldName string, protoFldTy
 	testFilename := "testdata/simple_template.descriptor_set"
 	found := false
 	for _, cf := range fields {
-		if cf.Name == protoFldName {
+		if cf.ProtoName == protoFldName {
 			found = true
-			if cf.GoName != goFldName || cf.Type != protoFldType || cf.GoType != goFldType || !strings.Contains(cf.Comment, comment) {
+			if cf.GoName != goFldName || cf.ProtoType != protoFldType || cf.GoType != goFldType || !strings.Contains(cf.Comment, comment) {
 				t.Fatalf("Got CreateModel(%s).TemplateMessage.Fields[%s] = GoName:%s, Type:%s, GoType:%s, Comment:%s"+
 					"\nwanted GoName:%s, Type:%s, GoType:%s, comment: %s",
-					testFilename, protoFldName, cf.GoName, cf.Type, cf.GoType, cf.Comment, goFldName, protoFldType, goFldType, comment)
+					testFilename, protoFldName, cf.GoName, cf.ProtoType, cf.GoType, cf.Comment, goFldName, protoFldType, goFldType, comment)
 			}
 		}
 	}
