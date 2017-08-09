@@ -21,4 +21,8 @@ message Template {
 
     // single line comment
     map<string, istio.mixer.v1.config.descriptor.ValueType> dimensions = 3;
+
+    int64 fieldInt64 = 4;
+    string fieldString = 5;
+    double fieldDouble = 6;
 }

@@ -127,7 +127,7 @@ func (m *Model) addTemplateMessage(parser *FileDescriptorSetParser, tmplProto *F
 			continue
 		}
 
-		protoTypeName, goTypeName, err := parser.protoType(fieldDesc)
+		protoTypeName, goTypeName, err := parser.getTypeName(fieldDesc)
 		if err != nil {
 			m.addError(tmplDesc.file.GetName(),
 				tmplProto.getLineNumber(getPathForField(tmplDesc, i)),

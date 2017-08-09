@@ -308,22 +308,17 @@ func (g *FileDescriptorSetParser) fail(msgs ...string) {
 }
 
 const (
-	sINT64     = "int64"
-	sFLOAT64   = "float64"
-	sINT32     = "int32"
-	sFLOAT32   = "float32"
-	sBOOL      = "bool"
-	sSTRING    = "string"
-	sUINT64    = "uint64"
-	sUINT32    = "uint32"
-	sBYTEARRAY = "[]byte"
+	sINT64   = "int64"
+	sFLOAT64 = "float64"
+	sBOOL    = "bool"
+	sSTRING  = "string"
 )
 
 // protoType returns a Proto type name for a Field's DescriptorProto.
 // We only support primitives that can be represented as ValueTypes,ValueType itself, or map<string, ValueType>.
 var supportedTypes = "string, int64, double, bool, " + fullProtoNameOfValueTypeEnum + ", " + fmt.Sprintf("map<string, %s>", fullProtoNameOfValueTypeEnum)
 
-func (g *FileDescriptorSetParser) protoType(field *descriptor.FieldDescriptorProto) (protoType string, goType string, err error) {
+func (g *FileDescriptorSetParser) getTypeName(field *descriptor.FieldDescriptorProto) (protoType string, goType string, err error) {
 	switch *field.Type {
 	case descriptor.FieldDescriptorProto_TYPE_STRING:
 		return "string", sSTRING, nil
@@ -343,11 +338,11 @@ func (g *FileDescriptorSetParser) protoType(field *descriptor.FieldDescriptorPro
 		if d, ok := desc.(*Descriptor); ok && d.GetOptions().GetMapEntry() {
 			keyField, valField := d.Field[0], d.Field[1]
 
-			keyType, goKeyType, err := g.protoType(keyField)
+			keyType, goKeyType, err := g.getTypeName(keyField)
 			if err != nil {
 				return "", "", err
 			}
-			protoValType, goValType, err := g.protoType(valField)
+			protoValType, goValType, err := g.getTypeName(valField)
 			if err != nil {
 				return "", "", err
 			}

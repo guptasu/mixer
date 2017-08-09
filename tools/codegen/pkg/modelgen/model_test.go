@@ -87,7 +87,7 @@ func TestTypeFields(t *testing.T) {
 	model, _ := createTestModel(t,
 		testFilename)
 
-	if len(model.TemplateMessage.Fields) != 3 {
+	if len(model.TemplateMessage.Fields) != 6 {
 		t.Fatalf("len(CreateModel(%s).TypeMessage.Fields) = %v, wanted %d", testFilename, len(model.TemplateMessage.Fields), 3)
 	}
 	testField(t, model.TemplateMessage.Fields,
@@ -98,6 +98,18 @@ func TestTypeFields(t *testing.T) {
 	testField(t, model.TemplateMessage.Fields,
 		"dimensions", "map<string, istio.mixer.v1.config.descriptor.ValueType>",
 		"Dimensions", "map[string]istio_mixer_v1_config_descriptor.ValueType", "single line comment")
+
+	testField(t, model.TemplateMessage.Fields,
+		"fieldInt64", "int64",
+		"FieldInt64", "int64", "")
+
+	testField(t, model.TemplateMessage.Fields,
+		"fieldString", "string",
+		"FieldString", "string", "")
+
+	testField(t, model.TemplateMessage.Fields,
+		"fieldDouble", "double",
+		"FieldDouble", "float64", "")
 }
 
 func testField(t *testing.T, fields []fieldInfo, protoFldName string, protoFldType string,
