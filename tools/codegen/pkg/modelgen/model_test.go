@@ -121,8 +121,8 @@ func testField(t *testing.T, fields []fieldInfo, protoFldName string, protoFldTy
 		if cf.ProtoName == protoFldName {
 			found = true
 			if cf.GoName != goFldName || cf.ProtoType != protoFldType || cf.GoType != goFldType || !strings.Contains(cf.Comment, comment) {
-				t.Fatalf("Got CreateModel(%s).TemplateMessage.Fields[%s] = GoName:%s, Type:%s, GoType:%s, Comment:%s"+
-					"\nwanted GoName:%s, Type:%s, GoType:%s, comment: %s",
+				t.Fatalf("Got CreateModel(%s).TemplateMessage.Fields[%s] = GoName:%s, ProtoType:%v, GoType:%v, Comment:%s"+
+					"\nwanted GoName:%s, ProtoType:%v, GoType:%v, comment: %s",
 					testFilename, protoFldName, cf.GoName, cf.ProtoType, cf.GoType, cf.Comment, goFldName, protoFldType, goFldType, comment)
 			}
 		}

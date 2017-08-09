@@ -359,6 +359,16 @@ func (g *FileDescriptorSetParser) getTypeName(field *descriptor.FieldDescriptorP
 	return "", "", fmt.Errorf("unsupported type for field '%s'. Supported types are '%s'", field.GetName(), supportedTypes)
 }
 
+func (g *FileDescriptorSetParser) isMap(field *descriptor.FieldDescriptorProto) bool {
+	if *field.Type == descriptor.FieldDescriptorProto_TYPE_MESSAGE {
+		desc := g.ObjectNamed(field.GetTypeName())
+		if d, ok := desc.(*Descriptor); ok && d.GetOptions().GetMapEntry() {
+			return true
+		}
+	}
+	return false
+}
+
 // TypeName returns a full name for the underlying Object type.
 func (g *FileDescriptorSetParser) TypeName(obj Object) string {
 	return g.DefaultPackageName(obj) + camelCaseSlice(obj.TypeName())
