@@ -55,12 +55,20 @@ type (
 
 	fieldInfo struct {
 		ProtoName string
-		GoName string
+		GoName    string
 		Number    string // Only for proto fields
-		Comment string
+		Comment   string
 
-		ProtoType string
-		GoType    string
+		ProtoType typeInfo
+		GoType    typeInfo
+	}
+
+	typeInfo struct {
+		Name       string
+		IsRepeated bool
+		IsMap      bool
+		KeyName    string
+		ValueName  string
 	}
 
 	messageInfo struct {
@@ -135,8 +143,8 @@ func (m *Model) addTemplateMessage(parser *FileDescriptorSetParser, tmplProto *F
 		m.TemplateMessage.Fields = append(m.TemplateMessage.Fields, fieldInfo{
 			ProtoName: fieldName,
 			GoName:    camelCase(fieldName),
-			GoType:    goTypeName,
-			ProtoType: protoTypeName,
+			GoType:    typeInfo{Name: goTypeName},
+			ProtoType: typeInfo{Name: protoTypeName},
 			Number:    strconv.Itoa(int(fieldDesc.GetNumber())),
 			Comment:   tmplProto.getComment(getPathForField(tmplDesc, i)),
 		})

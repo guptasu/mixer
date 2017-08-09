@@ -73,15 +73,15 @@ var (
 				infrdType := &{{.GoPackageName}}.Type{}
 
 				{{range .TemplateMessage.Fields}}
-					{{if isPrimitiveValueType .GoType}}
-						infrdType.{{.GoName}} = {{primitiveToValueType .GoType}}
+					{{if isPrimitiveValueType .GoType.Name}}
+						infrdType.{{.GoName}} = {{primitiveToValueType .GoType.Name}}
 					{{end}}
-					{{if isValueType .GoType}}
+					{{if isValueType .GoType.Name}}
 						if infrdType.{{.GoName}}, err = tEvalFn(cpb.{{.GoName}}); err != nil {
 							return nil, err
 						}
 					{{end}}
-					{{if isStringValueTypeMap .GoType}}
+					{{if isStringValueTypeMap .GoType.Name}}
 						infrdType.{{.GoName}} = make(map[string]istio_mixer_v1_config_descriptor.ValueType)
 						for k, v := range cpb.{{.GoName}} {
 							if infrdType.{{.GoName}}[k], err = tEvalFn(v); err != nil {
@@ -116,7 +116,7 @@ var (
 					}
 					for name, md := range castedInsts {
 						{{range .TemplateMessage.Fields}}
-							{{if isStringValueTypeMap .GoType}}
+							{{if isStringValueTypeMap .GoType.Name}}
 								{{.GoName}}, err := evalAll(md.{{.GoName}}, attrs, mapper)
 							{{else}}
 								{{.GoName}}, err := mapper.Eval(md.{{.GoName}}, attrs)
@@ -130,8 +130,8 @@ var (
 						instances = append(instances, &{{.GoPackageName}}.Instance{
 							Name:       name,
 							{{range .TemplateMessage.Fields}}
-								{{if isPrimitiveValueType .GoType}}
-									{{.GoName}}: {{.GoName}}.({{.GoType}}),
+								{{if isPrimitiveValueType .GoType.Name}}
+									{{.GoName}}: {{.GoName}}.({{.GoType.Name}}),
 								{{else}}
 									{{.GoName}}: {{.GoName}},
 								{{end}}
@@ -166,7 +166,7 @@ var (
 					}
 					for name, md := range castedInsts {
 						{{range .TemplateMessage.Fields}}
-							{{if isStringValueTypeMap .GoType}}
+							{{if isStringValueTypeMap .GoType.Name}}
 								{{.GoName}}, err := evalAll(md.{{.GoName}}, attrs, mapper)
 							{{else}}
 								{{.GoName}}, err := mapper.Eval(md.{{.GoName}}, attrs)
@@ -179,8 +179,8 @@ var (
 						instances = append(instances, &{{.GoPackageName}}.Instance{
 							Name:       name,
 							{{range .TemplateMessage.Fields}}
-								{{if isPrimitiveValueType .GoType}}
-									{{.GoName}}: {{.GoName}}.({{.GoType}}),
+								{{if isPrimitiveValueType .GoType.Name}}
+									{{.GoName}}: {{.GoName}}.({{.GoType.Name}}),
 								{{else}}
 									{{.GoName}}: {{.GoName}},
 								{{end}}
@@ -205,7 +205,7 @@ var (
 				qma adapter.QuotaRequestArgs) (rpc.Status, adapter.CacheabilityInfo, adapter.QuotaResult) {
 					castedInst := inst.(*{{.GoPackageName}}.InstanceParam)
 					{{range .TemplateMessage.Fields}}
-						{{if isStringValueTypeMap .GoType}}
+						{{if isStringValueTypeMap .GoType.Name}}
 							{{.GoName}}, err := evalAll(castedInst.{{.GoName}}, attrs, mapper)
 						{{else}}
 							{{.GoName}}, err := mapper.Eval(castedInst.{{.GoName}}, attrs)
@@ -220,8 +220,8 @@ var (
 					instance := &{{.GoPackageName}}.Instance{
 						Name:       quotaName,
 						{{range .TemplateMessage.Fields}}
-							{{if isPrimitiveValueType .GoType}}
-								{{.GoName}}: {{.GoName}}.({{.GoType}}),
+							{{if isPrimitiveValueType .GoType.Name}}
+								{{.GoName}}: {{.GoName}}.({{.GoType.Name}}),
 							{{else}}
 								{{.GoName}}: {{.GoName}},
 							{{end}}
