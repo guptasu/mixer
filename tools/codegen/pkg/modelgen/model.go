@@ -21,6 +21,7 @@ import (
 	"strings"
 
 	proto "github.com/gogo/protobuf/proto"
+	"github.com/gogo/protobuf/protoc-gen-gogo/descriptor"
 
 	tmpl "istio.io/mixer/pkg/adapter/template"
 )
@@ -134,7 +135,7 @@ func (m *Model) addTemplateMessage(parser *FileDescriptorSetParser, tmplProto *F
 			continue
 		}
 
-		protoTypeName, goTypeName, err := parser.getTypeName(fieldDesc)
+		protoTypeName, goTypeName, err := getTypeName(parser, fieldDesc)
 		if err != nil {
 			m.addError(tmplDesc.file.GetName(),
 				tmplProto.getLineNumber(getPathForField(tmplDesc, i)),
@@ -255,4 +256,55 @@ func getRequiredTmplMsg(fdp *FileDescriptor) (*Descriptor, bool) {
 	}
 
 	return cstrDesc, cstrDesc != nil
+}
+
+func getTypeName(g *FileDescriptorSetParser, field *descriptor.FieldDescriptorProto) (protoType string, goType string, err error) {
+	switch *field.Type {
+	case descriptor.FieldDescriptorProto_TYPE_STRING:
+		return "string", sSTRING, nil
+	case descriptor.FieldDescriptorProto_TYPE_INT64:
+		return "int64", sINT64, nil
+	case descriptor.FieldDescriptorProto_TYPE_DOUBLE:
+		return "double", sFLOAT64, nil
+	case descriptor.FieldDescriptorProto_TYPE_BOOL:
+		return "bool", sBOOL, nil
+	case descriptor.FieldDescriptorProto_TYPE_ENUM:
+		if field.GetTypeName()[1:] == fullProtoNameOfValueTypeEnum {
+			desc := g.ObjectNamed(field.GetTypeName())
+			return field.GetTypeName()[1:], g.TypeName(desc), nil
+		}
+	case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
+		desc := g.ObjectNamed(field.GetTypeName())
+		if d, ok := desc.(*Descriptor); ok && d.GetOptions().GetMapEntry() {
+			keyField, valField := d.Field[0], d.Field[1]
+
+			keyType, goKeyType, err := getTypeName(g, keyField)
+			if err != nil {
+				return "", "", err
+			}
+			protoValType, goValType, err := getTypeName(g, valField)
+			if err != nil {
+				return "", "", err
+			}
+
+			if keyType == "string" && protoValType == fullProtoNameOfValueTypeEnum {
+				return fmt.Sprintf("map<%s, %s>", keyType, protoValType), fmt.Sprintf("map[%s]%s", goKeyType, goValType), nil
+			}
+		} else if protoType, ok = SupportedCustomMessageTypes[field.GetTypeName()[1:]]; ok {
+			return field.GetTypeName()[1:], "TODO", nil
+		}
+	default:
+		return "", "", fmt.Errorf("unsupported type for field '%s'. Supported types are '%s'", field.GetName(), supportedTypes)
+	}
+	return "", "", fmt.Errorf("unsupported type for field '%s'. Supported types are '%s'", field.GetName(), supportedTypes)
+}
+
+func (g *FileDescriptorSetParser) isMap(field *descriptor.FieldDescriptorProto) bool {
+	if *field.Type == descriptor.FieldDescriptorProto_TYPE_MESSAGE {
+		desc := g.ObjectNamed(field.GetTypeName())
+		if d, ok := desc.(*Descriptor); ok && d.GetOptions().GetMapEntry() {
+			return true
+		}
+	}
+	return false
 }

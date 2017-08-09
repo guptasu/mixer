@@ -318,57 +318,6 @@ const (
 // We only support primitives that can be represented as ValueTypes,ValueType itself, or map<string, ValueType>.
 var supportedTypes = "string, int64, double, bool, " + fullProtoNameOfValueTypeEnum + ", " + fmt.Sprintf("map<string, %s>", fullProtoNameOfValueTypeEnum)
 
-func (g *FileDescriptorSetParser) getTypeName(field *descriptor.FieldDescriptorProto) (protoType string, goType string, err error) {
-	switch *field.Type {
-	case descriptor.FieldDescriptorProto_TYPE_STRING:
-		return "string", sSTRING, nil
-	case descriptor.FieldDescriptorProto_TYPE_INT64:
-		return "int64", sINT64, nil
-	case descriptor.FieldDescriptorProto_TYPE_DOUBLE:
-		return "double", sFLOAT64, nil
-	case descriptor.FieldDescriptorProto_TYPE_BOOL:
-		return "bool", sBOOL, nil
-	case descriptor.FieldDescriptorProto_TYPE_ENUM:
-		if field.GetTypeName()[1:] == fullProtoNameOfValueTypeEnum {
-			desc := g.ObjectNamed(field.GetTypeName())
-			return field.GetTypeName()[1:], g.TypeName(desc), nil
-		}
-	case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
-		desc := g.ObjectNamed(field.GetTypeName())
-		if d, ok := desc.(*Descriptor); ok && d.GetOptions().GetMapEntry() {
-			keyField, valField := d.Field[0], d.Field[1]
-
-			keyType, goKeyType, err := g.getTypeName(keyField)
-			if err != nil {
-				return "", "", err
-			}
-			protoValType, goValType, err := g.getTypeName(valField)
-			if err != nil {
-				return "", "", err
-			}
-
-			if keyType == "string" && protoValType == fullProtoNameOfValueTypeEnum {
-				return fmt.Sprintf("map<%s, %s>", keyType, protoValType), fmt.Sprintf("map[%s]%s", goKeyType, goValType), nil
-			}
-		} else if protoType, ok = SupportedCustomMessageTypes[field.GetTypeName()[1:]]; ok {
-			return field.GetTypeName()[1:], "TODO", nil
-		}
-	default:
-		return "", "", fmt.Errorf("unsupported type for field '%s'. Supported types are '%s'", field.GetName(), supportedTypes)
-	}
-	return "", "", fmt.Errorf("unsupported type for field '%s'. Supported types are '%s'", field.GetName(), supportedTypes)
-}
-
-func (g *FileDescriptorSetParser) isMap(field *descriptor.FieldDescriptorProto) bool {
-	if *field.Type == descriptor.FieldDescriptorProto_TYPE_MESSAGE {
-		desc := g.ObjectNamed(field.GetTypeName())
-		if d, ok := desc.(*Descriptor); ok && d.GetOptions().GetMapEntry() {
-			return true
-		}
-	}
-	return false
-}
-
 // TypeName returns a full name for the underlying Object type.
 func (g *FileDescriptorSetParser) TypeName(obj Object) string {
 	return g.DefaultPackageName(obj) + camelCaseSlice(obj.TypeName())
