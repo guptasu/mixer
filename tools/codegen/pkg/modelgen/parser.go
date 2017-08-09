@@ -319,127 +319,49 @@ const (
 	sBYTEARRAY = "[]byte"
 )
 
-// goType returns a Go type name for a FieldDescriptorProto.
-func (g *FileDescriptorSetParser) goType(message *descriptor.DescriptorProto, field *descriptor.FieldDescriptorProto) (typ string) {
-	switch *field.Type {
-	case descriptor.FieldDescriptorProto_TYPE_DOUBLE:
-		typ = sFLOAT64
-	case descriptor.FieldDescriptorProto_TYPE_FLOAT:
-		typ = sFLOAT32
-	case descriptor.FieldDescriptorProto_TYPE_INT64:
-		typ = sINT64
-	case descriptor.FieldDescriptorProto_TYPE_UINT64:
-		typ = sUINT64
-	case descriptor.FieldDescriptorProto_TYPE_INT32:
-		typ = sINT32
-	case descriptor.FieldDescriptorProto_TYPE_UINT32:
-		typ = sUINT32
-	case descriptor.FieldDescriptorProto_TYPE_FIXED64:
-		typ = sUINT64
-	case descriptor.FieldDescriptorProto_TYPE_FIXED32:
-		typ = sUINT32
-	case descriptor.FieldDescriptorProto_TYPE_BOOL:
-		typ = sBOOL
-	case descriptor.FieldDescriptorProto_TYPE_STRING:
-		typ = sSTRING
-	case descriptor.FieldDescriptorProto_TYPE_GROUP:
-		// TODO : What needs to be done in this case?
-		g.fail(fmt.Sprintf("unsupported field type %s for field %s", descriptor.FieldDescriptorProto_TYPE_GROUP.String(), field.GetName()))
-	case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
-		desc := g.ObjectNamed(field.GetTypeName())
-		typ = "*" + g.TypeName(desc)
-
-		if d, ok := desc.(*Descriptor); ok && d.GetOptions().GetMapEntry() {
-			keyField, valField := d.Field[0], d.Field[1]
-			keyType := g.goType(d.DescriptorProto, keyField)
-			valType := g.goType(d.DescriptorProto, valField)
-
-			keyType = strings.TrimPrefix(keyType, "*")
-			switch *valField.Type {
-			case descriptor.FieldDescriptorProto_TYPE_ENUM:
-				valType = strings.TrimPrefix(valType, "*")
-
-			case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
-
-			default:
-				valType = strings.TrimPrefix(valType, "*")
-			}
-
-			typ = fmt.Sprintf("map[%s]%s", keyType, valType)
-			return
-		}
-	case descriptor.FieldDescriptorProto_TYPE_BYTES:
-		typ = sBYTEARRAY
-	case descriptor.FieldDescriptorProto_TYPE_ENUM:
-		desc := g.ObjectNamed(field.GetTypeName())
-		typ = g.TypeName(desc)
-	case descriptor.FieldDescriptorProto_TYPE_SFIXED32:
-		typ = sINT32
-	case descriptor.FieldDescriptorProto_TYPE_SFIXED64:
-		typ = sINT64
-	case descriptor.FieldDescriptorProto_TYPE_SINT32:
-		typ = sINT32
-	case descriptor.FieldDescriptorProto_TYPE_SINT64:
-		typ = sINT64
-	default:
-		g.fail("unknown type for", field.GetName())
-
-	}
-	if isRepeated(field) {
-		typ = "[]" + typ
-	} else if message != nil {
-		return
-	} else if field.OneofIndex != nil && message != nil {
-		g.fail("oneof not supported ", field.GetName())
-		return
-	} else if needsStar(*field.Type) {
-		typ = "*" + typ
-	}
-	return
-}
-
 // protoType returns a Proto type name for a Field's DescriptorProto.
 // We only support primitives that can be represented as ValueTypes,ValueType itself, or map<string, ValueType>.
 var supportedTypes = "string, int64, double, bool, " + fullProtoNameOfValueTypeEnum + ", " + fmt.Sprintf("map<string, %s>", fullProtoNameOfValueTypeEnum)
 
-func (g *FileDescriptorSetParser) protoType(field *descriptor.FieldDescriptorProto) (typ string, err error) {
+func (g *FileDescriptorSetParser) protoType(field *descriptor.FieldDescriptorProto) (protoType string, goType string, err error) {
 	switch *field.Type {
 	case descriptor.FieldDescriptorProto_TYPE_STRING:
-		return "string", nil
+		return "string", sSTRING, nil
 	case descriptor.FieldDescriptorProto_TYPE_INT64:
-		return "int64", nil
+		return "int64", sINT64, nil
 	case descriptor.FieldDescriptorProto_TYPE_DOUBLE:
-		return "double", nil
+		return "double", sFLOAT64, nil
 	case descriptor.FieldDescriptorProto_TYPE_BOOL:
-		return "bool", nil
+		return "bool", sBOOL, nil
 	case descriptor.FieldDescriptorProto_TYPE_ENUM:
 		if field.GetTypeName()[1:] == fullProtoNameOfValueTypeEnum {
-			return field.GetTypeName()[1:], nil
+			desc := g.ObjectNamed(field.GetTypeName())
+			return field.GetTypeName()[1:], g.TypeName(desc), nil
 		}
 	case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
 		desc := g.ObjectNamed(field.GetTypeName())
 		if d, ok := desc.(*Descriptor); ok && d.GetOptions().GetMapEntry() {
 			keyField, valField := d.Field[0], d.Field[1]
 
-			keyType, err := g.protoType(keyField)
+			keyType, goKeyType, err := g.protoType(keyField)
 			if err != nil {
-				return "", err
+				return "", "", err
 			}
-			valType, err := g.protoType(valField)
+			protoValType, goValType, err := g.protoType(valField)
 			if err != nil {
-				return "", err
+				return "", "", err
 			}
 
-			if keyType == "string" && valType == fullProtoNameOfValueTypeEnum {
-				return fmt.Sprintf("map<%s, %s>", keyType, valType), nil
+			if keyType == "string" && protoValType == fullProtoNameOfValueTypeEnum {
+				return fmt.Sprintf("map<%s, %s>", keyType, protoValType), fmt.Sprintf("map[%s]%s", goKeyType, goValType), nil
 			}
-		} else if typ, ok = SupportedCustomMessageTypes[field.GetTypeName()[1:]]; ok {
-			return field.GetTypeName()[1:], nil
+		} else if protoType, ok = SupportedCustomMessageTypes[field.GetTypeName()[1:]]; ok {
+			return field.GetTypeName()[1:], "TODO", nil
 		}
 	default:
-		return "", fmt.Errorf("unsupported type for field '%s'. Supported types are '%s'", field.GetName(), supportedTypes)
+		return "", "", fmt.Errorf("unsupported type for field '%s'. Supported types are '%s'", field.GetName(), supportedTypes)
 	}
-	return "", fmt.Errorf("unsupported type for field '%s'. Supported types are '%s'", field.GetName(), supportedTypes)
+	return "", "", fmt.Errorf("unsupported type for field '%s'. Supported types are '%s'", field.GetName(), supportedTypes)
 }
 
 // TypeName returns a full name for the underlying Object type.
