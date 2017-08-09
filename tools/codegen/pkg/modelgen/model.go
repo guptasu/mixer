@@ -288,7 +288,7 @@ func getTypeName(g *FileDescriptorSetParser, field *descriptor.FieldDescriptorPr
 			}
 
 			if keyType.Name == "string" && protoValType.Name == fullProtoNameOfValueTypeEnum {
-				return typeInfo{Name: fmt.Sprintf("map<%s, %s>", keyType, protoValType)}, typeInfo{Name: fmt.Sprintf("map[%s]%s", goKeyType, goValType)}, nil
+				return typeInfo{Name: fmt.Sprintf("map<%s, %s>", keyType.Name, protoValType.Name)}, typeInfo{Name: fmt.Sprintf("map[%s]%s", goKeyType.Name, goValType.Name)}, nil
 			}
 		} else if _, ok = SupportedCustomMessageTypes[field.GetTypeName()[1:]]; ok {
 			return typeInfo{Name: field.GetTypeName()[1:]}, typeInfo{Name: "TODO"}, nil

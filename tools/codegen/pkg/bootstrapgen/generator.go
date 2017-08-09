@@ -114,7 +114,7 @@ func (g *Generator) Generate(fdsFiles map[string]string) error {
 	}
 	fmtd, err := format.Source(buf.Bytes())
 	if err != nil {
-		return fmt.Errorf("could not format generated code: %v", err)
+		return fmt.Errorf("could not format generated code: %v : %s", err, string(buf.Bytes()))
 	}
 
 	imports.LocalPrefix = "istio.io"
