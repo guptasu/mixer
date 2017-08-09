@@ -405,17 +405,16 @@ var supportedTypes = "string, int64, double, bool, " + fullProtoNameOfValueTypeE
 func (g *FileDescriptorSetParser) protoType(field *descriptor.FieldDescriptorProto) (typ string, err error) {
 	switch *field.Type {
 	case descriptor.FieldDescriptorProto_TYPE_STRING:
-		typ = "string"
+		return "string", nil
 	case descriptor.FieldDescriptorProto_TYPE_INT64:
-		typ = "int64"
+		return "int64", nil
 	case descriptor.FieldDescriptorProto_TYPE_DOUBLE:
-		typ = "double"
+		return "double", nil
 	case descriptor.FieldDescriptorProto_TYPE_BOOL:
-		typ = "bool"
+		return "bool", nil
 	case descriptor.FieldDescriptorProto_TYPE_ENUM:
-		typ = field.GetTypeName()[1:]
-		if typ != fullProtoNameOfValueTypeEnum {
-			return "", fmt.Errorf("unsupported type for field '%s'. Supported types are '%s'", field.GetName(), supportedTypes)
+		if field.GetTypeName()[1:] == fullProtoNameOfValueTypeEnum {
+			return field.GetTypeName()[1:], nil
 		}
 	case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
 		desc := g.ObjectNamed(field.GetTypeName())
@@ -431,18 +430,16 @@ func (g *FileDescriptorSetParser) protoType(field *descriptor.FieldDescriptorPro
 				return "", err
 			}
 
-			if keyType != "string" || valType != fullProtoNameOfValueTypeEnum {
-				return "", fmt.Errorf("unsupported type for field '%s'. Supported types are '%s'", field.GetName(), supportedTypes)
+			if keyType == "string" && valType == fullProtoNameOfValueTypeEnum {
+				return fmt.Sprintf("map<%s, %s>", keyType, valType), nil
 			}
-
-			typ = fmt.Sprintf("map<%s, %s>", keyType, valType)
-			return typ, nil
+		} else if typ, ok = SupportedCustomMessageTypes[field.GetTypeName()[1:]]; ok {
+			return field.GetTypeName()[1:], nil
 		}
-		return "", fmt.Errorf("unsupported type for field '%s'. Supported types are '%s'", field.GetName(), supportedTypes)
 	default:
 		return "", fmt.Errorf("unsupported type for field '%s'. Supported types are '%s'", field.GetName(), supportedTypes)
 	}
-	return typ, nil
+	return "", fmt.Errorf("unsupported type for field '%s'. Supported types are '%s'", field.GetName(), supportedTypes)
 }
 
 // TypeName returns a full name for the underlying Object type.

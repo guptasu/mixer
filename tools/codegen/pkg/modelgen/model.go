@@ -27,6 +27,11 @@ import (
 
 const fullProtoNameOfValueTypeEnum = "istio.mixer.v1.config.descriptor.ValueType"
 
+var SupportedCustomMessageTypes = map[string]string{
+	"google.protobuf.Timestamp": "",
+	"google.protobuf.Duration":  "",
+}
+
 type (
 	// Model represents the object used to code generate mixer artifacts.
 	Model struct {
