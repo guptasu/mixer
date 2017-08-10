@@ -10,12 +10,6 @@ mixer_proto_library(
 )
 
 mixer_proto_library(
-    name = "log_template_library",
-    testonly = True,
-    protos = ["LogTemplate.proto"],
-)
-
-mixer_proto_library(
     name = "metric_template_library",
     testonly = True,
     protos = ["MetricTemplate.proto"],
@@ -32,7 +26,6 @@ filegroup(
     testonly = True,
     srcs = [
         "list_template_library_proto.descriptor_set",
-        "log_template_library_proto.descriptor_set",
         "metric_template_library_proto.descriptor_set",
         "quota_template_library_proto.descriptor_set",
     ],
@@ -44,8 +37,6 @@ filegroup(
     srcs = [
         "list_template_library_handler.gen.go",
         "list_template_library_tmpl.proto",
-        "log_template_library_handler.gen.go",
-        "log_template_library_tmpl.proto",
         "metric_template_library_handler.gen.go",
         "metric_template_library_tmpl.proto",
         "quota_template_library_handler.gen.go",
@@ -59,8 +50,6 @@ filegroup(
     srcs = [
         "ListTemplateGenerated.golden.proto",
         "ListTemplateHandlerInterface.golden.go",
-        "LogTemplateGenerated.golden.proto",
-        "LogTemplateHandlerInterface.golden.go",
         "MetricTemplateGenerated.golden.proto",
         "MetricTemplateHandlerInterface.golden.go",
         "QuotaTemplateGenerated.golden.proto",
