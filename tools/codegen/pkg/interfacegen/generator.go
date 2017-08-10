@@ -54,14 +54,10 @@ func toProtoMap(k string, v string) string {
 	return fmt.Sprintf("map<%s, %s>", k, v)
 }
 func stringify(protoType modelgen.TypeInfo) string {
-	if protoType.CanExprEval {
-		return "string"
-	}
 	if protoType.IsMap {
 		return toProtoMap(stringify(*protoType.MapKey), stringify(*protoType.MapValue))
 	}
-
-	return protoType.Name
+	return "string"
 }
 
 func containsValueType(ti modelgen.TypeInfo) bool {
@@ -116,7 +112,7 @@ func (g *Generator) Generate(fdsFile string) error {
 	augmentedTemplateTmpl, err := template.New("AugmentedTemplateTmpl").Funcs(
 		template.FuncMap{
 			"containsValueType": containsValueType,
-			"stringify": stringify,
+			"stringify":         stringify,
 		}).Parse(tmpl.RevisedTemplateTmpl)
 	if err != nil {
 		return fmt.Errorf("cannot load template: %v", err)

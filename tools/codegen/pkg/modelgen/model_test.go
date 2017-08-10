@@ -92,98 +92,98 @@ func TestTypeFields(t *testing.T) {
 		t.Fatalf("len(CreateModel(%s).TypeMessage.Fields) = %v, wanted %d", testFilename, len(model.TemplateMessage.Fields), 10)
 	}
 	testField(t, model.TemplateMessage.Fields,
-		"blacklist", TypeInfo{Name: "bool", CanExprEval: true}, "Blacklist", TypeInfo{Name: "bool", CanExprEval: true}, "multi line comment line 2")
+		"blacklist", TypeInfo{Name: "bool"}, "Blacklist", TypeInfo{Name: "bool"}, "multi line comment line 2")
 
 	testField(t, model.TemplateMessage.Fields,
-		"fieldInt64", TypeInfo{Name: "int64", CanExprEval: true},
-		"FieldInt64", TypeInfo{Name: "int64", CanExprEval: true}, "")
+		"fieldInt64", TypeInfo{Name: "int64"},
+		"FieldInt64", TypeInfo{Name: "int64"}, "")
 
 	testField(t, model.TemplateMessage.Fields,
-		"fieldString", TypeInfo{Name: "string", CanExprEval: true},
-		"FieldString", TypeInfo{Name: "string", CanExprEval: true}, "")
+		"fieldString", TypeInfo{Name: "string"},
+		"FieldString", TypeInfo{Name: "string"}, "")
 
 	testField(t, model.TemplateMessage.Fields,
-		"fieldDouble", TypeInfo{Name: "double", CanExprEval: true},
-		"FieldDouble", TypeInfo{Name: "float64", CanExprEval: true}, "")
+		"fieldDouble", TypeInfo{Name: "double"},
+		"FieldDouble", TypeInfo{Name: "float64"}, "")
 
 	testField(t, model.TemplateMessage.Fields,
 		"val",
-		TypeInfo{Name: "istio.mixer.v1.config.descriptor.ValueType", CanExprEval: true, IsValueType: true}, "Val",
-		TypeInfo{Name: "istio_mixer_v1_config_descriptor.ValueType", CanExprEval: true, IsValueType: true}, "single line block comment")
+		TypeInfo{Name: "istio.mixer.v1.config.descriptor.ValueType", IsValueType: true}, "Val",
+		TypeInfo{Name: "istio_mixer_v1_config_descriptor.ValueType", IsValueType: true}, "single line block comment")
 
 	testField(t, model.TemplateMessage.Fields,
 		"dimensions",
 		TypeInfo{Name: "map<string, istio.mixer.v1.config.descriptor.ValueType>",
 			IsMap:    true,
-			MapKey:   &TypeInfo{Name: "string", CanExprEval: true},
-			MapValue: &TypeInfo{Name: "istio.mixer.v1.config.descriptor.ValueType", CanExprEval: true, IsValueType: true},
+			MapKey:   &TypeInfo{Name: "string"},
+			MapValue: &TypeInfo{Name: "istio.mixer.v1.config.descriptor.ValueType", IsValueType: true},
 		},
 		"Dimensions",
 		TypeInfo{
 			Name:     "map[string]istio_mixer_v1_config_descriptor.ValueType",
 			IsMap:    true,
-			MapKey:   &TypeInfo{Name: "string", CanExprEval: true},
-			MapValue: &TypeInfo{Name: "istio_mixer_v1_config_descriptor.ValueType", CanExprEval: true, IsValueType: true},
+			MapKey:   &TypeInfo{Name: "string"},
+			MapValue: &TypeInfo{Name: "istio_mixer_v1_config_descriptor.ValueType", IsValueType: true},
 		}, "single line comment")
 
 	testField(t, model.TemplateMessage.Fields,
 		"dimensionsConstInt64Val",
 		TypeInfo{Name: "map<string, int64>",
 			IsMap:    true,
-			MapKey:   &TypeInfo{Name: "string", CanExprEval: true},
-			MapValue: &TypeInfo{Name: "int64", CanExprEval: true},
+			MapKey:   &TypeInfo{Name: "string"},
+			MapValue: &TypeInfo{Name: "int64"},
 		},
 		"DimensionsConstInt64Val",
 		TypeInfo{
 			Name:     "map[string]int64",
 			IsMap:    true,
-			MapKey:   &TypeInfo{Name: "string", CanExprEval: true},
-			MapValue: &TypeInfo{Name: "int64", CanExprEval: true},
+			MapKey:   &TypeInfo{Name: "string"},
+			MapValue: &TypeInfo{Name: "int64"},
 		}, "")
 
 	testField(t, model.TemplateMessage.Fields,
 		"dimensionsConstStringVal",
 		TypeInfo{Name: "map<string, string>",
 			IsMap:    true,
-			MapKey:   &TypeInfo{Name: "string", CanExprEval: true},
-			MapValue: &TypeInfo{Name: "string", CanExprEval: true},
+			MapKey:   &TypeInfo{Name: "string"},
+			MapValue: &TypeInfo{Name: "string"},
 		},
 		"DimensionsConstStringVal",
 		TypeInfo{
 			Name:     "map[string]string",
 			IsMap:    true,
-			MapKey:   &TypeInfo{Name: "string", CanExprEval: true},
-			MapValue: &TypeInfo{Name: "string", CanExprEval: true},
+			MapKey:   &TypeInfo{Name: "string"},
+			MapValue: &TypeInfo{Name: "string"},
 		}, "")
 
 	testField(t, model.TemplateMessage.Fields,
 		"dimensionsConstBoolVal",
 		TypeInfo{Name: "map<string, bool>",
 			IsMap:    true,
-			MapKey:   &TypeInfo{Name: "string", CanExprEval: true},
-			MapValue: &TypeInfo{Name: "bool", CanExprEval: true},
+			MapKey:   &TypeInfo{Name: "string"},
+			MapValue: &TypeInfo{Name: "bool"},
 		},
 		"DimensionsConstBoolVal",
 		TypeInfo{
 			Name:     "map[string]bool",
 			IsMap:    true,
-			MapKey:   &TypeInfo{Name: "string", CanExprEval: true},
-			MapValue: &TypeInfo{Name: "bool", CanExprEval: true},
+			MapKey:   &TypeInfo{Name: "string"},
+			MapValue: &TypeInfo{Name: "bool"},
 		}, "")
 
 	testField(t, model.TemplateMessage.Fields,
 		"dimensionsConstDoubleVal",
 		TypeInfo{Name: "map<string, double>",
 			IsMap:    true,
-			MapKey:   &TypeInfo{Name: "string", CanExprEval: true},
-			MapValue: &TypeInfo{Name: "double", CanExprEval: true},
+			MapKey:   &TypeInfo{Name: "string"},
+			MapValue: &TypeInfo{Name: "double"},
 		},
 		"DimensionsConstDoubleVal",
 		TypeInfo{
 			Name:     "map[string]float64",
 			IsMap:    true,
-			MapKey:   &TypeInfo{Name: "string", CanExprEval: true},
-			MapValue: &TypeInfo{Name: "float64", CanExprEval: true},
+			MapKey:   &TypeInfo{Name: "string"},
+			MapValue: &TypeInfo{Name: "float64"},
 		}, "")
 }
 

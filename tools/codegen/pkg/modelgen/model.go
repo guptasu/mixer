@@ -70,7 +70,6 @@ type (
 		IsMap       bool
 		MapKey      *TypeInfo
 		MapValue    *TypeInfo
-		CanExprEval bool
 		IsValueType bool
 	}
 
@@ -271,17 +270,17 @@ func createInvalidTypeError(field string, err error) error {
 func getTypeName(g *FileDescriptorSetParser, field *descriptor.FieldDescriptorProto) (protoType TypeInfo, goType TypeInfo, err error) {
 	switch *field.Type {
 	case descriptor.FieldDescriptorProto_TYPE_STRING:
-		return TypeInfo{Name: "string", CanExprEval: true}, TypeInfo{Name: sSTRING, CanExprEval: true}, nil
+		return TypeInfo{Name: "string"}, TypeInfo{Name: sSTRING}, nil
 	case descriptor.FieldDescriptorProto_TYPE_INT64:
-		return TypeInfo{Name: "int64", CanExprEval: true}, TypeInfo{Name: sINT64, CanExprEval: true}, nil
+		return TypeInfo{Name: "int64"}, TypeInfo{Name: sINT64}, nil
 	case descriptor.FieldDescriptorProto_TYPE_DOUBLE:
-		return TypeInfo{Name: "double", CanExprEval: true}, TypeInfo{Name: sFLOAT64, CanExprEval: true}, nil
+		return TypeInfo{Name: "double"}, TypeInfo{Name: sFLOAT64}, nil
 	case descriptor.FieldDescriptorProto_TYPE_BOOL:
-		return TypeInfo{Name: "bool", CanExprEval: true}, TypeInfo{Name: sBOOL, CanExprEval: true}, nil
+		return TypeInfo{Name: "bool"}, TypeInfo{Name: sBOOL}, nil
 	case descriptor.FieldDescriptorProto_TYPE_ENUM:
 		if field.GetTypeName()[1:] == fullProtoNameOfValueTypeEnum {
 			desc := g.ObjectNamed(field.GetTypeName())
-			return TypeInfo{Name: field.GetTypeName()[1:], CanExprEval: true, IsValueType: true}, TypeInfo{Name: g.TypeName(desc), CanExprEval: true, IsValueType: true}, nil
+			return TypeInfo{Name: field.GetTypeName()[1:], IsValueType: true}, TypeInfo{Name: g.TypeName(desc), IsValueType: true}, nil
 		}
 	case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
 		desc := g.ObjectNamed(field.GetTypeName())
