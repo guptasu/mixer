@@ -20,4 +20,16 @@ message Template {
     // ...
     // ...
     map<string, istio.mixer.v1.config.descriptor.ValueType> dimensions = 1;
+
+    int64 int64Primitive = 3;
+
+    bool boolPrimitive = 4;
+
+    double doublePrimitive = 5;
+
+    string stringPrimitive = 6;
+
+    istio.mixer.v1.config.descriptor.ValueType anotherValueType = 7;
+
+    map<string, double> dimensionsFixedInt64ValueDType = 8;
 }

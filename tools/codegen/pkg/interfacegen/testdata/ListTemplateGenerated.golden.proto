@@ -29,10 +29,26 @@ option (istio.mixer.v1.config.template.template_name) = "List";
 
 message Type {
   
+  map<string, istio.mixer.v1.config.descriptor.ValueType> dimensions = 2;
+  istio.mixer.v1.config.descriptor.ValueType anotherValueType = 7;
 }
 
 message InstanceParam {
   
   string check_expression = 1;
+  
+  map<string, string> dimensions = 2;
+  
+  string int64Primitive = 3;
+  
+  string boolPrimitive = 4;
+  
+  string doublePrimitive = 5;
+  
+  string stringPrimitive = 6;
+  
+  string anotherValueType = 7;
+  
+  map<string, string> dimensionsFixedInt64ValueDType = 8;
   
 }

@@ -32,6 +32,18 @@ type Instance struct {
 
 	// dimensions are ...
 	Dimensions map[string]interface{}
+
+	Int64Primitive int64
+
+	BoolPrimitive bool
+
+	DoublePrimitive float64
+
+	StringPrimitive string
+
+	AnotherValueType interface{}
+
+	DimensionsFixedInt64ValueDType map[string]int64
 }
 
 // QuotaHandlerBuilder must be implemented by adapters if they want to

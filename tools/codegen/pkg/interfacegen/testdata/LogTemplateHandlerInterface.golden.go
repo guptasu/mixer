@@ -38,6 +38,18 @@ type Instance struct {
 	// ...
 	// ...
 	Dimensions map[string]interface{}
+
+	Int64Primitive int64
+
+	BoolPrimitive bool
+
+	DoublePrimitive float64
+
+	StringPrimitive string
+
+	AnotherValueType interface{}
+
+	DimensionsFixedInt64ValueDType map[string]float64
 }
 
 // LogHandlerBuilder must be implemented by adapters if they want to
