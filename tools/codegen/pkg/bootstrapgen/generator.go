@@ -69,9 +69,6 @@ func (g *Generator) Generate(fdsFiles map[string]string) error {
 			"isMapWithValueTypeValField": func(goType modelgen.TypeInfo) bool {
 				return goType.IsMap && goType.MapValue.IsValueType
 			},
-			"isMapWithExprEvalValField": func(goType modelgen.TypeInfo) bool {
-				return goType.IsMap && goType.MapValue.CanExprEval
-			},
 			"primitiveToValueType": func(goTypeName string) string {
 				return primitiveToValueType[goTypeName]
 			},

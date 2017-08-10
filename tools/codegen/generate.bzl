@@ -40,7 +40,6 @@ MIXER_DEPS = [
 MIXER_INPUTS = [
     "//pkg/adapter/template:protos",
     "@com_github_istio_api//:mixer/v1/config/descriptor_protos",  # keep
-    "@com_github_gogo_protobuf//gogoproto:go_default_library_protos",
 ]
 MIXER_IMPORT_MAP = {
     "mixer/v1/config/descriptor/value_type.proto": "istio.io/api/mixer/v1/config/descriptor",

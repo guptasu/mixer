@@ -260,20 +260,28 @@ func getRequiredTmplMsg(fdp *FileDescriptor) (*Descriptor, bool) {
 	return cstrDesc, cstrDesc != nil
 }
 
+func createInvalidTypeError(field string, err error) error {
+	errStr := fmt.Sprintf("unsupported type for field '%s'. Supported types are '%s'", field, supportedTypes)
+	if err == nil {
+		return fmt.Errorf(errStr)
+	} else {
+		return fmt.Errorf(errStr+": %v", err)
+	}
+}
 func getTypeName(g *FileDescriptorSetParser, field *descriptor.FieldDescriptorProto) (protoType TypeInfo, goType TypeInfo, err error) {
 	switch *field.Type {
 	case descriptor.FieldDescriptorProto_TYPE_STRING:
-		return TypeInfo{Name: "string", CanExprEval:true}, TypeInfo{Name: sSTRING, CanExprEval:true}, nil
+		return TypeInfo{Name: "string", CanExprEval: true}, TypeInfo{Name: sSTRING, CanExprEval: true}, nil
 	case descriptor.FieldDescriptorProto_TYPE_INT64:
-		return TypeInfo{Name: "int64", CanExprEval:true}, TypeInfo{Name: sINT64, CanExprEval:true}, nil
+		return TypeInfo{Name: "int64", CanExprEval: true}, TypeInfo{Name: sINT64, CanExprEval: true}, nil
 	case descriptor.FieldDescriptorProto_TYPE_DOUBLE:
-		return TypeInfo{Name: "double", CanExprEval:true}, TypeInfo{Name: sFLOAT64, CanExprEval:true}, nil
+		return TypeInfo{Name: "double", CanExprEval: true}, TypeInfo{Name: sFLOAT64, CanExprEval: true}, nil
 	case descriptor.FieldDescriptorProto_TYPE_BOOL:
-		return TypeInfo{Name: "bool", CanExprEval:true}, TypeInfo{Name: sBOOL, CanExprEval:true}, nil
+		return TypeInfo{Name: "bool", CanExprEval: true}, TypeInfo{Name: sBOOL, CanExprEval: true}, nil
 	case descriptor.FieldDescriptorProto_TYPE_ENUM:
 		if field.GetTypeName()[1:] == fullProtoNameOfValueTypeEnum {
 			desc := g.ObjectNamed(field.GetTypeName())
-			return TypeInfo{Name: field.GetTypeName()[1:], CanExprEval:true, IsValueType: true}, TypeInfo{Name: g.TypeName(desc), CanExprEval:true, IsValueType: true}, nil
+			return TypeInfo{Name: field.GetTypeName()[1:], CanExprEval: true, IsValueType: true}, TypeInfo{Name: g.TypeName(desc), CanExprEval: true, IsValueType: true}, nil
 		}
 	case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
 		desc := g.ObjectNamed(field.GetTypeName())
@@ -282,11 +290,11 @@ func getTypeName(g *FileDescriptorSetParser, field *descriptor.FieldDescriptorPr
 
 			protoKeyType, goKeyType, err := getTypeName(g, keyField)
 			if err != nil {
-				return TypeInfo{}, TypeInfo{}, err
+				return TypeInfo{}, TypeInfo{}, createInvalidTypeError(field.GetName(), err)
 			}
 			protoValType, goValType, err := getTypeName(g, valField)
 			if err != nil {
-				return TypeInfo{}, TypeInfo{}, err
+				return TypeInfo{}, TypeInfo{}, createInvalidTypeError(field.GetName(), err)
 			}
 
 			if protoKeyType.Name == "string" {
@@ -306,17 +314,7 @@ func getTypeName(g *FileDescriptorSetParser, field *descriptor.FieldDescriptorPr
 			}
 		}
 	default:
-		return TypeInfo{}, TypeInfo{}, fmt.Errorf("unsupported type for field '%s'. Supported types are '%s'", field.GetName(), supportedTypes)
+		return TypeInfo{}, TypeInfo{}, createInvalidTypeError(field.GetName(), nil)
 	}
-	return TypeInfo{}, TypeInfo{}, fmt.Errorf("unsupported type for field '%s'. Supported types are '%s'", field.GetName(), supportedTypes)
-}
-
-func (g *FileDescriptorSetParser) isMap(field *descriptor.FieldDescriptorProto) bool {
-	if *field.Type == descriptor.FieldDescriptorProto_TYPE_MESSAGE {
-		desc := g.ObjectNamed(field.GetTypeName())
-		if d, ok := desc.(*Descriptor); ok && d.GetOptions().GetMapEntry() {
-			return true
-		}
-	}
-	return false
+	return TypeInfo{}, TypeInfo{}, createInvalidTypeError(field.GetName(), nil)
 }

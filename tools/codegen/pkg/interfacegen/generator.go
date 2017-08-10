@@ -53,7 +53,7 @@ var primitiveProtoTypesHavingValueType = map[string]bool{
 func toProtoMap(k string, v string) string {
 	return fmt.Sprintf("map<%s, %s>", k, v)
 }
-func stringify (protoType modelgen.TypeInfo) string {
+func stringify(protoType modelgen.TypeInfo) string {
 	if protoType.CanExprEval {
 		return "string"
 	}
