@@ -70,6 +70,8 @@ var (
 					return nil, fmt.Errorf("error type checking for field CheckExpression: Evaluated expression type %v want %v", t, istio_mixer_v1_config_descriptor.STRING)
 				}
 
+				// TODO ADD CODE HERE
+
 				_ = cpb
 				return infrdType, err
 			},
@@ -104,10 +106,22 @@ var (
 						return status.WithError(err), adapter.CacheabilityInfo{}
 					}
 
+					StringMapWithInterfaceVal, err := evalAll(md.StringMap, attrs, mapper)
+					StringMap := make(map[string]string, len(StringMapWithInterfaceVal))
+					for StringMapKey, StringMapVal := range StringMapWithInterfaceVal {
+						StringMap[StringMapKey] = StringMapVal.(string)
+					}
+
+					if err != nil {
+						return status.WithError(err), adapter.CacheabilityInfo{}
+					}
+
 					instances = append(instances, &istio_mixer_adapter_sample_check.Instance{
 						Name: name,
 
 						CheckExpression: CheckExpression.(string),
+
+						StringMap: StringMap,
 					})
 					_ = md
 				}
@@ -151,6 +165,8 @@ var (
 					}
 				}
 
+				// TODO ADD CODE HERE
+
 				_ = cpb
 				return infrdType, err
 			},
@@ -178,10 +194,24 @@ var (
 					return status.WithInvalidArgument(msg), adapter.CacheabilityInfo{}, adapter.QuotaResult{}
 				}
 
+				BoolMapWithInterfaceVal, err := evalAll(castedInst.BoolMap, attrs, mapper)
+				BoolMap := make(map[string]bool, len(BoolMapWithInterfaceVal))
+				for BoolMapKey, BoolMapVal := range BoolMapWithInterfaceVal {
+					BoolMap[BoolMapKey] = BoolMapVal.(bool)
+				}
+
+				if err != nil {
+					msg := fmt.Sprintf("failed to eval BoolMap for instance '%s': %v", quotaName, err)
+					glog.Error(msg)
+					return status.WithInvalidArgument(msg), adapter.CacheabilityInfo{}, adapter.QuotaResult{}
+				}
+
 				instance := &istio_mixer_adapter_sample_quota.Instance{
 					Name: quotaName,
 
 					Dimensions: Dimensions,
+
+					BoolMap: BoolMap,
 				}
 
 				var qr adapter.QuotaResult
@@ -281,6 +311,8 @@ var (
 					return nil, fmt.Errorf("error type checking for field StringPrimitive: Evaluated expression type %v want %v", t, istio_mixer_v1_config_descriptor.STRING)
 				}
 
+				// TODO ADD CODE HERE
+
 				_ = cpb
 				return infrdType, err
 			},
@@ -349,6 +381,17 @@ var (
 						continue
 					}
 
+					Int64MapWithInterfaceVal, err := evalAll(md.Int64Map, attrs, mapper)
+					Int64Map := make(map[string]int64, len(Int64MapWithInterfaceVal))
+					for Int64MapKey, Int64MapVal := range Int64MapWithInterfaceVal {
+						Int64Map[Int64MapKey] = Int64MapVal.(int64)
+					}
+
+					if err != nil {
+						result = multierror.Append(result, fmt.Errorf("failed to eval Int64Map for instance '%s': %v", name, err))
+						continue
+					}
+
 					instances = append(instances, &istio_mixer_adapter_sample_report.Instance{
 						Name: name,
 
@@ -363,6 +406,8 @@ var (
 						DoublePrimitive: DoublePrimitive.(float64),
 
 						StringPrimitive: StringPrimitive.(string),
+
+						Int64Map: Int64Map,
 					})
 					_ = md
 				}

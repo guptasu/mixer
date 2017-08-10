@@ -371,10 +371,14 @@ var (
 						continue
 					}
 
-					// TODO ADD CODE HERE
+					Int64MapWithInterfaceVal, err := evalAll(md.Int64Map, attrs, mapper)
+					Int64Map := make(map[string]int64, len(Int64MapWithInterfaceVal))
+					for Int64MapKey, Int64MapVal := range Int64MapWithInterfaceVal {
+						Int64Map[Int64MapKey] = Int64MapVal.(int64)
+					}
 
 					if err != nil {
-						result = multierror.Append(result, fmt.Errorf("failed to eval DimensionsFixedInt64ValueDType for instance '%s': %v", name, err))
+						result = multierror.Append(result, fmt.Errorf("failed to eval Int64Map for instance '%s': %v", name, err))
 						continue
 					}
 
@@ -395,7 +399,7 @@ var (
 
 						AnotherValueType: AnotherValueType,
 
-						DimensionsFixedInt64ValueDType: DimensionsFixedInt64ValueDType,
+						Int64Map: Int64Map,
 					})
 					_ = md
 				}

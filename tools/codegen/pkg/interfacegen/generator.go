@@ -112,8 +112,8 @@ func (g *Generator) Generate(fdsFile string) error {
 
 	augmentedTemplateTmpl, err := template.New("AugmentedTemplateTmpl").Funcs(
 		template.FuncMap{
-			"containsValueType": func(typeName string) bool {
-				return strings.Contains(typeName, fullProtoNameOfValueTypeEnum)
+			"containsValueType": func(ti modelgen.TypeInfo) bool {
+				return ti.IsValueType || (ti.IsMap && ti.MapValue.IsValueType)
 			},
 			"stringify": stringify,
 		}).Parse(tmpl.RevisedTemplateTmpl)

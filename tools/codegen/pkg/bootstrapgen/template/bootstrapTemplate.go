@@ -134,7 +134,11 @@ var (
 								{{if .GoType.MapValue.IsValueType}}
 									{{.GoName}}, err := evalAll(md.{{.GoName}}, attrs, mapper)
 								{{else}}
-									// TODO ADD CODE HERE
+									{{.GoName}}WithInterfaceVal, err := evalAll(md.{{.GoName}}, attrs, mapper)
+									{{.GoName}} := make(map[string]{{.GoType.MapValue.Name}}, len({{.GoName}}WithInterfaceVal))
+									for {{.GoName}}Key, {{.GoName}}Val := range {{.GoName}}WithInterfaceVal {
+										{{.GoName}}[{{.GoName}}Key] = {{.GoName}}Val.({{.GoType.MapValue.Name}})
+									}
 								{{end}}
 							{{else}}
 								{{.GoName}}, err := mapper.Eval(md.{{.GoName}}, attrs)
@@ -189,7 +193,11 @@ var (
 								{{if .GoType.MapValue.IsValueType}}
 									{{.GoName}}, err := evalAll(md.{{.GoName}}, attrs, mapper)
 								{{else}}
-									// TODO ADD CODE HERE
+									{{.GoName}}WithInterfaceVal, err := evalAll(md.{{.GoName}}, attrs, mapper)
+									{{.GoName}} := make(map[string]{{.GoType.MapValue.Name}}, len({{.GoName}}WithInterfaceVal))
+									for {{.GoName}}Key, {{.GoName}}Val := range {{.GoName}}WithInterfaceVal {
+										{{.GoName}}[{{.GoName}}Key] = {{.GoName}}Val.({{.GoType.MapValue.Name}})
+									}
 								{{end}}
 							{{else}}
 								{{.GoName}}, err := mapper.Eval(md.{{.GoName}}, attrs)
@@ -233,7 +241,11 @@ var (
 							{{if .GoType.MapValue.IsValueType}}
 								{{.GoName}}, err := evalAll(castedInst.{{.GoName}}, attrs, mapper)
 							{{else}}
-									// TODO ADD CODE HERE
+								{{.GoName}}WithInterfaceVal, err := evalAll(castedInst.{{.GoName}}, attrs, mapper)
+								{{.GoName}} := make(map[string]{{.GoType.MapValue.Name}}, len({{.GoName}}WithInterfaceVal))
+								for {{.GoName}}Key, {{.GoName}}Val := range {{.GoName}}WithInterfaceVal {
+									{{.GoName}}[{{.GoName}}Key] = {{.GoName}}Val.({{.GoType.MapValue.Name}})
+								}
 							{{end}}
 						{{else}}
 							{{.GoName}}, err := mapper.Eval(castedInst.{{.GoName}}, attrs)

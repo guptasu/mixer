@@ -22,5 +22,5 @@ message Template {
 
     istio.mixer.v1.config.descriptor.ValueType anotherValueType = 7;
 
-    map<string, int64> dimensionsFixedInt64ValueDType = 8;
+    map<string, int64> int64Map = 8;
 }
