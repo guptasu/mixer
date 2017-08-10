@@ -62,11 +62,6 @@ func (g *Generator) Generate(fdsFiles map[string]string) error {
 
 	tmpl, err := template.New("MixerBootstrap").Funcs(
 		template.FuncMap{
-			"isPrimitiveValueType": func(goTypeName string) bool {
-				// Is this a primitive type from all types that can be represented as ValueType
-				_, ok := primitiveToValueType[goTypeName]
-				return ok
-			},
 			"isValueType": func(goTypeName string) bool {
 				return goTypeName == fullGoNameOfValueTypeMessageName
 			},
