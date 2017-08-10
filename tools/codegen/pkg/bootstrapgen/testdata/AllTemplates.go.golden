@@ -34,11 +34,11 @@ import (
 
 	"istio.io/mixer/template/list"
 
+	"istio.io/mixer/template/quota"
+
 	"istio.io/mixer/template/log"
 
 	"istio.io/mixer/template/metric"
-
-	"istio.io/mixer/template/quota"
 )
 
 var (
@@ -126,6 +126,87 @@ var (
 			},
 			ProcessReport: nil,
 			ProcessQuota:  nil,
+		},
+
+		istio_mixer_template_quota.TemplateName: {
+			CtrCfg:    &istio_mixer_template_quota.InstanceParam{},
+			Variety:   adptTmpl.TEMPLATE_VARIETY_REPORT,
+			BldrName:  "istio.io/mixer/template/quota.QuotaHandlerBuilder",
+			HndlrName: "istio.io/mixer/template/quota.QuotaHandler",
+			SupportsTemplate: func(hndlrBuilder adapter.HandlerBuilder) bool {
+				_, ok := hndlrBuilder.(istio_mixer_template_quota.QuotaHandlerBuilder)
+				return ok
+			},
+			HandlerSupportsTemplate: func(hndlr adapter.Handler) bool {
+				_, ok := hndlr.(istio_mixer_template_quota.QuotaHandler)
+				return ok
+			},
+			InferType: func(cp proto.Message, tEvalFn template.TypeEvalFn) (proto.Message, error) {
+				var err error = nil
+				cpb := cp.(*istio_mixer_template_quota.InstanceParam)
+				infrdType := &istio_mixer_template_quota.Type{}
+
+				infrdType.Dimensions = make(map[string]istio_mixer_v1_config_descriptor.ValueType, len(cpb.Dimensions))
+				for k, v := range cpb.Dimensions {
+					if infrdType.Dimensions[k], err = tEvalFn(v); err != nil {
+						return nil, err
+					}
+				}
+
+				_ = cpb
+				return infrdType, err
+			},
+			ConfigureType: func(types map[string]proto.Message, builder *adapter.HandlerBuilder) error {
+				// Mixer framework should have ensured the type safety.
+				castedBuilder := (*builder).(istio_mixer_template_quota.QuotaHandlerBuilder)
+				castedTypes := make(map[string]*istio_mixer_template_quota.Type, len(types))
+				for k, v := range types {
+					// Mixer framework should have ensured the type safety.
+					v1 := v.(*istio_mixer_template_quota.Type)
+					castedTypes[k] = v1
+				}
+				return castedBuilder.ConfigureQuotaHandler(castedTypes)
+			},
+
+			ProcessReport: func(insts map[string]proto.Message, attrs attribute.Bag, mapper expr.Evaluator, handler adapter.Handler) rpc.Status {
+				result := &multierror.Error{}
+				var instances []*istio_mixer_template_quota.Instance
+
+				castedInsts := make(map[string]*istio_mixer_template_quota.InstanceParam, len(insts))
+				for k, v := range insts {
+					v1 := v.(*istio_mixer_template_quota.InstanceParam)
+					castedInsts[k] = v1
+				}
+				for name, md := range castedInsts {
+
+					Dimensions, err := template.EvalAll(md.Dimensions, attrs, mapper)
+
+					if err != nil {
+						result = multierror.Append(result, fmt.Errorf("failed to eval Dimensions for instance '%s': %v", name, err))
+						continue
+					}
+
+					instances = append(instances, &istio_mixer_template_quota.Instance{
+						Name: name,
+
+						Dimensions: Dimensions,
+					})
+					_ = md
+				}
+
+				if err := handler.(istio_mixer_template_quota.QuotaHandler).HandleQuota(instances); err != nil {
+					result = multierror.Append(result, fmt.Errorf("failed to report all values: %v", err))
+				}
+
+				err := result.ErrorOrNil()
+				if err != nil {
+					return status.WithError(err)
+				}
+
+				return status.OK
+			},
+			ProcessCheck: nil,
+			ProcessQuota: nil,
 		},
 
 		istio_mixer_template_log.TemplateName: {
@@ -408,87 +489,6 @@ var (
 				}
 
 				if err := handler.(istio_mixer_template_metric.MetricHandler).HandleMetric(instances); err != nil {
-					result = multierror.Append(result, fmt.Errorf("failed to report all values: %v", err))
-				}
-
-				err := result.ErrorOrNil()
-				if err != nil {
-					return status.WithError(err)
-				}
-
-				return status.OK
-			},
-			ProcessCheck: nil,
-			ProcessQuota: nil,
-		},
-
-		istio_mixer_template_quota.TemplateName: {
-			CtrCfg:    &istio_mixer_template_quota.InstanceParam{},
-			Variety:   adptTmpl.TEMPLATE_VARIETY_REPORT,
-			BldrName:  "istio.io/mixer/template/quota.QuotaHandlerBuilder",
-			HndlrName: "istio.io/mixer/template/quota.QuotaHandler",
-			SupportsTemplate: func(hndlrBuilder adapter.HandlerBuilder) bool {
-				_, ok := hndlrBuilder.(istio_mixer_template_quota.QuotaHandlerBuilder)
-				return ok
-			},
-			HandlerSupportsTemplate: func(hndlr adapter.Handler) bool {
-				_, ok := hndlr.(istio_mixer_template_quota.QuotaHandler)
-				return ok
-			},
-			InferType: func(cp proto.Message, tEvalFn template.TypeEvalFn) (proto.Message, error) {
-				var err error = nil
-				cpb := cp.(*istio_mixer_template_quota.InstanceParam)
-				infrdType := &istio_mixer_template_quota.Type{}
-
-				infrdType.Dimensions = make(map[string]istio_mixer_v1_config_descriptor.ValueType, len(cpb.Dimensions))
-				for k, v := range cpb.Dimensions {
-					if infrdType.Dimensions[k], err = tEvalFn(v); err != nil {
-						return nil, err
-					}
-				}
-
-				_ = cpb
-				return infrdType, err
-			},
-			ConfigureType: func(types map[string]proto.Message, builder *adapter.HandlerBuilder) error {
-				// Mixer framework should have ensured the type safety.
-				castedBuilder := (*builder).(istio_mixer_template_quota.QuotaHandlerBuilder)
-				castedTypes := make(map[string]*istio_mixer_template_quota.Type, len(types))
-				for k, v := range types {
-					// Mixer framework should have ensured the type safety.
-					v1 := v.(*istio_mixer_template_quota.Type)
-					castedTypes[k] = v1
-				}
-				return castedBuilder.ConfigureQuotaHandler(castedTypes)
-			},
-
-			ProcessReport: func(insts map[string]proto.Message, attrs attribute.Bag, mapper expr.Evaluator, handler adapter.Handler) rpc.Status {
-				result := &multierror.Error{}
-				var instances []*istio_mixer_template_quota.Instance
-
-				castedInsts := make(map[string]*istio_mixer_template_quota.InstanceParam, len(insts))
-				for k, v := range insts {
-					v1 := v.(*istio_mixer_template_quota.InstanceParam)
-					castedInsts[k] = v1
-				}
-				for name, md := range castedInsts {
-
-					Dimensions, err := template.EvalAll(md.Dimensions, attrs, mapper)
-
-					if err != nil {
-						result = multierror.Append(result, fmt.Errorf("failed to eval Dimensions for instance '%s': %v", name, err))
-						continue
-					}
-
-					instances = append(instances, &istio_mixer_template_quota.Instance{
-						Name: name,
-
-						Dimensions: Dimensions,
-					})
-					_ = md
-				}
-
-				if err := handler.(istio_mixer_template_quota.QuotaHandler).HandleQuota(instances); err != nil {
 					result = multierror.Append(result, fmt.Errorf("failed to report all values: %v", err))
 				}
 
