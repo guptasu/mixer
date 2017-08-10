@@ -103,11 +103,11 @@ var (
 							if cpb.{{.GoName}} == "" {
 								return nil, fmt.Errorf("expression for field {{.GoName}} cannot be empty")
 							}
-							if t, e := tEvalFn(cpb.{{.GoName}}); e != nil || t != {{primitiveToValueType .GoType.Name}} {
+							if t, e := tEvalFn(cpb.{{.GoName}}); e != nil || t != {{getValueType .GoType}} {
 								if e != nil {
 									return nil, fmt.Errorf("failed to evaluate expression for field {{.GoName}}: %v", e)
 								}
-								return nil, fmt.Errorf("error type checking for field {{.GoName}}: Evaluated expression type %v want %v", t, {{primitiveToValueType .GoType.Name}})
+								return nil, fmt.Errorf("error type checking for field {{.GoName}}: Evaluated expression type %v want %v", t, {{getValueType .GoType}})
 							}
 						{{end}}
 					{{end}}
