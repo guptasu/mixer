@@ -55,8 +55,8 @@ func (g *Generator) Generate(fdsFile string) error {
 
 	intfaceTmpl, err := template.New("ProcInterface").Funcs(
 		template.FuncMap{
-			"replaceGoValueTypeToInterface": func(typeName string) string {
-				return strings.Replace(typeName, fullGoNameOfValueTypeEnum, "interface{}", 1)
+			"replaceGoValueTypeToInterface": func(typeInfo modelgen.TypeInfo) string {
+				return strings.Replace(typeInfo.Name, fullGoNameOfValueTypeEnum, "interface{}", 1)
 			},
 		}).Parse(tmpl.InterfaceTemplate)
 	if err != nil {
@@ -102,6 +102,7 @@ func (g *Generator) Generate(fdsFile string) error {
 				return strings.Contains(typeName, fullProtoNameOfValueTypeEnum)
 			},
 			"stringify": func(protoTypeName string) string {
+
 				if strings.Contains(protoTypeName, fullProtoNameOfValueTypeEnum) {
 					// replace map<string, ValueType> -> map<string, string>
 					return strings.Replace(protoTypeName, fullProtoNameOfValueTypeEnum, "string", 1)

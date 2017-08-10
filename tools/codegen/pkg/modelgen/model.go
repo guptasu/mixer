@@ -48,33 +48,34 @@ type (
 
 		// Info for regenerated template proto
 		PackageName     string
-		TemplateMessage messageInfo
+		TemplateMessage MessageInfo
 
 		// Warnings/Errors in the Template proto file.
 		diags []diag
 	}
 
-	fieldInfo struct {
+	FieldInfo struct {
 		ProtoName string
 		GoName    string
 		Number    string // Only for proto fields
 		Comment   string
 
-		ProtoType typeInfo
-		GoType    typeInfo
+		ProtoType TypeInfo
+		GoType    TypeInfo
 	}
 
-	typeInfo struct {
-		Name       string
-		IsRepeated bool
-		IsMap      bool
-		KeyName    string
-		ValueName  string
+	TypeInfo struct {
+		Name         string
+		IsRepeated   bool
+		IsMap        bool
+		MapKeyType   *TypeInfo
+		MapValueType *TypeInfo
+		CanExprEval  bool
 	}
 
-	messageInfo struct {
+	MessageInfo struct {
 		Comment string
-		Fields  []fieldInfo
+		Fields  []FieldInfo
 	}
 )
 
@@ -120,7 +121,7 @@ func (m *Model) fillModel(templateProto *FileDescriptor, parser *FileDescriptorS
 
 func (m *Model) addTemplateMessage(parser *FileDescriptorSetParser, tmplProto *FileDescriptor, tmplDesc *Descriptor) {
 	m.TemplateMessage.Comment = tmplProto.getComment(tmplDesc.path)
-	m.TemplateMessage.Fields = make([]fieldInfo, 0)
+	m.TemplateMessage.Fields = make([]FieldInfo, 0)
 	for i, fieldDesc := range tmplDesc.Field {
 		fieldName := fieldDesc.GetName()
 
@@ -141,7 +142,7 @@ func (m *Model) addTemplateMessage(parser *FileDescriptorSetParser, tmplProto *F
 				tmplProto.getLineNumber(getPathForField(tmplDesc, i)),
 				err.Error())
 		}
-		m.TemplateMessage.Fields = append(m.TemplateMessage.Fields, fieldInfo{
+		m.TemplateMessage.Fields = append(m.TemplateMessage.Fields, FieldInfo{
 			ProtoName: fieldName,
 			GoName:    camelCase(fieldName),
 			GoType:    goTypeInfo,
@@ -258,45 +259,57 @@ func getRequiredTmplMsg(fdp *FileDescriptor) (*Descriptor, bool) {
 	return cstrDesc, cstrDesc != nil
 }
 
-func getTypeName(g *FileDescriptorSetParser, field *descriptor.FieldDescriptorProto) (protoType typeInfo, goType typeInfo, err error) {
+func getTypeName(g *FileDescriptorSetParser, field *descriptor.FieldDescriptorProto) (protoType TypeInfo, goType TypeInfo, err error) {
 	switch *field.Type {
 	case descriptor.FieldDescriptorProto_TYPE_STRING:
-		return typeInfo{Name: "string"}, typeInfo{Name: sSTRING}, nil
+		return TypeInfo{Name: "string"}, TypeInfo{Name: sSTRING}, nil
 	case descriptor.FieldDescriptorProto_TYPE_INT64:
-		return typeInfo{Name: "int64"}, typeInfo{Name: sINT64}, nil
+		return TypeInfo{Name: "int64"}, TypeInfo{Name: sINT64}, nil
 	case descriptor.FieldDescriptorProto_TYPE_DOUBLE:
-		return typeInfo{Name: "double"}, typeInfo{Name: sFLOAT64}, nil
+		return TypeInfo{Name: "double"}, TypeInfo{Name: sFLOAT64}, nil
 	case descriptor.FieldDescriptorProto_TYPE_BOOL:
-		return typeInfo{Name: "bool"}, typeInfo{Name: sBOOL}, nil
+		return TypeInfo{Name: "bool"}, TypeInfo{Name: sBOOL}, nil
 	case descriptor.FieldDescriptorProto_TYPE_ENUM:
 		if field.GetTypeName()[1:] == fullProtoNameOfValueTypeEnum {
 			desc := g.ObjectNamed(field.GetTypeName())
-			return typeInfo{Name: field.GetTypeName()[1:]}, typeInfo{Name: g.TypeName(desc)}, nil
+			return TypeInfo{Name: field.GetTypeName()[1:]}, TypeInfo{Name: g.TypeName(desc)}, nil
 		}
 	case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
 		desc := g.ObjectNamed(field.GetTypeName())
 		if d, ok := desc.(*Descriptor); ok && d.GetOptions().GetMapEntry() {
 			keyField, valField := d.Field[0], d.Field[1]
 
-			keyType, goKeyType, err := getTypeName(g, keyField)
+			protoKeyType, goKeyType, err := getTypeName(g, keyField)
 			if err != nil {
-				return typeInfo{}, typeInfo{}, err
+				return TypeInfo{}, TypeInfo{}, err
 			}
 			protoValType, goValType, err := getTypeName(g, valField)
 			if err != nil {
-				return typeInfo{}, typeInfo{}, err
+				return TypeInfo{}, TypeInfo{}, err
 			}
 
-			if keyType.Name == "string" && protoValType.Name == fullProtoNameOfValueTypeEnum {
-				return typeInfo{Name: fmt.Sprintf("map<%s, %s>", keyType.Name, protoValType.Name)}, typeInfo{Name: fmt.Sprintf("map[%s]%s", goKeyType.Name, goValType.Name)}, nil
+			if protoKeyType.Name == "string" && protoValType.Name == fullProtoNameOfValueTypeEnum {
+				return TypeInfo{
+						Name:         fmt.Sprintf("map<%s, %s>", protoKeyType.Name, protoValType.Name),
+						IsMap:        true,
+						MapKeyType:   &protoKeyType,
+						MapValueType: &protoValType,
+					},
+					TypeInfo{
+						Name: fmt.Sprintf("map[%s]%s", goKeyType.Name, goValType.Name),
+						IsMap:        true,
+						MapKeyType:   &goKeyType,
+						MapValueType: &goValType,
+					},
+					nil
 			}
 		} else if _, ok = SupportedCustomMessageTypes[field.GetTypeName()[1:]]; ok {
-			return typeInfo{Name: field.GetTypeName()[1:]}, typeInfo{Name: "TODO"}, nil
+			return TypeInfo{Name: field.GetTypeName()[1:]}, TypeInfo{Name: "TODO"}, nil
 		}
 	default:
-		return typeInfo{}, typeInfo{}, fmt.Errorf("unsupported type for field '%s'. Supported types are '%s'", field.GetName(), supportedTypes)
+		return TypeInfo{}, TypeInfo{}, fmt.Errorf("unsupported type for field '%s'. Supported types are '%s'", field.GetName(), supportedTypes)
 	}
-	return typeInfo{}, typeInfo{}, fmt.Errorf("unsupported type for field '%s'. Supported types are '%s'", field.GetName(), supportedTypes)
+	return TypeInfo{}, TypeInfo{}, fmt.Errorf("unsupported type for field '%s'. Supported types are '%s'", field.GetName(), supportedTypes)
 }
 
 func (g *FileDescriptorSetParser) isMap(field *descriptor.FieldDescriptorProto) bool {

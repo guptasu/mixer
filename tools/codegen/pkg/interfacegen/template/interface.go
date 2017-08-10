@@ -36,7 +36,7 @@ type Instance struct {
   Name string
   {{range .TemplateMessage.Fields}}
   {{.Comment}}
-  {{.GoName}} {{replaceGoValueTypeToInterface .GoType.Name}}
+  {{.GoName}} {{replaceGoValueTypeToInterface .GoType}}
   {{end}}
 }
 

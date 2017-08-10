@@ -91,30 +91,30 @@ func TestTypeFields(t *testing.T) {
 		t.Fatalf("len(CreateModel(%s).TypeMessage.Fields) = %v, wanted %d", testFilename, len(model.TemplateMessage.Fields), 3)
 	}
 	testField(t, model.TemplateMessage.Fields,
-		"blacklist", typeInfo{Name: "bool"}, "Blacklist", typeInfo{Name: "bool"}, "multi line comment line 2")
+		"blacklist", TypeInfo{Name: "bool"}, "Blacklist", TypeInfo{Name: "bool"}, "multi line comment line 2")
 	testField(t, model.TemplateMessage.Fields,
-		"val", typeInfo{Name: "istio.mixer.v1.config.descriptor.ValueType"}, "Val",
-		typeInfo{Name: "istio_mixer_v1_config_descriptor.ValueType"}, "single line block comment")
+		"val", TypeInfo{Name: "istio.mixer.v1.config.descriptor.ValueType"}, "Val",
+		TypeInfo{Name: "istio_mixer_v1_config_descriptor.ValueType"}, "single line block comment")
 
 	testField(t, model.TemplateMessage.Fields,
-		"dimensions", typeInfo{Name: "map<string, istio.mixer.v1.config.descriptor.ValueType>"},
-		"Dimensions", typeInfo{Name: "map[string]istio_mixer_v1_config_descriptor.ValueType"}, "single line comment")
+		"dimensions", TypeInfo{Name: "map<string, istio.mixer.v1.config.descriptor.ValueType>"},
+		"Dimensions", TypeInfo{Name: "map[string]istio_mixer_v1_config_descriptor.ValueType"}, "single line comment")
 
 	testField(t, model.TemplateMessage.Fields,
-		"fieldInt64", typeInfo{Name: "int64"},
-		"FieldInt64", typeInfo{Name: "int64"}, "")
+		"fieldInt64", TypeInfo{Name: "int64"},
+		"FieldInt64", TypeInfo{Name: "int64"}, "")
 
 	testField(t, model.TemplateMessage.Fields,
-		"fieldString", typeInfo{Name: "string"},
-		"FieldString", typeInfo{Name: "string"}, "")
+		"fieldString", TypeInfo{Name: "string"},
+		"FieldString", TypeInfo{Name: "string"}, "")
 
 	testField(t, model.TemplateMessage.Fields,
-		"fieldDouble", typeInfo{Name: "double"},
-		"FieldDouble", typeInfo{Name: "float64"}, "")
+		"fieldDouble", TypeInfo{Name: "double"},
+		"FieldDouble", TypeInfo{Name: "float64"}, "")
 }
 
-func testField(t *testing.T, fields []fieldInfo, protoFldName string, protoFldType typeInfo,
-	goFldName string, goFldType typeInfo, comment string) {
+func testField(t *testing.T, fields []FieldInfo, protoFldName string, protoFldType TypeInfo,
+	goFldName string, goFldType TypeInfo, comment string) {
 	testFilename := "testdata/simple_template.descriptor_set"
 	found := false
 	for _, cf := range fields {
