@@ -58,7 +58,7 @@ func stringify (protoType modelgen.TypeInfo) string {
 		return "string"
 	}
 	if protoType.IsMap {
-		return toProtoMap(stringify(*protoType.MapKeyType), stringify(*protoType.MapValueType))
+		return toProtoMap(stringify(*protoType.MapKey), stringify(*protoType.MapValue))
 	}
 
 	return protoType.Name

@@ -65,12 +65,12 @@ type (
 	}
 
 	TypeInfo struct {
-		Name         string
-		IsRepeated   bool
-		IsMap        bool
-		MapKeyType   *TypeInfo
-		MapValueType *TypeInfo
-		CanExprEval  bool
+		Name        string
+		IsRepeated  bool
+		IsMap       bool
+		MapKey      *TypeInfo
+		MapValue    *TypeInfo
+		CanExprEval bool
 	}
 
 	MessageInfo struct {
@@ -290,16 +290,16 @@ func getTypeName(g *FileDescriptorSetParser, field *descriptor.FieldDescriptorPr
 
 			if protoKeyType.Name == "string" && protoValType.Name == fullProtoNameOfValueTypeEnum {
 				return TypeInfo{
-						Name:         fmt.Sprintf("map<%s, %s>", protoKeyType.Name, protoValType.Name),
-						IsMap:        true,
-						MapKeyType:   &protoKeyType,
-						MapValueType: &protoValType,
+						Name:     fmt.Sprintf("map<%s, %s>", protoKeyType.Name, protoValType.Name),
+						IsMap:    true,
+						MapKey:   &protoKeyType,
+						MapValue: &protoValType,
 					},
 					TypeInfo{
-						Name: fmt.Sprintf("map[%s]%s", goKeyType.Name, goValType.Name),
-						IsMap:        true,
-						MapKeyType:   &goKeyType,
-						MapValueType: &goValType,
+						Name:     fmt.Sprintf("map[%s]%s", goKeyType.Name, goValType.Name),
+						IsMap:    true,
+						MapKey:   &goKeyType,
+						MapValue: &goValType,
 					},
 					nil
 			}
