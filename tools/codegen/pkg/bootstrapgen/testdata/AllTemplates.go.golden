@@ -369,6 +369,13 @@ var (
 						continue
 					}
 
+					DimensionsFixedInt64ValueDType, err := mapper.Eval(md.DimensionsFixedInt64ValueDType, attrs)
+
+					if err != nil {
+						result = multierror.Append(result, fmt.Errorf("failed to eval DimensionsFixedInt64ValueDType for instance '%s': %v", name, err))
+						continue
+					}
+
 					instances = append(instances, &istio_mixer_template_metric.Instance{
 						Name: name,
 
@@ -385,6 +392,8 @@ var (
 						StringPrimitive: StringPrimitive.(string),
 
 						AnotherValueType: AnotherValueType,
+
+						DimensionsFixedInt64ValueDType: DimensionsFixedInt64ValueDType,
 					})
 					_ = md
 				}

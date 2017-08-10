@@ -129,7 +129,7 @@ var (
 					}
 					for name, md := range castedInsts {
 						{{range .TemplateMessage.Fields}}
-							{{if isMapWithExprEvalValField .GoType}}
+							{{if isMapWithValueTypeValField .GoType}}
 								{{.GoName}}, err := evalAll(md.{{.GoName}}, attrs, mapper)
 							{{else}}
 								{{.GoName}}, err := mapper.Eval(md.{{.GoName}}, attrs)
@@ -180,7 +180,7 @@ var (
 					}
 					for name, md := range castedInsts {
 						{{range .TemplateMessage.Fields}}
-							{{if isMapWithExprEvalValField .GoType}}
+							{{if isMapWithValueTypeValField .GoType}}
 								{{.GoName}}, err := evalAll(md.{{.GoName}}, attrs, mapper)
 							{{else}}
 								{{.GoName}}, err := mapper.Eval(md.{{.GoName}}, attrs)
@@ -220,7 +220,7 @@ var (
 				qma adapter.QuotaRequestArgs) (rpc.Status, adapter.CacheabilityInfo, adapter.QuotaResult) {
 					castedInst := inst.(*{{.GoPackageName}}.InstanceParam)
 					{{range .TemplateMessage.Fields}}
-						{{if isMapWithExprEvalValField .GoType}}
+						{{if isMapWithValueTypeValField .GoType}}
 							{{.GoName}}, err := evalAll(castedInst.{{.GoName}}, attrs, mapper)
 						{{else}}
 							{{.GoName}}, err := mapper.Eval(castedInst.{{.GoName}}, attrs)
