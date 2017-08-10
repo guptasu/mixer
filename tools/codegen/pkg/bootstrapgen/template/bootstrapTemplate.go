@@ -73,13 +73,16 @@ var (
 				infrdType := &{{.GoPackageName}}.Type{}
 
 				{{range .TemplateMessage.Fields}}
-					{{if isStringValueTypeMap .GoType.Name}}
-						infrdType.{{.GoName}} = make(map[string]istio_mixer_v1_config_descriptor.ValueType, len(cpb.{{.GoName}}))
-						for k, v := range cpb.{{.GoName}} {
-							if infrdType.{{.GoName}}[k], err = tEvalFn(v); err != nil {
-								return nil, err
+					{{if .GoType.IsMap}}
+						{{if .GoType.MapValue.IsValueType}}
+							infrdType.{{.GoName}} = make(map[{{.GoType.MapKey.Name}}]istio_mixer_v1_config_descriptor.ValueType, len(cpb.{{.GoName}}))
+							for k, v := range cpb.{{.GoName}} {
+								if infrdType.{{.GoName}}[k], err = tEvalFn(v); err != nil {
+									return nil, err
+								}
 							}
-						}
+						{{else}}
+						{{end}}
 					{{else}}
 						if cpb.{{.GoName}} == "" {
 							return nil, fmt.Errorf("expression for field {{.GoName}} cannot be empty")
@@ -126,7 +129,7 @@ var (
 					}
 					for name, md := range castedInsts {
 						{{range .TemplateMessage.Fields}}
-							{{if isStringValueTypeMap .GoType.Name}}
+							{{if isMapWithExprEvalValField .GoType}}
 								{{.GoName}}, err := evalAll(md.{{.GoName}}, attrs, mapper)
 							{{else}}
 								{{.GoName}}, err := mapper.Eval(md.{{.GoName}}, attrs)
@@ -177,7 +180,7 @@ var (
 					}
 					for name, md := range castedInsts {
 						{{range .TemplateMessage.Fields}}
-							{{if isStringValueTypeMap .GoType.Name}}
+							{{if isMapWithExprEvalValField .GoType}}
 								{{.GoName}}, err := evalAll(md.{{.GoName}}, attrs, mapper)
 							{{else}}
 								{{.GoName}}, err := mapper.Eval(md.{{.GoName}}, attrs)
@@ -217,7 +220,7 @@ var (
 				qma adapter.QuotaRequestArgs) (rpc.Status, adapter.CacheabilityInfo, adapter.QuotaResult) {
 					castedInst := inst.(*{{.GoPackageName}}.InstanceParam)
 					{{range .TemplateMessage.Fields}}
-						{{if isStringValueTypeMap .GoType.Name}}
+						{{if isMapWithExprEvalValField .GoType}}
 							{{.GoName}}, err := evalAll(castedInst.{{.GoName}}, attrs, mapper)
 						{{else}}
 							{{.GoName}}, err := mapper.Eval(castedInst.{{.GoName}}, attrs)

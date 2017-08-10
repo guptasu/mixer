@@ -50,6 +50,8 @@ type Instance struct {
 	StringPrimitive string
 
 	AnotherValueType interface{}
+
+	DimensionsFixedInt64ValueDType map[string]int64
 }
 
 // MetricHandlerBuilder must be implemented by adapter code if it wants to

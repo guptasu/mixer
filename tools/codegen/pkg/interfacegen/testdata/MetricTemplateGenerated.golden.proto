@@ -53,4 +53,6 @@ message InstanceParam {
   
   string anotherValueType = 7;
   
+  map<string, string> dimensionsFixedInt64ValueDType = 8;
+  
 }

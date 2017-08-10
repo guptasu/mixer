@@ -21,7 +21,6 @@ import (
 	"io/ioutil"
 	"os"
 	"sort"
-	"strings"
 	"text/template"
 
 	"github.com/gogo/protobuf/proto"
@@ -67,8 +66,11 @@ func (g *Generator) Generate(fdsFiles map[string]string) error {
 			"isValueType": func(goTypeName string) bool {
 				return goTypeName == fullGoNameOfValueTypeMessageName
 			},
-			"isStringValueTypeMap": func(goTypeName string) bool {
-				return strings.Replace(goTypeName, " ", "", -1) == "map[string]"+fullGoNameOfValueTypeMessageName
+			"isMapWithValueTypeValField": func(goType modelgen.TypeInfo) bool {
+				return goType.IsMap && goType.MapValue.IsValueType
+			},
+			"isMapWithExprEvalValField": func(goType modelgen.TypeInfo) bool {
+				return goType.IsMap && goType.MapValue.CanExprEval
 			},
 			"primitiveToValueType": func(goTypeName string) string {
 				return primitiveToValueType[goTypeName]

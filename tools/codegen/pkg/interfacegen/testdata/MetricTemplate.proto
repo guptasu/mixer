@@ -32,4 +32,6 @@ message Template {
     string stringPrimitive = 6;
 
     istio.mixer.v1.config.descriptor.ValueType anotherValueType = 7;
+
+    map<string, int64> dimensionsFixedInt64ValueDType = 8;
 }

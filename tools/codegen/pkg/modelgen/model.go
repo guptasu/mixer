@@ -71,6 +71,7 @@ type (
 		MapKey      *TypeInfo
 		MapValue    *TypeInfo
 		CanExprEval bool
+		IsValueType bool
 	}
 
 	MessageInfo struct {
@@ -272,7 +273,7 @@ func getTypeName(g *FileDescriptorSetParser, field *descriptor.FieldDescriptorPr
 	case descriptor.FieldDescriptorProto_TYPE_ENUM:
 		if field.GetTypeName()[1:] == fullProtoNameOfValueTypeEnum {
 			desc := g.ObjectNamed(field.GetTypeName())
-			return TypeInfo{Name: field.GetTypeName()[1:], CanExprEval:true}, TypeInfo{Name: g.TypeName(desc), CanExprEval:true}, nil
+			return TypeInfo{Name: field.GetTypeName()[1:], CanExprEval:true, IsValueType: true}, TypeInfo{Name: g.TypeName(desc), CanExprEval:true, IsValueType: true}, nil
 		}
 	case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
 		desc := g.ObjectNamed(field.GetTypeName())
@@ -288,7 +289,7 @@ func getTypeName(g *FileDescriptorSetParser, field *descriptor.FieldDescriptorPr
 				return TypeInfo{}, TypeInfo{}, err
 			}
 
-			if protoKeyType.Name == "string" && protoValType.Name == fullProtoNameOfValueTypeEnum {
+			if protoKeyType.Name == "string" {
 				return TypeInfo{
 						Name:     fmt.Sprintf("map<%s, %s>", protoKeyType.Name, protoValType.Name),
 						IsMap:    true,
