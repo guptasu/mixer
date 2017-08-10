@@ -28,10 +28,10 @@ import (
 
 const fullProtoNameOfValueTypeEnum = "istio.mixer.v1.config.descriptor.ValueType"
 
-var SupportedCustomMessageTypes = map[string]string{
-	"google.protobuf.Timestamp": "",
-	"google.protobuf.Duration":  "",
-}
+//var SupportedCustomMessageTypes = map[string]string{
+//	"google.protobuf.Timestamp": "",
+//	"google.protobuf.Duration":  "",
+//}
 
 type (
 	// Model represents the object used to code generate mixer artifacts.
@@ -262,17 +262,17 @@ func getRequiredTmplMsg(fdp *FileDescriptor) (*Descriptor, bool) {
 func getTypeName(g *FileDescriptorSetParser, field *descriptor.FieldDescriptorProto) (protoType TypeInfo, goType TypeInfo, err error) {
 	switch *field.Type {
 	case descriptor.FieldDescriptorProto_TYPE_STRING:
-		return TypeInfo{Name: "string"}, TypeInfo{Name: sSTRING}, nil
+		return TypeInfo{Name: "string", CanExprEval:true}, TypeInfo{Name: sSTRING, CanExprEval:true}, nil
 	case descriptor.FieldDescriptorProto_TYPE_INT64:
-		return TypeInfo{Name: "int64"}, TypeInfo{Name: sINT64}, nil
+		return TypeInfo{Name: "int64", CanExprEval:true}, TypeInfo{Name: sINT64, CanExprEval:true}, nil
 	case descriptor.FieldDescriptorProto_TYPE_DOUBLE:
-		return TypeInfo{Name: "double"}, TypeInfo{Name: sFLOAT64}, nil
+		return TypeInfo{Name: "double", CanExprEval:true}, TypeInfo{Name: sFLOAT64, CanExprEval:true}, nil
 	case descriptor.FieldDescriptorProto_TYPE_BOOL:
-		return TypeInfo{Name: "bool"}, TypeInfo{Name: sBOOL}, nil
+		return TypeInfo{Name: "bool", CanExprEval:true}, TypeInfo{Name: sBOOL, CanExprEval:true}, nil
 	case descriptor.FieldDescriptorProto_TYPE_ENUM:
 		if field.GetTypeName()[1:] == fullProtoNameOfValueTypeEnum {
 			desc := g.ObjectNamed(field.GetTypeName())
-			return TypeInfo{Name: field.GetTypeName()[1:]}, TypeInfo{Name: g.TypeName(desc)}, nil
+			return TypeInfo{Name: field.GetTypeName()[1:], CanExprEval:true}, TypeInfo{Name: g.TypeName(desc), CanExprEval:true}, nil
 		}
 	case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
 		desc := g.ObjectNamed(field.GetTypeName())
@@ -303,8 +303,6 @@ func getTypeName(g *FileDescriptorSetParser, field *descriptor.FieldDescriptorPr
 					},
 					nil
 			}
-		} else if _, ok = SupportedCustomMessageTypes[field.GetTypeName()[1:]]; ok {
-			return TypeInfo{Name: field.GetTypeName()[1:]}, TypeInfo{Name: "TODO"}, nil
 		}
 	default:
 		return TypeInfo{}, TypeInfo{}, fmt.Errorf("unsupported type for field '%s'. Supported types are '%s'", field.GetName(), supportedTypes)

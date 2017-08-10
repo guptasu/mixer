@@ -31,7 +31,7 @@ option (istio.mixer.v1.config.template.template_name) = "{{.Name}}";
 {{.TemplateMessage.Comment}}
 message Type {
   {{range .TemplateMessage.Fields -}}
-  {{if hasValueType .ProtoType.Name -}}
+  {{if containsValueType .ProtoType.Name -}}
   {{.Comment}}
   {{.ProtoType.Name}} {{.ProtoName}} = {{.Number}};
   {{- end}}
@@ -40,7 +40,7 @@ message Type {
 
 message InstanceParam {
   {{range .TemplateMessage.Fields}}
-  {{stringify .ProtoType.Name}} {{.ProtoName}} = {{.Number}};
+  {{stringify .ProtoType}} {{.ProtoName}} = {{.Number}};
   {{end}}
 }
 `

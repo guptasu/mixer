@@ -50,6 +50,20 @@ var primitiveProtoTypesHavingValueType = map[string]bool{
 	"double": true,
 }
 
+func toProtoMap(k string, v string) string {
+	return fmt.Sprintf("map<%s, %s>", k, v)
+}
+func stringify (protoType modelgen.TypeInfo) string {
+	if protoType.CanExprEval {
+		return "string"
+	}
+	if protoType.IsMap {
+		return toProtoMap(stringify(*protoType.MapKeyType), stringify(*protoType.MapValueType))
+	}
+
+	return protoType.Name
+}
+
 // Generate creates a Go interfaces for adapters to implement for a given Template.
 func (g *Generator) Generate(fdsFile string) error {
 
@@ -98,20 +112,10 @@ func (g *Generator) Generate(fdsFile string) error {
 
 	augmentedTemplateTmpl, err := template.New("AugmentedTemplateTmpl").Funcs(
 		template.FuncMap{
-			"hasValueType": func(typeName string) bool {
+			"containsValueType": func(typeName string) bool {
 				return strings.Contains(typeName, fullProtoNameOfValueTypeEnum)
 			},
-			"stringify": func(protoTypeName string) string {
-
-				if strings.Contains(protoTypeName, fullProtoNameOfValueTypeEnum) {
-					// replace map<string, ValueType> -> map<string, string>
-					return strings.Replace(protoTypeName, fullProtoNameOfValueTypeEnum, "string", 1)
-				}
-				if _, ok := primitiveProtoTypesHavingValueType[protoTypeName]; ok {
-					return "string"
-				}
-				return protoTypeName
-			},
+			"stringify": stringify,
 		}).Parse(tmpl.RevisedTemplateTmpl)
 	if err != nil {
 		return fmt.Errorf("cannot load template: %v", err)
