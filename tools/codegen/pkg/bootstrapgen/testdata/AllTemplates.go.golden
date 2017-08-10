@@ -294,6 +294,8 @@ var (
 					return nil, err
 				}
 
+				// TODO ADD CODE HERE
+
 				_ = cpb
 				return infrdType, err
 			},
@@ -369,7 +371,7 @@ var (
 						continue
 					}
 
-					DimensionsFixedInt64ValueDType, err := mapper.Eval(md.DimensionsFixedInt64ValueDType, attrs)
+					// TODO ADD CODE HERE
 
 					if err != nil {
 						result = multierror.Append(result, fmt.Errorf("failed to eval DimensionsFixedInt64ValueDType for instance '%s': %v", name, err))

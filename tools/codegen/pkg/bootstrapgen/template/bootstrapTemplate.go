@@ -82,6 +82,7 @@ var (
 								}
 							}
 						{{else}}
+						// TODO ADD CODE HERE
 						{{end}}
 					{{else}}
 						if cpb.{{.GoName}} == "" {
@@ -129,8 +130,12 @@ var (
 					}
 					for name, md := range castedInsts {
 						{{range .TemplateMessage.Fields}}
-							{{if isMapWithValueTypeValField .GoType}}
-								{{.GoName}}, err := evalAll(md.{{.GoName}}, attrs, mapper)
+							{{if .GoType.IsMap}}
+								{{if .GoType.MapValue.IsValueType}}
+									{{.GoName}}, err := evalAll(md.{{.GoName}}, attrs, mapper)
+								{{else}}
+									// TODO ADD CODE HERE
+								{{end}}
 							{{else}}
 								{{.GoName}}, err := mapper.Eval(md.{{.GoName}}, attrs)
 							{{end}}
@@ -180,8 +185,12 @@ var (
 					}
 					for name, md := range castedInsts {
 						{{range .TemplateMessage.Fields}}
-							{{if isMapWithValueTypeValField .GoType}}
-								{{.GoName}}, err := evalAll(md.{{.GoName}}, attrs, mapper)
+							{{if .GoType.IsMap}}
+								{{if .GoType.MapValue.IsValueType}}
+									{{.GoName}}, err := evalAll(md.{{.GoName}}, attrs, mapper)
+								{{else}}
+									// TODO ADD CODE HERE
+								{{end}}
 							{{else}}
 								{{.GoName}}, err := mapper.Eval(md.{{.GoName}}, attrs)
 							{{end}}
@@ -220,8 +229,12 @@ var (
 				qma adapter.QuotaRequestArgs) (rpc.Status, adapter.CacheabilityInfo, adapter.QuotaResult) {
 					castedInst := inst.(*{{.GoPackageName}}.InstanceParam)
 					{{range .TemplateMessage.Fields}}
-						{{if isMapWithValueTypeValField .GoType}}
-							{{.GoName}}, err := evalAll(castedInst.{{.GoName}}, attrs, mapper)
+						{{if .GoType.IsMap}}
+							{{if .GoType.MapValue.IsValueType}}
+								{{.GoName}}, err := evalAll(castedInst.{{.GoName}}, attrs, mapper)
+							{{else}}
+									// TODO ADD CODE HERE
+							{{end}}
 						{{else}}
 							{{.GoName}}, err := mapper.Eval(castedInst.{{.GoName}}, attrs)
 						{{end}}
