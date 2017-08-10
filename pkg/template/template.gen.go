@@ -106,11 +106,7 @@ var (
 						return status.WithError(err), adapter.CacheabilityInfo{}
 					}
 
-					StringMapWithInterfaceVal, err := evalAll(md.StringMap, attrs, mapper)
-					StringMap := make(map[string]string, len(StringMapWithInterfaceVal))
-					for StringMapKey, StringMapVal := range StringMapWithInterfaceVal {
-						StringMap[StringMapKey] = StringMapVal.(string)
-					}
+					StringMap, err := evalAll(md.StringMap, attrs, mapper)
 
 					if err != nil {
 						return status.WithError(err), adapter.CacheabilityInfo{}
@@ -121,7 +117,13 @@ var (
 
 						CheckExpression: CheckExpression.(string),
 
-						StringMap: StringMap,
+						StringMap: func(m map[string]interface{}) map[string]string {
+							res := make(map[string]string, len(m))
+							for k, v := range m {
+								res[k] = v.(string)
+							}
+							return res
+						}(StringMap),
 					})
 					_ = md
 				}
@@ -194,11 +196,7 @@ var (
 					return status.WithInvalidArgument(msg), adapter.CacheabilityInfo{}, adapter.QuotaResult{}
 				}
 
-				BoolMapWithInterfaceVal, err := evalAll(castedInst.BoolMap, attrs, mapper)
-				BoolMap := make(map[string]bool, len(BoolMapWithInterfaceVal))
-				for BoolMapKey, BoolMapVal := range BoolMapWithInterfaceVal {
-					BoolMap[BoolMapKey] = BoolMapVal.(bool)
-				}
+				BoolMap, err := evalAll(castedInst.BoolMap, attrs, mapper)
 
 				if err != nil {
 					msg := fmt.Sprintf("failed to eval BoolMap for instance '%s': %v", quotaName, err)
@@ -211,7 +209,13 @@ var (
 
 					Dimensions: Dimensions,
 
-					BoolMap: BoolMap,
+					BoolMap: func(m map[string]interface{}) map[string]bool {
+						res := make(map[string]bool, len(m))
+						for k, v := range m {
+							res[k] = v.(bool)
+						}
+						return res
+					}(BoolMap),
 				}
 
 				var qr adapter.QuotaResult
@@ -381,11 +385,7 @@ var (
 						continue
 					}
 
-					Int64MapWithInterfaceVal, err := evalAll(md.Int64Map, attrs, mapper)
-					Int64Map := make(map[string]int64, len(Int64MapWithInterfaceVal))
-					for Int64MapKey, Int64MapVal := range Int64MapWithInterfaceVal {
-						Int64Map[Int64MapKey] = Int64MapVal.(int64)
-					}
+					Int64Map, err := evalAll(md.Int64Map, attrs, mapper)
 
 					if err != nil {
 						result = multierror.Append(result, fmt.Errorf("failed to eval Int64Map for instance '%s': %v", name, err))
@@ -407,7 +407,13 @@ var (
 
 						StringPrimitive: StringPrimitive.(string),
 
-						Int64Map: Int64Map,
+						Int64Map: func(m map[string]interface{}) map[string]int64 {
+							res := make(map[string]int64, len(m))
+							for k, v := range m {
+								res[k] = v.(int64)
+							}
+							return res
+						}(Int64Map),
 					})
 					_ = md
 				}

@@ -64,9 +64,12 @@ func stringify(protoType modelgen.TypeInfo) string {
 	return protoType.Name
 }
 
+func containsValueType(ti modelgen.TypeInfo) bool {
+	return ti.IsValueType || ti.IsMap && ti.MapValue.IsValueType
+}
+
 // Generate creates a Go interfaces for adapters to implement for a given Template.
 func (g *Generator) Generate(fdsFile string) error {
-
 	intfaceTmpl, err := template.New("ProcInterface").Funcs(
 		template.FuncMap{
 			"replaceGoValueTypeToInterface": func(typeInfo modelgen.TypeInfo) string {
@@ -112,9 +115,7 @@ func (g *Generator) Generate(fdsFile string) error {
 
 	augmentedTemplateTmpl, err := template.New("AugmentedTemplateTmpl").Funcs(
 		template.FuncMap{
-			"containsValueType": func(ti modelgen.TypeInfo) bool {
-				return ti.IsValueType || (ti.IsMap && ti.MapValue.IsValueType)
-			},
+			"containsValueType": containsValueType,
 			"stringify": stringify,
 		}).Parse(tmpl.RevisedTemplateTmpl)
 	if err != nil {

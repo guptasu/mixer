@@ -52,6 +52,10 @@ var primitiveToValueType = map[string]string{
 	"float64": fullGoNameOfValueTypePkgName + istio_mixer_v1_config_descriptor.DOUBLE.String(),
 }
 
+func containsValueType(ti modelgen.TypeInfo) bool {
+	return ti.IsValueType || ti.IsMap && ti.MapValue.IsValueType
+}
+
 // Generate creates a Go file that will be build inside mixer framework. The generated file contains all the
 // template specific code that mixer needs to add support for different passed in templates.
 func (g *Generator) Generate(fdsFiles map[string]string) error {
@@ -72,6 +76,7 @@ func (g *Generator) Generate(fdsFiles map[string]string) error {
 			"primitiveToValueType": func(goTypeName string) string {
 				return primitiveToValueType[goTypeName]
 			},
+			"containsValueType": containsValueType,
 		}).Parse(tmplPkg.InterfaceTemplate)
 
 	if err != nil {

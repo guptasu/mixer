@@ -371,11 +371,7 @@ var (
 						continue
 					}
 
-					Int64MapWithInterfaceVal, err := evalAll(md.Int64Map, attrs, mapper)
-					Int64Map := make(map[string]int64, len(Int64MapWithInterfaceVal))
-					for Int64MapKey, Int64MapVal := range Int64MapWithInterfaceVal {
-						Int64Map[Int64MapKey] = Int64MapVal.(int64)
-					}
+					Int64Map, err := evalAll(md.Int64Map, attrs, mapper)
 
 					if err != nil {
 						result = multierror.Append(result, fmt.Errorf("failed to eval Int64Map for instance '%s': %v", name, err))
@@ -399,7 +395,13 @@ var (
 
 						AnotherValueType: AnotherValueType,
 
-						Int64Map: Int64Map,
+						Int64Map: func(m map[string]interface{}) map[string]int64 {
+							res := make(map[string]int64, len(m))
+							for k, v := range m {
+								res[k] = v.(int64)
+							}
+							return res
+						}(Int64Map),
 					})
 					_ = md
 				}

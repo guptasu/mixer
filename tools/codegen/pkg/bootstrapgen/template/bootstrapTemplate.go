@@ -131,15 +131,7 @@ var (
 					for name, md := range castedInsts {
 						{{range .TemplateMessage.Fields}}
 							{{if .GoType.IsMap}}
-								{{if .GoType.MapValue.IsValueType}}
-									{{.GoName}}, err := evalAll(md.{{.GoName}}, attrs, mapper)
-								{{else}}
-									{{.GoName}}WithInterfaceVal, err := evalAll(md.{{.GoName}}, attrs, mapper)
-									{{.GoName}} := make(map[string]{{.GoType.MapValue.Name}}, len({{.GoName}}WithInterfaceVal))
-									for {{.GoName}}Key, {{.GoName}}Val := range {{.GoName}}WithInterfaceVal {
-										{{.GoName}}[{{.GoName}}Key] = {{.GoName}}Val.({{.GoType.MapValue.Name}})
-									}
-								{{end}}
+								{{.GoName}}, err := evalAll(md.{{.GoName}}, attrs, mapper)
 							{{else}}
 								{{.GoName}}, err := mapper.Eval(md.{{.GoName}}, attrs)
 							{{end}}
@@ -152,10 +144,20 @@ var (
 						instances = append(instances, &{{.GoPackageName}}.Instance{
 							Name:       name,
 							{{range .TemplateMessage.Fields}}
-								{{if isPrimitiveValueType .GoType.Name}}
-									{{.GoName}}: {{.GoName}}.({{.GoType.Name}}),
-								{{else}}
+								{{if containsValueType .GoType}}
 									{{.GoName}}: {{.GoName}},
+								{{else}}
+									{{if .GoType.IsMap}}
+										{{.GoName}}: func(m map[string]interface{}) map[string]{{.GoType.MapValue.Name}} {
+											res := make(map[string]{{.GoType.MapValue.Name}}, len(m))
+											for k, v := range m {
+												res[k] = v.({{.GoType.MapValue.Name}})
+											}
+											return res
+										}({{.GoName}}),
+									{{else}}
+										{{.GoName}}: {{.GoName}}.({{.GoType.Name}}),
+									{{end}}
 								{{end}}
 							{{end}}
 						})
@@ -190,15 +192,7 @@ var (
 					for name, md := range castedInsts {
 						{{range .TemplateMessage.Fields}}
 							{{if .GoType.IsMap}}
-								{{if .GoType.MapValue.IsValueType}}
-									{{.GoName}}, err := evalAll(md.{{.GoName}}, attrs, mapper)
-								{{else}}
-									{{.GoName}}WithInterfaceVal, err := evalAll(md.{{.GoName}}, attrs, mapper)
-									{{.GoName}} := make(map[string]{{.GoType.MapValue.Name}}, len({{.GoName}}WithInterfaceVal))
-									for {{.GoName}}Key, {{.GoName}}Val := range {{.GoName}}WithInterfaceVal {
-										{{.GoName}}[{{.GoName}}Key] = {{.GoName}}Val.({{.GoType.MapValue.Name}})
-									}
-								{{end}}
+								{{.GoName}}, err := evalAll(md.{{.GoName}}, attrs, mapper)
 							{{else}}
 								{{.GoName}}, err := mapper.Eval(md.{{.GoName}}, attrs)
 							{{end}}
@@ -206,14 +200,23 @@ var (
 									return status.WithError(err), adapter.CacheabilityInfo{}
 								}
 						{{end}}
-
 						instances = append(instances, &{{.GoPackageName}}.Instance{
 							Name:       name,
 							{{range .TemplateMessage.Fields}}
-								{{if isPrimitiveValueType .GoType.Name}}
-									{{.GoName}}: {{.GoName}}.({{.GoType.Name}}),
-								{{else}}
+								{{if containsValueType .GoType}}
 									{{.GoName}}: {{.GoName}},
+								{{else}}
+									{{if .GoType.IsMap}}
+										{{.GoName}}: func(m map[string]interface{}) map[string]{{.GoType.MapValue.Name}} {
+											res := make(map[string]{{.GoType.MapValue.Name}}, len(m))
+											for k, v := range m {
+												res[k] = v.({{.GoType.MapValue.Name}})
+											}
+											return res
+										}({{.GoName}}),
+									{{else}}
+										{{.GoName}}: {{.GoName}}.({{.GoType.Name}}),
+									{{end}}
 								{{end}}
 							{{end}}
 						})
@@ -238,15 +241,7 @@ var (
 					castedInst := inst.(*{{.GoPackageName}}.InstanceParam)
 					{{range .TemplateMessage.Fields}}
 						{{if .GoType.IsMap}}
-							{{if .GoType.MapValue.IsValueType}}
-								{{.GoName}}, err := evalAll(castedInst.{{.GoName}}, attrs, mapper)
-							{{else}}
-								{{.GoName}}WithInterfaceVal, err := evalAll(castedInst.{{.GoName}}, attrs, mapper)
-								{{.GoName}} := make(map[string]{{.GoType.MapValue.Name}}, len({{.GoName}}WithInterfaceVal))
-								for {{.GoName}}Key, {{.GoName}}Val := range {{.GoName}}WithInterfaceVal {
-									{{.GoName}}[{{.GoName}}Key] = {{.GoName}}Val.({{.GoType.MapValue.Name}})
-								}
-							{{end}}
+							{{.GoName}}, err := evalAll(castedInst.{{.GoName}}, attrs, mapper)
 						{{else}}
 							{{.GoName}}, err := mapper.Eval(castedInst.{{.GoName}}, attrs)
 						{{end}}
@@ -260,10 +255,20 @@ var (
 					instance := &{{.GoPackageName}}.Instance{
 						Name:       quotaName,
 						{{range .TemplateMessage.Fields}}
-							{{if isPrimitiveValueType .GoType.Name}}
-								{{.GoName}}: {{.GoName}}.({{.GoType.Name}}),
-							{{else}}
+							{{if containsValueType .GoType}}
 								{{.GoName}}: {{.GoName}},
+							{{else}}
+								{{if .GoType.IsMap}}
+									{{.GoName}}: func(m map[string]interface{}) map[string]{{.GoType.MapValue.Name}} {
+										res := make(map[string]{{.GoType.MapValue.Name}}, len(m))
+										for k, v := range m {
+											res[k] = v.({{.GoType.MapValue.Name}})
+										}
+										return res
+									}({{.GoName}}),
+								{{else}}
+									{{.GoName}}: {{.GoName}}.({{.GoType.Name}}),
+								{{end}}
 							{{end}}
 						{{end}}
 					}
