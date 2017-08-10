@@ -54,6 +54,7 @@ type (
 		diags []diag
 	}
 
+	// FieldInfo contains the data about the field
 	FieldInfo struct {
 		ProtoName string
 		GoName    string
@@ -64,15 +65,17 @@ type (
 		GoType    TypeInfo
 	}
 
+	// TypeInfo contains the data about the field
 	TypeInfo struct {
 		Name        string
 		IsRepeated  bool
 		IsMap       bool
+		IsValueType bool
 		MapKey      *TypeInfo
 		MapValue    *TypeInfo
-		IsValueType bool
 	}
 
+	// MessageInfo contains the data about the type/message
 	MessageInfo struct {
 		Comment string
 		Fields  []FieldInfo
@@ -263,9 +266,9 @@ func createInvalidTypeError(field string, err error) error {
 	errStr := fmt.Sprintf("unsupported type for field '%s'. Supported types are '%s'", field, supportedTypes)
 	if err == nil {
 		return fmt.Errorf(errStr)
-	} else {
-		return fmt.Errorf(errStr+": %v", err)
 	}
+	return fmt.Errorf(errStr+": %v", err)
+
 }
 func getTypeName(g *FileDescriptorSetParser, field *descriptor.FieldDescriptorProto) (protoType TypeInfo, goType TypeInfo, err error) {
 	switch *field.Type {

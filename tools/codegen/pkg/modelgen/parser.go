@@ -317,7 +317,8 @@ const (
 // protoType returns a Proto type name for a Field's DescriptorProto.
 // We only support primitives that can be represented as ValueTypes,ValueType itself, or map<string, ValueType>.
 var supportedPrimitives = []string{"string", "int64", "double", "bool"}
-var supportedTypes = strings.Join(supportedPrimitives, ", ") + ", " + fullProtoNameOfValueTypeEnum + ", " + fmt.Sprintf("map<string, %s | %s>", fullProtoNameOfValueTypeEnum, strings.Join(supportedPrimitives, " | "))
+var supportedTypes = strings.Join(supportedPrimitives, ", ") + ", " + fullProtoNameOfValueTypeEnum + ", " +
+	fmt.Sprintf("map<string, %s | %s>", fullProtoNameOfValueTypeEnum, strings.Join(supportedPrimitives, " | "))
 
 // TypeName returns a full name for the underlying Object type.
 func (g *FileDescriptorSetParser) TypeName(obj Object) string {
@@ -423,22 +424,6 @@ func (c *common) File() *descriptor.FileDescriptorProto { return c.file }
 // helper methods
 
 func dottedSlice(elem []string) string { return strings.Join(elem, ".") }
-
-func isRepeated(field *descriptor.FieldDescriptorProto) bool {
-	return field.Label != nil && *field.Label == descriptor.FieldDescriptorProto_LABEL_REPEATED
-}
-
-func needsStar(typ descriptor.FieldDescriptorProto_Type) bool {
-	switch typ {
-	case descriptor.FieldDescriptorProto_TYPE_GROUP:
-		return false
-	case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
-		return false
-	case descriptor.FieldDescriptorProto_TYPE_BYTES:
-		return false
-	}
-	return true
-}
 
 // Is c an ASCII lower-case letter?
 func isASCIILower(c byte) bool {

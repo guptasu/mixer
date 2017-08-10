@@ -194,7 +194,10 @@ func testField(t *testing.T, fields []FieldInfo, protoFldName string, protoFldTy
 	for _, cf := range fields {
 		if cf.ProtoName == protoFldName {
 			found = true
-			if cf.GoName != goFldName || !reflect.DeepEqual(cf.ProtoType, protoFldType) || !reflect.DeepEqual(cf.GoType, goFldType) || !strings.Contains(cf.Comment, comment) {
+			if cf.GoName != goFldName ||
+				!reflect.DeepEqual(cf.ProtoType, protoFldType) ||
+				!reflect.DeepEqual(cf.GoType, goFldType) ||
+				!strings.Contains(cf.Comment, comment) {
 				t.Fatalf("Got CreateModel(%s).TemplateMessage.Fields[%s] = GoName:%s, ProtoType:%v, GoType:%v, Comment:%s"+
 					"\nwanted GoName:%s, ProtoType:%v, GoType:%v, comment: %s",
 					testFilename, protoFldName, cf.GoName, cf.ProtoType, cf.GoType, cf.Comment, goFldName, protoFldType, goFldType, comment)

@@ -39,20 +39,13 @@ type Generator struct {
 }
 
 const (
-	fullProtoNameOfValueTypeEnum = "istio.mixer.v1.config.descriptor.ValueType"
-	fullGoNameOfValueTypeEnum    = "istio_mixer_v1_config_descriptor.ValueType"
+	fullGoNameOfValueTypeEnum = "istio_mixer_v1_config_descriptor.ValueType"
 )
-
-var primitiveProtoTypesHavingValueType = map[string]bool{
-	"string": true,
-	"bool":   true,
-	"int64":  true,
-	"double": true,
-}
 
 func toProtoMap(k string, v string) string {
 	return fmt.Sprintf("map<%s, %s>", k, v)
 }
+
 func stringify(protoType modelgen.TypeInfo) string {
 	if protoType.IsMap {
 		return toProtoMap(stringify(*protoType.MapKey), stringify(*protoType.MapValue))

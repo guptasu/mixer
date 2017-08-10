@@ -41,8 +41,7 @@ type Generator struct {
 }
 
 const (
-	fullGoNameOfValueTypePkgName     = "istio_mixer_v1_config_descriptor."
-	fullGoNameOfValueTypeMessageName = "istio_mixer_v1_config_descriptor.ValueType"
+	fullGoNameOfValueTypePkgName = "istio_mixer_v1_config_descriptor."
 )
 
 // TODO share the code between this generator and the interfacegen code generator.
