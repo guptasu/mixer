@@ -32,9 +32,9 @@ filegroup(
     testonly = True,
     srcs = [
         "check_proto.descriptor_set",
+        "quota_proto.descriptor_set",
         "report1_proto.descriptor_set",
         "report2_proto.descriptor_set",
-        "quota_proto.descriptor_set",
     ],
 )
 
