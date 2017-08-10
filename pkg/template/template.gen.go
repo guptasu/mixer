@@ -74,7 +74,7 @@ var (
 						if e != nil {
 							return nil, fmt.Errorf("failed to evaluate expression for field StringMap: %v", e)
 						}
-						return nil, fmt.Errorf("error type checking for field StringMap: Evaluated expression type %v want %v", t)
+						return nil, fmt.Errorf("error type checking for field StringMap: Evaluated expression type %v want %v", t, istio_mixer_v1_config_descriptor.STRING)
 					}
 				}
 
@@ -178,7 +178,7 @@ var (
 						if e != nil {
 							return nil, fmt.Errorf("failed to evaluate expression for field BoolMap: %v", e)
 						}
-						return nil, fmt.Errorf("error type checking for field BoolMap: Evaluated expression type %v want %v", t)
+						return nil, fmt.Errorf("error type checking for field BoolMap: Evaluated expression type %v want %v", t, istio_mixer_v1_config_descriptor.BOOL)
 					}
 				}
 
@@ -328,7 +328,7 @@ var (
 						if e != nil {
 							return nil, fmt.Errorf("failed to evaluate expression for field Int64Map: %v", e)
 						}
-						return nil, fmt.Errorf("error type checking for field Int64Map: Evaluated expression type %v want %v", t)
+						return nil, fmt.Errorf("error type checking for field Int64Map: Evaluated expression type %v want %v", t, istio_mixer_v1_config_descriptor.INT64)
 					}
 				}
 
