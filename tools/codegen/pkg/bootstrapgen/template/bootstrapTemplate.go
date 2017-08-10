@@ -73,8 +73,8 @@ var (
 				infrdType := &{{.GoPackageName}}.Type{}
 
 				{{range .TemplateMessage.Fields}}
-					{{if .GoType.IsMap}}
-						{{if .GoType.MapValue.IsValueType}}
+					{{if containsValueType .GoType}}
+						{{if .GoType.IsMap}}
 							infrdType.{{.GoName}} = make(map[{{.GoType.MapKey.Name}}]istio_mixer_v1_config_descriptor.ValueType, len(cpb.{{.GoName}}))
 							for k, v := range cpb.{{.GoName}} {
 								if infrdType.{{.GoName}}[k], err = tEvalFn(v); err != nil {
@@ -82,13 +82,20 @@ var (
 								}
 							}
 						{{else}}
-						// TODO ADD CODE HERE
+							if cpb.{{.GoName}} == "" {
+								return nil, fmt.Errorf("expression for field {{.GoName}} cannot be empty")
+							}
+							if infrdType.{{.GoName}}, err = tEvalFn(cpb.{{.GoName}}); err != nil {
+								return nil, err
+							}
 						{{end}}
 					{{else}}
-						if cpb.{{.GoName}} == "" {
-							return nil, fmt.Errorf("expression for field {{.GoName}} cannot be empty")
-						}
-						{{if isPrimitiveValueType .GoType.Name}}
+						{{if .GoType.IsMap}}
+						// TODO
+						{{else}}
+							if cpb.{{.GoName}} == "" {
+								return nil, fmt.Errorf("expression for field {{.GoName}} cannot be empty")
+							}
 							if t, e := tEvalFn(cpb.{{.GoName}}); e != nil || t != {{primitiveToValueType .GoType.Name}} {
 								if e != nil {
 								    return nil, fmt.Errorf("failed to evaluate expression for field {{.GoName}}: %v", e)
@@ -96,13 +103,7 @@ var (
 								return nil, fmt.Errorf("error type checking for field {{.GoName}}: Evaluated expression type %v want %v", t, {{primitiveToValueType .GoType.Name}})
 							}
 						{{end}}
-						{{if isValueType .GoType.Name}}
-							if infrdType.{{.GoName}}, err = tEvalFn(cpb.{{.GoName}}); err != nil {
-								return nil, err
-							}
-						{{end}}
 					{{end}}
-
 				{{end}}
 				_ = cpb
 				return infrdType, err

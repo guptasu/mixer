@@ -62,7 +62,6 @@ var (
 				if cpb.CheckExpression == "" {
 					return nil, fmt.Errorf("expression for field CheckExpression cannot be empty")
 				}
-
 				if t, e := tEvalFn(cpb.CheckExpression); e != nil || t != istio_mixer_v1_config_descriptor.STRING {
 					if e != nil {
 						return nil, fmt.Errorf("failed to evaluate expression for field CheckExpression: %v", e)
@@ -70,7 +69,7 @@ var (
 					return nil, fmt.Errorf("error type checking for field CheckExpression: Evaluated expression type %v want %v", t, istio_mixer_v1_config_descriptor.STRING)
 				}
 
-				// TODO ADD CODE HERE
+				// TODO
 
 				_ = cpb
 				return infrdType, err
@@ -167,7 +166,7 @@ var (
 					}
 				}
 
-				// TODO ADD CODE HERE
+				// TODO
 
 				_ = cpb
 				return infrdType, err
@@ -259,7 +258,6 @@ var (
 				if cpb.Value == "" {
 					return nil, fmt.Errorf("expression for field Value cannot be empty")
 				}
-
 				if infrdType.Value, err = tEvalFn(cpb.Value); err != nil {
 					return nil, err
 				}
@@ -274,7 +272,6 @@ var (
 				if cpb.Int64Primitive == "" {
 					return nil, fmt.Errorf("expression for field Int64Primitive cannot be empty")
 				}
-
 				if t, e := tEvalFn(cpb.Int64Primitive); e != nil || t != istio_mixer_v1_config_descriptor.INT64 {
 					if e != nil {
 						return nil, fmt.Errorf("failed to evaluate expression for field Int64Primitive: %v", e)
@@ -285,7 +282,6 @@ var (
 				if cpb.BoolPrimitive == "" {
 					return nil, fmt.Errorf("expression for field BoolPrimitive cannot be empty")
 				}
-
 				if t, e := tEvalFn(cpb.BoolPrimitive); e != nil || t != istio_mixer_v1_config_descriptor.BOOL {
 					if e != nil {
 						return nil, fmt.Errorf("failed to evaluate expression for field BoolPrimitive: %v", e)
@@ -296,7 +292,6 @@ var (
 				if cpb.DoublePrimitive == "" {
 					return nil, fmt.Errorf("expression for field DoublePrimitive cannot be empty")
 				}
-
 				if t, e := tEvalFn(cpb.DoublePrimitive); e != nil || t != istio_mixer_v1_config_descriptor.DOUBLE {
 					if e != nil {
 						return nil, fmt.Errorf("failed to evaluate expression for field DoublePrimitive: %v", e)
@@ -307,7 +302,6 @@ var (
 				if cpb.StringPrimitive == "" {
 					return nil, fmt.Errorf("expression for field StringPrimitive cannot be empty")
 				}
-
 				if t, e := tEvalFn(cpb.StringPrimitive); e != nil || t != istio_mixer_v1_config_descriptor.STRING {
 					if e != nil {
 						return nil, fmt.Errorf("failed to evaluate expression for field StringPrimitive: %v", e)
@@ -315,7 +309,7 @@ var (
 					return nil, fmt.Errorf("error type checking for field StringPrimitive: Evaluated expression type %v want %v", t, istio_mixer_v1_config_descriptor.STRING)
 				}
 
-				// TODO ADD CODE HERE
+				// TODO
 
 				_ = cpb
 				return infrdType, err
