@@ -138,7 +138,7 @@ func TestTypeFields(t *testing.T) {
 			Name:     "map[string]int64",
 			IsMap:    true,
 			MapKey:   &TypeInfo{Name: "string", CanExprEval: true},
-			MapValue: &TypeInfo{Name: "int64", CanExprEval: true,},
+			MapValue: &TypeInfo{Name: "int64", CanExprEval: true},
 		}, "")
 
 	testField(t, model.TemplateMessage.Fields,
@@ -153,7 +153,7 @@ func TestTypeFields(t *testing.T) {
 			Name:     "map[string]string",
 			IsMap:    true,
 			MapKey:   &TypeInfo{Name: "string", CanExprEval: true},
-			MapValue: &TypeInfo{Name: "string", CanExprEval: true,},
+			MapValue: &TypeInfo{Name: "string", CanExprEval: true},
 		}, "")
 
 	testField(t, model.TemplateMessage.Fields,
@@ -168,7 +168,7 @@ func TestTypeFields(t *testing.T) {
 			Name:     "map[string]bool",
 			IsMap:    true,
 			MapKey:   &TypeInfo{Name: "string", CanExprEval: true},
-			MapValue: &TypeInfo{Name: "bool", CanExprEval: true,},
+			MapValue: &TypeInfo{Name: "bool", CanExprEval: true},
 		}, "")
 
 	testField(t, model.TemplateMessage.Fields,
@@ -183,7 +183,7 @@ func TestTypeFields(t *testing.T) {
 			Name:     "map[string]float64",
 			IsMap:    true,
 			MapKey:   &TypeInfo{Name: "string", CanExprEval: true},
-			MapValue: &TypeInfo{Name: "float64", CanExprEval: true,},
+			MapValue: &TypeInfo{Name: "float64", CanExprEval: true},
 		}, "")
 }
 
