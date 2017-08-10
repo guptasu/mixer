@@ -287,7 +287,14 @@ var (
 					return nil, err
 				}
 
-				// TODO
+				for _, v := range cpb.Int64Map {
+					if t, e := tEvalFn(v); e != nil || t != istio_mixer_v1_config_descriptor.INT64 {
+						if e != nil {
+							return nil, fmt.Errorf("failed to evaluate expression for field Int64Map: %v", e)
+						}
+						return nil, fmt.Errorf("error type checking for field Int64Map: Evaluated expression type %v want %v", t, istio_mixer_v1_config_descriptor.INT64)
+					}
+				}
 
 				_ = cpb
 				return infrdType, err

@@ -69,7 +69,14 @@ var (
 					return nil, fmt.Errorf("error type checking for field CheckExpression: Evaluated expression type %v want %v", t, istio_mixer_v1_config_descriptor.STRING)
 				}
 
-				// TODO
+				for _, v := range cpb.StringMap {
+					if t, e := tEvalFn(v); e != nil || t != istio_mixer_v1_config_descriptor.STRING {
+						if e != nil {
+							return nil, fmt.Errorf("failed to evaluate expression for field StringMap: %v", e)
+						}
+						return nil, fmt.Errorf("error type checking for field StringMap: Evaluated expression type %v want %v", t)
+					}
+				}
 
 				_ = cpb
 				return infrdType, err
@@ -166,7 +173,14 @@ var (
 					}
 				}
 
-				// TODO
+				for _, v := range cpb.BoolMap {
+					if t, e := tEvalFn(v); e != nil || t != istio_mixer_v1_config_descriptor.BOOL {
+						if e != nil {
+							return nil, fmt.Errorf("failed to evaluate expression for field BoolMap: %v", e)
+						}
+						return nil, fmt.Errorf("error type checking for field BoolMap: Evaluated expression type %v want %v", t)
+					}
+				}
 
 				_ = cpb
 				return infrdType, err
@@ -309,7 +323,14 @@ var (
 					return nil, fmt.Errorf("error type checking for field StringPrimitive: Evaluated expression type %v want %v", t, istio_mixer_v1_config_descriptor.STRING)
 				}
 
-				// TODO
+				for _, v := range cpb.Int64Map {
+					if t, e := tEvalFn(v); e != nil || t != istio_mixer_v1_config_descriptor.INT64 {
+						if e != nil {
+							return nil, fmt.Errorf("failed to evaluate expression for field Int64Map: %v", e)
+						}
+						return nil, fmt.Errorf("error type checking for field Int64Map: Evaluated expression type %v want %v", t)
+					}
+				}
 
 				_ = cpb
 				return infrdType, err

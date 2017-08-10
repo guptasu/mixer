@@ -76,6 +76,9 @@ func (g *Generator) Generate(fdsFiles map[string]string) error {
 			"primitiveToValueType": func(goTypeName string) string {
 				return primitiveToValueType[goTypeName]
 			},
+			"getValueType": func(goType modelgen.TypeInfo) string {
+				return primitiveToValueType[goType.Name]
+			},
 			"containsValueType": containsValueType,
 		}).Parse(tmplPkg.InterfaceTemplate)
 

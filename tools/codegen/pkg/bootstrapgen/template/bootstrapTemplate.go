@@ -91,14 +91,21 @@ var (
 						{{end}}
 					{{else}}
 						{{if .GoType.IsMap}}
-						// TODO
+							for _, v := range cpb.{{.GoName}} {
+								if t, e := tEvalFn(v); e != nil || t != {{getValueType .GoType.MapValue}} {
+									if e != nil {
+										return nil, fmt.Errorf("failed to evaluate expression for field {{.GoName}}: %v", e)
+									}
+									return nil, fmt.Errorf("error type checking for field {{.GoName}}: Evaluated expression type %v want %v", t, {{getValueType .GoType.MapValue}})
+								}
+							}
 						{{else}}
 							if cpb.{{.GoName}} == "" {
 								return nil, fmt.Errorf("expression for field {{.GoName}} cannot be empty")
 							}
 							if t, e := tEvalFn(cpb.{{.GoName}}); e != nil || t != {{primitiveToValueType .GoType.Name}} {
 								if e != nil {
-								    return nil, fmt.Errorf("failed to evaluate expression for field {{.GoName}}: %v", e)
+									return nil, fmt.Errorf("failed to evaluate expression for field {{.GoName}}: %v", e)
 								}
 								return nil, fmt.Errorf("error type checking for field {{.GoName}}: Evaluated expression type %v want %v", t, {{primitiveToValueType .GoType.Name}})
 							}
