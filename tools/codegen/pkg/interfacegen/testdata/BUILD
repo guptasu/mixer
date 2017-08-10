@@ -4,30 +4,30 @@ load("@org_pubref_rules_protobuf//protobuf:rules.bzl", "proto_compile")
 load("//tools/codegen:generate.bzl", "mixer_proto_library")
 
 mixer_proto_library(
-    name = "list_template_library",
+    name = "check",
     testonly = True,
-    protos = ["ListTemplate.proto"],
+    protos = ["CheckTmpl.proto"],
 )
 
 mixer_proto_library(
-    name = "metric_template_library",
+    name = "report",
     testonly = True,
-    protos = ["MetricTemplate.proto"],
+    protos = ["ReportTmpl.proto"],
 )
 
 mixer_proto_library(
-    name = "quota_template_library",
+    name = "quota",
     testonly = True,
-    protos = ["QuotaTemplate.proto"],
+    protos = ["QuotaTmpl.proto"],
 )
 
 filegroup(
     name = "descriptors",
     testonly = True,
     srcs = [
-        "list_template_library_proto.descriptor_set",
-        "metric_template_library_proto.descriptor_set",
-        "quota_template_library_proto.descriptor_set",
+        "check_proto.descriptor_set",
+        "quota_proto.descriptor_set",
+        "report_proto.descriptor_set",
     ],
 )
 
@@ -35,12 +35,12 @@ filegroup(
     name = "generated_files",
     testonly = True,
     srcs = [
-        "list_template_library_handler.gen.go",
-        "list_template_library_tmpl.proto",
-        "metric_template_library_handler.gen.go",
-        "metric_template_library_tmpl.proto",
-        "quota_template_library_handler.gen.go",
-        "quota_template_library_tmpl.proto",
+        "check_handler.gen.go",
+        "check_tmpl.proto",
+        "quota_handler.gen.go",
+        "quota_tmpl.proto",
+        "report_handler.gen.go",
+        "report_tmpl.proto",
     ],
 )
 
@@ -48,12 +48,12 @@ filegroup(
     name = "golden_files",
     testonly = True,
     srcs = [
-        "ListTemplateGenerated.golden.proto",
-        "ListTemplateHandlerInterface.golden.go",
-        "MetricTemplateGenerated.golden.proto",
-        "MetricTemplateHandlerInterface.golden.go",
-        "QuotaTemplateGenerated.golden.proto",
-        "QuotaTemplateHandlerInterface.golden.go",
+        "CheckTmpl.golden.go",
+        "CheckTmpl.golden.proto",
+        "QuotaTmpl.golden.go",
+        "QuotaTmpl.golden.proto",
+        "ReportTmpl.golden.go",
+        "ReportTmpl.golden.proto",
     ],
 )
 
