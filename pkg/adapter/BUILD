@@ -11,7 +11,7 @@ go_library(
         "attributes.go",
         "builder.go",
         "builderInfo.go",
-        "cacheability.go",
+        "check.go",
         "configError.go",
         "denials.go",
         "handler.go",

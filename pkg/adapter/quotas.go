@@ -14,7 +14,10 @@
 
 package adapter
 
-import "time"
+import (
+	"time"
+	rpc "github.com/googleapis/googleapis/google/rpc"
+)
 
 type (
 	// QuotasAspect handles quotas and rate limits within Mixer.
@@ -99,6 +102,18 @@ type (
 	QuotaResult struct {
 		// The amount of time until which the returned quota expires, this is 0 for non-expiring quotas.
 		Expiration time.Duration
+
+		// The total amount of quota returned, may be less than requested.
+		Amount int64
+	}
+
+	// QuotaResult2 provides return values from quota allocation calls
+	QuotaResult2 struct {
+		// The outcome of the operation.
+		Status rpc.Status
+
+		// The amount of time until which the returned quota expires, this is 0 for non-expiring quotas.
+		ValidDuration time.Duration
 
 		// The total amount of quota returned, may be less than requested.
 		Amount int64

@@ -93,13 +93,12 @@ type fakeQuotaHandler struct {
 	cnfgCallInput interface{}
 	procCallInput interface{}
 	retQuotaRes   adapter.QuotaResult
-	retCache      adapter.CacheabilityInfo
 }
 
 func (h *fakeQuotaHandler) Close() error { return nil }
-func (h *fakeQuotaHandler) HandleQuota(ctx context.Context, instance *sample_quota.Instance, qra adapter.QuotaRequestArgs) (adapter.QuotaResult, adapter.CacheabilityInfo, error) {
+func (h *fakeQuotaHandler) HandleQuota(ctx context.Context, instance *sample_quota.Instance, qra adapter.QuotaRequestArgs) (adapter.QuotaResult, error) {
 	h.procCallInput = instance
-	return h.retQuotaRes, h.retCache, h.retProcError
+	return h.retQuotaRes, h.retProcError
 }
 func (h *fakeQuotaHandler) Build(proto.Message, adapter.Env) (adapter.Handler, error) {
 	return nil, nil
@@ -579,7 +578,6 @@ type ProcessTest struct {
 	insts         map[string]proto.Message
 	hdlr          adapter.Handler
 	wantInstance  interface{}
-	wantCache     adapter.CacheabilityInfo // not for report calls
 	wantQuotaResp adapter.QuotaResult      // only for quota calls
 	wantError     string
 }

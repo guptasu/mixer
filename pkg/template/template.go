@@ -47,11 +47,11 @@ type (
 
 	// ProcessCheckFn instantiates the instance object and dispatches them to the handler.
 	ProcessCheckFn func(ctx context.Context, instName string, cnstr proto.Message, attrs attribute.Bag, mapper expr.Evaluator,
-		handler adapter.Handler) (rpc.Status, adapter.CacheabilityInfo)
+		handler adapter.Handler) (adapter.CheckResult)
 
 	// ProcessQuotaFn instantiates the instance object and dispatches them to the handler.
 	ProcessQuotaFn func(ctx context.Context, quotaName string, cnstr proto.Message, attrs attribute.Bag, mapper expr.Evaluator, handler adapter.Handler,
-		args adapter.QuotaRequestArgs) (rpc.Status, adapter.CacheabilityInfo, adapter.QuotaResult)
+		args adapter.QuotaRequestArgs) (adapter.QuotaResult2)
 
 	// SupportsTemplateFn check if the handlerBuilder supports template.
 	SupportsTemplateFn func(hndlrBuilder adapter.HandlerBuilder) bool

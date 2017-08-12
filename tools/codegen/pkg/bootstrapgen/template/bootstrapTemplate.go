@@ -189,12 +189,10 @@ var (
 				ProcessQuota: nil,
 			{{else if eq .VarietyName "TEMPLATE_VARIETY_CHECK"}}
 				ProcessCheck: func(ctx context.Context, instName string, inst proto.Message, attrs attribute.Bag, mapper expr.Evaluator,
-				handler adapter.Handler) (rpc.Status, adapter.CacheabilityInfo) {
-					var found bool
+				handler adapter.Handler) adapter.CheckResult {
 					var err error
 
 					castedInst := inst.(*{{.GoPackageName}}.InstanceParam)
-					var instances []*{{.GoPackageName}}.Instance
 					{{range .TemplateMessage.Fields}}
 						{{if .GoType.IsMap}}
 							{{.GoName}}, err := template.EvalAll(castedInst.{{.GoName}}, attrs, mapper)
@@ -202,7 +200,7 @@ var (
 							{{.GoName}}, err := mapper.Eval(castedInst.{{.GoName}}, attrs)
 						{{end}}
 							if err != nil {
-								return status.WithError(err), adapter.CacheabilityInfo{}
+								return adapter.CheckResult{Status: status.WithError(err)}
 							}
 					{{end}}
 
@@ -228,22 +226,18 @@ var (
 					}
 					_ = castedInst
 
-					var cacheInfo adapter.CacheabilityInfo
-					if found, cacheInfo, err = handler.({{.GoPackageName}}.{{.Name}}Handler).Handle{{.Name}}(ctx, instance); err != nil {
-						return status.WithError(err), adapter.CacheabilityInfo{}
+					var checkResult adapter.CheckResult
+					if checkResult, err = handler.({{.GoPackageName}}.{{.Name}}Handler).Handle{{.Name}}(ctx, instance); err != nil {
+						return adapter.CheckResult{Status: status.WithError(err)}
 					}
 
-					if found {
-						return status.OK, cacheInfo
-					}
-
-					return status.WithPermissionDenied(fmt.Sprintf("%s rejected", instances)), adapter.CacheabilityInfo{}
+					return checkResult
 				},
 				ProcessReport: nil,
 				ProcessQuota: nil,
 			{{else}}
 				ProcessQuota: func(ctx context.Context, quotaName string, inst proto.Message, attrs attribute.Bag, mapper expr.Evaluator, handler adapter.Handler,
-				qma adapter.QuotaRequestArgs) (rpc.Status, adapter.CacheabilityInfo, adapter.QuotaResult) {
+				qma adapter.QuotaRequestArgs) adapter.QuotaResult2 {
 					castedInst := inst.(*{{.GoPackageName}}.InstanceParam)
 					{{range .TemplateMessage.Fields}}
 						{{if .GoType.IsMap}}
@@ -254,7 +248,7 @@ var (
 							if err != nil {
 								msg := fmt.Sprintf("failed to eval {{.GoName}} for instance '%s': %v", quotaName, err)
 								glog.Error(msg)
-								return status.WithInvalidArgument(msg), adapter.CacheabilityInfo{}, adapter.QuotaResult{}
+								return  adapter.QuotaResult2{Status: status.WithInvalidArgument(msg)}
 							}
 					{{end}}
 
@@ -279,21 +273,20 @@ var (
 						{{end}}
 					}
 
-					var qr adapter.QuotaResult
-					var cacheInfo adapter.CacheabilityInfo
-					if qr, cacheInfo, err = handler.({{.GoPackageName}}.{{.Name}}Handler).Handle{{.Name}}(ctx, instance, qma); err != nil {
+					var qr adapter.QuotaResult2
+					if qr, err = handler.({{.GoPackageName}}.{{.Name}}Handler).Handle{{.Name}}(ctx, instance, qma); err != nil {
 						glog.Errorf("Quota allocation failed: %v", err)
-						return status.WithError(err), adapter.CacheabilityInfo{}, adapter.QuotaResult{}
+						return  adapter.QuotaResult2{Status: status.WithError(err)}
 					}
 					if qr.Amount == 0 {
 						msg := fmt.Sprintf("Unable to allocate %v units from quota %s", qma.QuotaAmount, quotaName)
 						glog.Warning(msg)
-						return status.WithResourceExhausted(msg), adapter.CacheabilityInfo{}, adapter.QuotaResult{}
+						return adapter.QuotaResult2{Status:status.WithResourceExhausted(msg)}
 					}
 					if glog.V(2) {
 						glog.Infof("Allocated %v units from quota %s", qma.QuotaAmount, quotaName)
 					}
-					return status.OK, cacheInfo, qr
+					return qr
 				},
 				ProcessReport: nil,
 				ProcessCheck: nil,

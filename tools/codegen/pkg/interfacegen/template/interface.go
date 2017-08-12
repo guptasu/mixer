@@ -70,9 +70,9 @@ type {{.Name}}Handler interface {
   // Handle{{.Name}} is called by Mixer at request time to deliver instances to
   // to an adapter.
   {{if eq .VarietyName "TEMPLATE_VARIETY_CHECK" -}}
-    Handle{{.Name}}(context.Context, *Instance) (bool, adapter.CacheabilityInfo, error)
+    Handle{{.Name}}(context.Context, *Instance) (adapter.CheckResult, error)
   {{else if eq .VarietyName "TEMPLATE_VARIETY_QUOTA" -}}
-    Handle{{.Name}}(context.Context, *Instance, adapter.QuotaRequestArgs) (adapter.QuotaResult, adapter.CacheabilityInfo, error)
+    Handle{{.Name}}(context.Context, *Instance, adapter.QuotaRequestArgs) (adapter.QuotaResult2, error)
   {{else -}}
     Handle{{.Name}}(context.Context, []*Instance) error
   {{end}}

@@ -31,6 +31,7 @@ import (
 	"istio.io/mixer/template/metric"
 	"istio.io/mixer/template/quota"
 	"istio.io/mixer/template/reportnothing"
+	rpc "github.com/googleapis/googleapis/google/rpc"
 )
 
 type (
@@ -83,21 +84,21 @@ func (builder) ConfigureQuotaHandler(map[string]*quota.Type) error {
 
 ////////////////// Runtime Methods //////////////////////////
 
-var cacheInfo = adapter.CacheabilityInfo{
+var checkResult = adapter.CheckResult {
 	ValidDuration: 1000000000 * time.Second,
 	ValidUseCount: 1000000000,
 }
 
-func (handler) HandleCheckNothing(context.Context, *checknothing.Instance) (bool, adapter.CacheabilityInfo, error) {
-	return true, cacheInfo, nil
+func (handler) HandleCheckNothing(context.Context, *checknothing.Instance) (adapter.CheckResult, error) {
+	return checkResult, nil
 }
 
 func (handler) HandleReportNothing(context.Context, []*reportnothing.Instance) error {
 	return nil
 }
 
-func (handler) HandleListEntry(context.Context, *listentry.Instance) (bool, adapter.CacheabilityInfo, error) {
-	return true, cacheInfo, nil
+func (handler) HandleListEntry(context.Context, *listentry.Instance) (adapter.CheckResult, error) {
+	return checkResult, nil
 }
 
 func (handler) HandleLogEntry(context.Context, []*logentry.Instance) error {
@@ -108,12 +109,12 @@ func (handler) HandleMetric(context.Context, []*metric.Instance) error {
 	return nil
 }
 
-func (handler) HandleQuota(ctx context.Context, _ *quota.Instance, args adapter.QuotaRequestArgs) (adapter.QuotaResult, adapter.CacheabilityInfo, error) {
-	return adapter.QuotaResult{
-			Expiration: 1000000000 * time.Second,
-			Amount:     args.QuotaAmount,
-		},
-		cacheInfo,
+func (handler) HandleQuota(ctx context.Context, _ *quota.Instance, args adapter.QuotaRequestArgs) (adapter.QuotaResult2, error) {
+	return adapter.QuotaResult2 {
+		Status: rpc.Status{Code: int32(rpc.OK)},
+		ValidDuration: 1000000000 * time.Second,
+		Amount:     args.QuotaAmount,
+	},
 		nil
 }
 

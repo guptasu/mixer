@@ -83,28 +83,22 @@ var (
 			},
 
 			ProcessCheck: func(ctx context.Context, instName string, inst proto.Message, attrs attribute.Bag, mapper expr.Evaluator,
-				handler adapter.Handler) (rpc.Status, adapter.CacheabilityInfo) {
-				var found bool
+				handler adapter.Handler) adapter.CheckResult {
 				var err error
 
 				castedInst := inst.(*checknothing.InstanceParam)
-				var instances []*checknothing.Instance
 
 				instance := &checknothing.Instance{
 					Name: instName,
 				}
 				_ = castedInst
 
-				var cacheInfo adapter.CacheabilityInfo
-				if found, cacheInfo, err = handler.(checknothing.CheckNothingHandler).HandleCheckNothing(ctx, instance); err != nil {
-					return status.WithError(err), adapter.CacheabilityInfo{}
+				var checkResult adapter.CheckResult
+				if checkResult, err = handler.(checknothing.CheckNothingHandler).HandleCheckNothing(ctx, instance); err != nil {
+					return adapter.CheckResult{Status: status.WithError(err)}
 				}
 
-				if found {
-					return status.OK, cacheInfo
-				}
-
-				return status.WithPermissionDenied(fmt.Sprintf("%s rejected", instances)), adapter.CacheabilityInfo{}
+				return checkResult
 			},
 			ProcessReport: nil,
 			ProcessQuota:  nil,
@@ -154,17 +148,15 @@ var (
 			},
 
 			ProcessCheck: func(ctx context.Context, instName string, inst proto.Message, attrs attribute.Bag, mapper expr.Evaluator,
-				handler adapter.Handler) (rpc.Status, adapter.CacheabilityInfo) {
-				var found bool
+				handler adapter.Handler) adapter.CheckResult {
 				var err error
 
 				castedInst := inst.(*listentry.InstanceParam)
-				var instances []*listentry.Instance
 
 				Value, err := mapper.Eval(castedInst.Value, attrs)
 
 				if err != nil {
-					return status.WithError(err), adapter.CacheabilityInfo{}
+					return adapter.CheckResult{Status: status.WithError(err)}
 				}
 
 				instance := &listentry.Instance{
@@ -174,16 +166,12 @@ var (
 				}
 				_ = castedInst
 
-				var cacheInfo adapter.CacheabilityInfo
-				if found, cacheInfo, err = handler.(listentry.ListEntryHandler).HandleListEntry(ctx, instance); err != nil {
-					return status.WithError(err), adapter.CacheabilityInfo{}
+				var checkResult adapter.CheckResult
+				if checkResult, err = handler.(listentry.ListEntryHandler).HandleListEntry(ctx, instance); err != nil {
+					return adapter.CheckResult{Status: status.WithError(err)}
 				}
 
-				if found {
-					return status.OK, cacheInfo
-				}
-
-				return status.WithPermissionDenied(fmt.Sprintf("%s rejected", instances)), adapter.CacheabilityInfo{}
+				return checkResult
 			},
 			ProcessReport: nil,
 			ProcessQuota:  nil,
@@ -427,7 +415,7 @@ var (
 			},
 
 			ProcessQuota: func(ctx context.Context, quotaName string, inst proto.Message, attrs attribute.Bag, mapper expr.Evaluator, handler adapter.Handler,
-				qma adapter.QuotaRequestArgs) (rpc.Status, adapter.CacheabilityInfo, adapter.QuotaResult) {
+				qma adapter.QuotaRequestArgs) adapter.QuotaResult2 {
 				castedInst := inst.(*quota.InstanceParam)
 
 				Dimensions, err := template.EvalAll(castedInst.Dimensions, attrs, mapper)
@@ -435,7 +423,7 @@ var (
 				if err != nil {
 					msg := fmt.Sprintf("failed to eval Dimensions for instance '%s': %v", quotaName, err)
 					glog.Error(msg)
-					return status.WithInvalidArgument(msg), adapter.CacheabilityInfo{}, adapter.QuotaResult{}
+					return adapter.QuotaResult2{Status: status.WithInvalidArgument(msg)}
 				}
 
 				instance := &quota.Instance{
@@ -444,21 +432,20 @@ var (
 					Dimensions: Dimensions,
 				}
 
-				var qr adapter.QuotaResult
-				var cacheInfo adapter.CacheabilityInfo
-				if qr, cacheInfo, err = handler.(quota.QuotaHandler).HandleQuota(ctx, instance, qma); err != nil {
+				var qr adapter.QuotaResult2
+				if qr, err = handler.(quota.QuotaHandler).HandleQuota(ctx, instance, qma); err != nil {
 					glog.Errorf("Quota allocation failed: %v", err)
-					return status.WithError(err), adapter.CacheabilityInfo{}, adapter.QuotaResult{}
+					return adapter.QuotaResult2{Status: status.WithError(err)}
 				}
 				if qr.Amount == 0 {
 					msg := fmt.Sprintf("Unable to allocate %v units from quota %s", qma.QuotaAmount, quotaName)
 					glog.Warning(msg)
-					return status.WithResourceExhausted(msg), adapter.CacheabilityInfo{}, adapter.QuotaResult{}
+					return adapter.QuotaResult2{Status: status.WithResourceExhausted(msg)}
 				}
 				if glog.V(2) {
 					glog.Infof("Allocated %v units from quota %s", qma.QuotaAmount, quotaName)
 				}
-				return status.OK, cacheInfo, qr
+				return qr
 			},
 			ProcessReport: nil,
 			ProcessCheck:  nil,

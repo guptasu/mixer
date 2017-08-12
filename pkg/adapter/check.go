@@ -14,12 +14,17 @@
 
 package adapter
 
-import "time"
+import (
+	"time"
+	rpc "github.com/googleapis/googleapis/google/rpc"
+)
 
 // TODO revisit the comment on this adapter struct.
 
-// CacheabilityInfo represents information about when to refresh the cache.
-type CacheabilityInfo struct {
+// CheckResult provides return values from check calls
+type CheckResult struct {
+	// The outcome of the operation.
+	Status rpc.Status
 	// ValidDuration represents amount of time for which this result can be considered valid.
 	ValidDuration time.Duration
 	// ValidUseCount represent the number of uses for which this result can be considered valid.
