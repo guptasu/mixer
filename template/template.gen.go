@@ -50,16 +50,16 @@ var (
 	SupportedTmplInfo = map[string]template.Info{
 
 		checknothing.TemplateName: {
-			CtrCfg:    &checknothing.InstanceParam{},
-			Variety:   adptTmpl.TEMPLATE_VARIETY_CHECK,
-			BldrName:  "istio.io/mixer/template/checknothing.CheckNothingHandlerBuilder",
-			HndlrName: "istio.io/mixer/template/checknothing.CheckNothingHandler",
+			CtrCfg:             &checknothing.InstanceParam{},
+			Variety:            adptTmpl.TEMPLATE_VARIETY_CHECK,
+			BldrInterfaceName:  "istio.io/mixer/template/checknothing.HandlerBuilder",
+			HndlrInterfaceName: "istio.io/mixer/template/checknothing.Handler",
 			SupportsTemplate: func(hndlrBuilder adapter.HandlerBuilder) bool {
-				_, ok := hndlrBuilder.(checknothing.CheckNothingHandlerBuilder)
+				_, ok := hndlrBuilder.(checknothing.HandlerBuilder)
 				return ok
 			},
 			HandlerSupportsTemplate: func(hndlr adapter.Handler) bool {
-				_, ok := hndlr.(checknothing.CheckNothingHandler)
+				_, ok := hndlr.(checknothing.Handler)
 				return ok
 			},
 			InferType: func(cp proto.Message, tEvalFn template.TypeEvalFn) (proto.Message, error) {
@@ -72,7 +72,7 @@ var (
 			},
 			ConfigureType: func(types map[string]proto.Message, builder *adapter.HandlerBuilder) error {
 				// Mixer framework should have ensured the type safety.
-				castedBuilder := (*builder).(checknothing.CheckNothingHandlerBuilder)
+				castedBuilder := (*builder).(checknothing.HandlerBuilder)
 				castedTypes := make(map[string]*checknothing.Type, len(types))
 				for k, v := range types {
 					// Mixer framework should have ensured the type safety.
@@ -105,16 +105,16 @@ var (
 		},
 
 		listentry.TemplateName: {
-			CtrCfg:    &listentry.InstanceParam{},
-			Variety:   adptTmpl.TEMPLATE_VARIETY_CHECK,
-			BldrName:  "istio.io/mixer/template/listentry.ListEntryHandlerBuilder",
-			HndlrName: "istio.io/mixer/template/listentry.ListEntryHandler",
+			CtrCfg:             &listentry.InstanceParam{},
+			Variety:            adptTmpl.TEMPLATE_VARIETY_CHECK,
+			BldrInterfaceName:  "istio.io/mixer/template/listentry.HandlerBuilder",
+			HndlrInterfaceName: "istio.io/mixer/template/listentry.Handler",
 			SupportsTemplate: func(hndlrBuilder adapter.HandlerBuilder) bool {
-				_, ok := hndlrBuilder.(listentry.ListEntryHandlerBuilder)
+				_, ok := hndlrBuilder.(listentry.HandlerBuilder)
 				return ok
 			},
 			HandlerSupportsTemplate: func(hndlr adapter.Handler) bool {
-				_, ok := hndlr.(listentry.ListEntryHandler)
+				_, ok := hndlr.(listentry.Handler)
 				return ok
 			},
 			InferType: func(cp proto.Message, tEvalFn template.TypeEvalFn) (proto.Message, error) {
@@ -137,7 +137,7 @@ var (
 			},
 			ConfigureType: func(types map[string]proto.Message, builder *adapter.HandlerBuilder) error {
 				// Mixer framework should have ensured the type safety.
-				castedBuilder := (*builder).(listentry.ListEntryHandlerBuilder)
+				castedBuilder := (*builder).(listentry.HandlerBuilder)
 				castedTypes := make(map[string]*listentry.Type, len(types))
 				for k, v := range types {
 					// Mixer framework should have ensured the type safety.
@@ -178,16 +178,16 @@ var (
 		},
 
 		logentry.TemplateName: {
-			CtrCfg:    &logentry.InstanceParam{},
-			Variety:   adptTmpl.TEMPLATE_VARIETY_REPORT,
-			BldrName:  "istio.io/mixer/template/logentry.LogEntryHandlerBuilder",
-			HndlrName: "istio.io/mixer/template/logentry.LogEntryHandler",
+			CtrCfg:             &logentry.InstanceParam{},
+			Variety:            adptTmpl.TEMPLATE_VARIETY_REPORT,
+			BldrInterfaceName:  "istio.io/mixer/template/logentry.HandlerBuilder",
+			HndlrInterfaceName: "istio.io/mixer/template/logentry.Handler",
 			SupportsTemplate: func(hndlrBuilder adapter.HandlerBuilder) bool {
-				_, ok := hndlrBuilder.(logentry.LogEntryHandlerBuilder)
+				_, ok := hndlrBuilder.(logentry.HandlerBuilder)
 				return ok
 			},
 			HandlerSupportsTemplate: func(hndlr adapter.Handler) bool {
-				_, ok := hndlr.(logentry.LogEntryHandler)
+				_, ok := hndlr.(logentry.Handler)
 				return ok
 			},
 			InferType: func(cp proto.Message, tEvalFn template.TypeEvalFn) (proto.Message, error) {
@@ -217,7 +217,7 @@ var (
 			},
 			ConfigureType: func(types map[string]proto.Message, builder *adapter.HandlerBuilder) error {
 				// Mixer framework should have ensured the type safety.
-				castedBuilder := (*builder).(logentry.LogEntryHandlerBuilder)
+				castedBuilder := (*builder).(logentry.HandlerBuilder)
 				castedTypes := make(map[string]*logentry.Type, len(types))
 				for k, v := range types {
 					// Mixer framework should have ensured the type safety.
@@ -278,16 +278,16 @@ var (
 		},
 
 		metric.TemplateName: {
-			CtrCfg:    &metric.InstanceParam{},
-			Variety:   adptTmpl.TEMPLATE_VARIETY_REPORT,
-			BldrName:  "istio.io/mixer/template/metric.MetricHandlerBuilder",
-			HndlrName: "istio.io/mixer/template/metric.MetricHandler",
+			CtrCfg:             &metric.InstanceParam{},
+			Variety:            adptTmpl.TEMPLATE_VARIETY_REPORT,
+			BldrInterfaceName:  "istio.io/mixer/template/metric.HandlerBuilder",
+			HndlrInterfaceName: "istio.io/mixer/template/metric.Handler",
 			SupportsTemplate: func(hndlrBuilder adapter.HandlerBuilder) bool {
-				_, ok := hndlrBuilder.(metric.MetricHandlerBuilder)
+				_, ok := hndlrBuilder.(metric.HandlerBuilder)
 				return ok
 			},
 			HandlerSupportsTemplate: func(hndlr adapter.Handler) bool {
-				_, ok := hndlr.(metric.MetricHandler)
+				_, ok := hndlr.(metric.Handler)
 				return ok
 			},
 			InferType: func(cp proto.Message, tEvalFn template.TypeEvalFn) (proto.Message, error) {
@@ -314,7 +314,7 @@ var (
 			},
 			ConfigureType: func(types map[string]proto.Message, builder *adapter.HandlerBuilder) error {
 				// Mixer framework should have ensured the type safety.
-				castedBuilder := (*builder).(metric.MetricHandlerBuilder)
+				castedBuilder := (*builder).(metric.HandlerBuilder)
 				castedTypes := make(map[string]*metric.Type, len(types))
 				for k, v := range types {
 					// Mixer framework should have ensured the type safety.
@@ -375,16 +375,16 @@ var (
 		},
 
 		quota.TemplateName: {
-			CtrCfg:    &quota.InstanceParam{},
-			Variety:   adptTmpl.TEMPLATE_VARIETY_QUOTA,
-			BldrName:  "istio.io/mixer/template/quota.QuotaHandlerBuilder",
-			HndlrName: "istio.io/mixer/template/quota.QuotaHandler",
+			CtrCfg:             &quota.InstanceParam{},
+			Variety:            adptTmpl.TEMPLATE_VARIETY_QUOTA,
+			BldrInterfaceName:  "istio.io/mixer/template/quota.HandlerBuilder",
+			HndlrInterfaceName: "istio.io/mixer/template/quota.Handler",
 			SupportsTemplate: func(hndlrBuilder adapter.HandlerBuilder) bool {
-				_, ok := hndlrBuilder.(quota.QuotaHandlerBuilder)
+				_, ok := hndlrBuilder.(quota.HandlerBuilder)
 				return ok
 			},
 			HandlerSupportsTemplate: func(hndlr adapter.Handler) bool {
-				_, ok := hndlr.(quota.QuotaHandler)
+				_, ok := hndlr.(quota.Handler)
 				return ok
 			},
 			InferType: func(cp proto.Message, tEvalFn template.TypeEvalFn) (proto.Message, error) {
@@ -404,7 +404,7 @@ var (
 			},
 			ConfigureType: func(types map[string]proto.Message, builder *adapter.HandlerBuilder) error {
 				// Mixer framework should have ensured the type safety.
-				castedBuilder := (*builder).(quota.QuotaHandlerBuilder)
+				castedBuilder := (*builder).(quota.HandlerBuilder)
 				castedTypes := make(map[string]*quota.Type, len(types))
 				for k, v := range types {
 					// Mixer framework should have ensured the type safety.
@@ -452,16 +452,16 @@ var (
 		},
 
 		reportnothing.TemplateName: {
-			CtrCfg:    &reportnothing.InstanceParam{},
-			Variety:   adptTmpl.TEMPLATE_VARIETY_REPORT,
-			BldrName:  "istio.io/mixer/template/reportnothing.ReportNothingHandlerBuilder",
-			HndlrName: "istio.io/mixer/template/reportnothing.ReportNothingHandler",
+			CtrCfg:             &reportnothing.InstanceParam{},
+			Variety:            adptTmpl.TEMPLATE_VARIETY_REPORT,
+			BldrInterfaceName:  "istio.io/mixer/template/reportnothing.HandlerBuilder",
+			HndlrInterfaceName: "istio.io/mixer/template/reportnothing.Handler",
 			SupportsTemplate: func(hndlrBuilder adapter.HandlerBuilder) bool {
-				_, ok := hndlrBuilder.(reportnothing.ReportNothingHandlerBuilder)
+				_, ok := hndlrBuilder.(reportnothing.HandlerBuilder)
 				return ok
 			},
 			HandlerSupportsTemplate: func(hndlr adapter.Handler) bool {
-				_, ok := hndlr.(reportnothing.ReportNothingHandler)
+				_, ok := hndlr.(reportnothing.Handler)
 				return ok
 			},
 			InferType: func(cp proto.Message, tEvalFn template.TypeEvalFn) (proto.Message, error) {
@@ -474,7 +474,7 @@ var (
 			},
 			ConfigureType: func(types map[string]proto.Message, builder *adapter.HandlerBuilder) error {
 				// Mixer framework should have ensured the type safety.
-				castedBuilder := (*builder).(reportnothing.ReportNothingHandlerBuilder)
+				castedBuilder := (*builder).(reportnothing.HandlerBuilder)
 				castedTypes := make(map[string]*reportnothing.Type, len(types))
 				for k, v := range types {
 					// Mixer framework should have ensured the type safety.

@@ -59,14 +59,14 @@ var (
 		{{.GoPackageName}}.TemplateName: {
 			CtrCfg:  &{{.GoPackageName}}.InstanceParam{},
 			Variety:   adptTmpl.{{.VarietyName}},
-			BldrName:  "{{.PackageImportPath}}.{{.Name}}HandlerBuilder",
-			HndlrName: "{{.PackageImportPath}}.{{.Name}}Handler",
+			BldrInterfaceName:  "{{.PackageImportPath}}.HandlerBuilder",
+			HndlrInterfaceName: "{{.PackageImportPath}}.Handler",
 			SupportsTemplate: func(hndlrBuilder adapter.HandlerBuilder) bool {
-				_, ok := hndlrBuilder.({{.GoPackageName}}.{{.Name}}HandlerBuilder)
+				_, ok := hndlrBuilder.({{.GoPackageName}}.HandlerBuilder)
 				return ok
 			},
 			HandlerSupportsTemplate: func(hndlr adapter.Handler) bool {
-				_, ok := hndlr.({{.GoPackageName}}.{{.Name}}Handler)
+				_, ok := hndlr.({{.GoPackageName}}.Handler)
 				return ok
 			},
 			InferType: func(cp proto.Message, tEvalFn template.TypeEvalFn) (proto.Message, error) {
@@ -119,7 +119,7 @@ var (
 			},
 			ConfigureType: func(types map[string]proto.Message, builder *adapter.HandlerBuilder) error {
 				// Mixer framework should have ensured the type safety.
-				castedBuilder := (*builder).({{.GoPackageName}}.{{.Name}}HandlerBuilder)
+				castedBuilder := (*builder).({{.GoPackageName}}.HandlerBuilder)
 				castedTypes := make(map[string]*{{.GoPackageName}}.Type, len(types))
 				for k, v := range types {
 					// Mixer framework should have ensured the type safety.

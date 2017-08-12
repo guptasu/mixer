@@ -67,8 +67,8 @@ type (
 		ConfigureType           ConfigureTypeFn
 		SupportsTemplate        SupportsTemplateFn
 		HandlerSupportsTemplate HandlerSupportsTemplateFn
-		BldrName                string
-		HndlrName               string
+		BldrInterfaceName       string
+		HndlrInterfaceName      string
 		Variety                 adptTmpl.TemplateVariety
 		ProcessReport           ProcessReportFn
 		ProcessCheck            ProcessCheckFn
@@ -105,7 +105,7 @@ func NewRepository(templateInfos map[string]Info) Repository {
 
 	for t, v := range templateInfos {
 		allSupportedTmpls = append(allSupportedTmpls, t)
-		tmplToBuilderNames[t] = v.BldrName
+		tmplToBuilderNames[t] = v.BldrInterfaceName
 	}
 	return repo{info: templateInfos, tmplToBuilderNames: tmplToBuilderNames, allSupportedTmpls: allSupportedTmpls}
 }
