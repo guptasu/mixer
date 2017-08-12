@@ -19,7 +19,6 @@ import (
 	"fmt"
 
 	"github.com/golang/protobuf/proto"
-	rpc "github.com/googleapis/googleapis/google/rpc"
 	multierror "github.com/hashicorp/go-multierror"
 
 	pb "istio.io/api/mixer/v1/config/descriptor"
@@ -41,17 +40,6 @@ type (
 	InferTypeFn func(proto.Message, TypeEvalFn) (proto.Message, error)
 	// ConfigureTypeFn dispatches the inferred types to handlers
 	ConfigureTypeFn func(types map[string]proto.Message, builder *adapter.HandlerBuilder) error
-
-	// ProcessReportFn instantiates the instance object and dispatches them to the handler.
-	ProcessReportFn func(ctx context.Context, allCnstrs map[string]proto.Message, attrs attribute.Bag, mapper expr.Evaluator, handler adapter.Handler) rpc.Status
-
-	// ProcessCheckFn instantiates the instance object and dispatches them to the handler.
-	ProcessCheckFn func(ctx context.Context, instName string, cnstr proto.Message, attrs attribute.Bag, mapper expr.Evaluator,
-		handler adapter.Handler) adapter.CheckResult
-
-	// ProcessQuotaFn instantiates the instance object and dispatches them to the handler.
-	ProcessQuotaFn func(ctx context.Context, quotaName string, cnstr proto.Message, attrs attribute.Bag, mapper expr.Evaluator, handler adapter.Handler,
-		args adapter.QuotaRequestArgs) adapter.QuotaResult2
 
 	// EvaluateFn creates the instance object by evaluating the constructor config using the attributes
 	EvaluateFn func(instName string, cnstrParam proto.Message, attrs attribute.Bag, mapper expr.Evaluator) (interface{}, error)
@@ -82,9 +70,6 @@ type (
 		BldrInterfaceName       string
 		HndlrInterfaceName      string
 		Variety                 adptTmpl.TemplateVariety
-		ProcessReport           ProcessReportFn
-		ProcessCheck            ProcessCheckFn
-		ProcessQuota            ProcessQuotaFn
 		Evaluate                EvaluateFn
 		DispatchReport          DispatchReportFn
 		DispatchCheck           DispatchCheckFn

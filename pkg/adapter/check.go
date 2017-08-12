@@ -22,9 +22,9 @@ import (
 
 // TODO revisit the comment on this adapter struct.
 
-// CheckResult provides return values from check calls
+// CheckResult provides return value from check request call on the handler.
 type CheckResult struct {
-	// The outcome of the operation.
+	// The outcome status of the operation.
 	Status rpc.Status
 	// ValidDuration represents amount of time for which this result can be considered valid.
 	ValidDuration time.Duration

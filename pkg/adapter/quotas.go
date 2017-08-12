@@ -108,9 +108,9 @@ type (
 		Amount int64
 	}
 
-	// QuotaResult2 provides return values from quota allocation calls
+	// QuotaResult2 provides return values from quota allocation calls on the handler
 	QuotaResult2 struct {
-		// The outcome of the operation.
+		// The outcome status of the operation.
 		Status rpc.Status
 
 		// The amount of time until which the returned quota expires, this is 0 for non-expiring quotas.

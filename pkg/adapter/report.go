@@ -20,8 +20,8 @@ import (
 
 // TODO revisit the comment on this adapter struct.
 
-// ReportResult provides return values from report calls
+// ReportResult provides return values from report calls on the handler
 type ReportResult struct {
-	// The outcome of the operation.
+	// The outcome status of the operation.
 	Status rpc.Status
 }
