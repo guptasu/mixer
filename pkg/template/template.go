@@ -53,6 +53,18 @@ type (
 	ProcessQuotaFn func(ctx context.Context, quotaName string, cnstr proto.Message, attrs attribute.Bag, mapper expr.Evaluator, handler adapter.Handler,
 		args adapter.QuotaRequestArgs) adapter.QuotaResult2
 
+	// EvaluateFn creates the instance object by evaluating the constructor config using the attributes
+	EvaluateFn func(instName string, cnstrParam proto.Message, attrs attribute.Bag, mapper expr.Evaluator) (interface{}, error)
+
+	// DispatchReportFn dispatches the instance to the handler.
+	DispatchReportFn func(context.Context, interface{}, adapter.Handler) (adapter.ReportResult, error)
+
+	// DispatchCheckFn dispatches the instance to the handler.
+	DispatchCheckFn func(context.Context, interface{}, adapter.Handler) (adapter.CheckResult, error)
+
+	// DispatchQuotaFn dispatches the instance to the handler.
+	DispatchQuotaFn func(context.Context, interface{}, adapter.Handler) (adapter.QuotaResult2, error)
+
 	// SupportsTemplateFn check if the handlerBuilder supports template.
 	SupportsTemplateFn func(hndlrBuilder adapter.HandlerBuilder) bool
 
@@ -73,7 +85,12 @@ type (
 		ProcessReport           ProcessReportFn
 		ProcessCheck            ProcessCheckFn
 		ProcessQuota            ProcessQuotaFn
+		Evaluate                EvaluateFn
+		DispatchReport          DispatchReportFn
+		DispatchCheck           DispatchCheckFn
+		DispatchQuota           DispatchQuotaFn
 	}
+
 	// templateRepo implements Repository
 	repo struct {
 		info map[string]Info

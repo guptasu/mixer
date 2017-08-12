@@ -94,6 +94,37 @@ var (
 				}
 				return castedBuilder.ConfigureSampleHandler(castedTypes)
 			},
+			Evaluate: func(instName string, inst proto.Message, attrs attribute.Bag, mapper expr.Evaluator) (interface{}, error) {
+				castedInst := inst.(*istio_mixer_adapter_sample_check.InstanceParam)
+
+				CheckExpression, err := mapper.Eval(castedInst.CheckExpression, attrs)
+
+				if err != nil {
+					return adapter.CheckResult{Status: status.WithError(err)}
+				}
+
+				StringMap, err := template.EvalAll(castedInst.StringMap, attrs, mapper)
+
+				if err != nil {
+					return adapter.CheckResult{Status: status.WithError(err)}
+				}
+
+				_ = castedInst
+
+				return &istio_mixer_adapter_sample_check.Instance{
+					Name: instName,
+
+					CheckExpression: CheckExpression.(string),
+
+					StringMap: func(m map[string]interface{}) map[string]string {
+						res := make(map[string]string, len(m))
+						for k, v := range m {
+							res[k] = v.(string)
+						}
+						return res
+					}(StringMap),
+				}
+			},
 
 			ProcessCheck: func(ctx context.Context, instName string, inst proto.Message, attrs attribute.Bag, mapper expr.Evaluator,
 				handler adapter.Handler) adapter.CheckResult {
@@ -137,6 +168,12 @@ var (
 			},
 			ProcessReport: nil,
 			ProcessQuota:  nil,
+
+			DispatchCheckFn: func(ctx context.Context, insts interface{}, handler adapter.Handler) (adapter.CheckResult, error) {
+				return handler.(istio_mixer_adapter_sample_check.Handler).HandleSample(ctx, insts.(*istio_mixer_adapter_sample_check.Instance))
+			},
+			DispatchReportFn: nil,
+			DispatchQuotaFn:  nil,
 		},
 
 		istio_mixer_adapter_sample_quota.TemplateName: {
@@ -186,6 +223,37 @@ var (
 					castedTypes[k] = v1
 				}
 				return castedBuilder.ConfigureQuotaHandler(castedTypes)
+			},
+			Evaluate: func(instName string, inst proto.Message, attrs attribute.Bag, mapper expr.Evaluator) (interface{}, error) {
+				castedInst := inst.(*istio_mixer_adapter_sample_quota.InstanceParam)
+
+				Dimensions, err := template.EvalAll(castedInst.Dimensions, attrs, mapper)
+
+				if err != nil {
+					return adapter.CheckResult{Status: status.WithError(err)}
+				}
+
+				BoolMap, err := template.EvalAll(castedInst.BoolMap, attrs, mapper)
+
+				if err != nil {
+					return adapter.CheckResult{Status: status.WithError(err)}
+				}
+
+				_ = castedInst
+
+				return &istio_mixer_adapter_sample_quota.Instance{
+					Name: instName,
+
+					Dimensions: Dimensions,
+
+					BoolMap: func(m map[string]interface{}) map[string]bool {
+						res := make(map[string]bool, len(m))
+						for k, v := range m {
+							res[k] = v.(bool)
+						}
+						return res
+					}(BoolMap),
+				}
 			},
 
 			ProcessQuota: func(ctx context.Context, quotaName string, inst proto.Message, attrs attribute.Bag, mapper expr.Evaluator, handler adapter.Handler,
@@ -239,6 +307,12 @@ var (
 			},
 			ProcessReport: nil,
 			ProcessCheck:  nil,
+
+			DispatchQuotaFn: func(ctx context.Context, insts interface{}, handler adapter.Handler, args adapter.QuotaRequestArgs) (adapter.QuotaResult, error) {
+				return handler.(istio_mixer_adapter_sample_quota.Handler).HandleQuota(ctx, insts.(*istio_mixer_adapter_sample_quota.Instance), args)
+			},
+			DispatchReportFn: nil,
+			DispatchCheckFn:  nil,
 		},
 
 		istio_mixer_adapter_sample_report.TemplateName: {
@@ -335,6 +409,77 @@ var (
 					castedTypes[k] = v1
 				}
 				return castedBuilder.ConfigureSampleHandler(castedTypes)
+			},
+			Evaluate: func(instName string, inst proto.Message, attrs attribute.Bag, mapper expr.Evaluator) (interface{}, error) {
+				castedInst := inst.(*istio_mixer_adapter_sample_report.InstanceParam)
+
+				Value, err := mapper.Eval(castedInst.Value, attrs)
+
+				if err != nil {
+					return adapter.CheckResult{Status: status.WithError(err)}
+				}
+
+				Dimensions, err := template.EvalAll(castedInst.Dimensions, attrs, mapper)
+
+				if err != nil {
+					return adapter.CheckResult{Status: status.WithError(err)}
+				}
+
+				Int64Primitive, err := mapper.Eval(castedInst.Int64Primitive, attrs)
+
+				if err != nil {
+					return adapter.CheckResult{Status: status.WithError(err)}
+				}
+
+				BoolPrimitive, err := mapper.Eval(castedInst.BoolPrimitive, attrs)
+
+				if err != nil {
+					return adapter.CheckResult{Status: status.WithError(err)}
+				}
+
+				DoublePrimitive, err := mapper.Eval(castedInst.DoublePrimitive, attrs)
+
+				if err != nil {
+					return adapter.CheckResult{Status: status.WithError(err)}
+				}
+
+				StringPrimitive, err := mapper.Eval(castedInst.StringPrimitive, attrs)
+
+				if err != nil {
+					return adapter.CheckResult{Status: status.WithError(err)}
+				}
+
+				Int64Map, err := template.EvalAll(castedInst.Int64Map, attrs, mapper)
+
+				if err != nil {
+					return adapter.CheckResult{Status: status.WithError(err)}
+				}
+
+				_ = castedInst
+
+				return &istio_mixer_adapter_sample_report.Instance{
+					Name: instName,
+
+					Value: Value,
+
+					Dimensions: Dimensions,
+
+					Int64Primitive: Int64Primitive.(int64),
+
+					BoolPrimitive: BoolPrimitive.(bool),
+
+					DoublePrimitive: DoublePrimitive.(float64),
+
+					StringPrimitive: StringPrimitive.(string),
+
+					Int64Map: func(m map[string]interface{}) map[string]int64 {
+						res := make(map[string]int64, len(m))
+						for k, v := range m {
+							res[k] = v.(int64)
+						}
+						return res
+					}(Int64Map),
+				}
 			},
 
 			ProcessReport: func(ctx context.Context, insts map[string]proto.Message, attrs attribute.Bag, mapper expr.Evaluator, handler adapter.Handler) rpc.Status {
@@ -436,6 +581,12 @@ var (
 			},
 			ProcessCheck: nil,
 			ProcessQuota: nil,
+
+			DispatchReportFn: func(ctx context.Context, insts interface{}, handler adapter.Handler) (adapter.ReportResult, error) {
+				return handler.(istio_mixer_adapter_sample_report.Handler).HandleSample(ctx, insts.([]*istio_mixer_adapter_sample_report.Instance))
+			},
+			DispatchCheckFn: nil,
+			DispatchQuotaFn: nil,
 		},
 	}
 )

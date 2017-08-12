@@ -128,6 +128,41 @@ var (
 				}
 				return castedBuilder.Configure{{.Name}}Handler(castedTypes)
 			},
+			Evaluate: func(instName string, inst proto.Message, attrs attribute.Bag, mapper expr.Evaluator) (interface{}, error) {
+				castedInst := inst.(*{{.GoPackageName}}.InstanceParam)
+				{{range .TemplateMessage.Fields}}
+					{{if .GoType.IsMap}}
+						{{.GoName}}, err := template.EvalAll(castedInst.{{.GoName}}, attrs, mapper)
+					{{else}}
+						{{.GoName}}, err := mapper.Eval(castedInst.{{.GoName}}, attrs)
+					{{end}}
+						if err != nil {
+							return adapter.CheckResult{Status: status.WithError(err)}
+						}
+				{{end}}
+				_ = castedInst
+
+				return &{{.GoPackageName}}.Instance{
+					Name:	instName,
+					{{range .TemplateMessage.Fields}}
+						{{if containsValueType .GoType}}
+							{{.GoName}}: {{.GoName}},
+						{{else}}
+							{{if .GoType.IsMap}}
+								{{.GoName}}: func(m map[string]interface{}) map[string]{{.GoType.MapValue.Name}} {
+									res := make(map[string]{{.GoType.MapValue.Name}}, len(m))
+									for k, v := range m {
+										res[k] = v.({{.GoType.MapValue.Name}})
+									}
+									return res
+								}({{.GoName}}),
+							{{else}}
+								{{.GoName}}: {{.GoName}}.({{.GoType.Name}}),
+							{{end}}
+						{{end}}
+					{{end}}
+				}
+			},
 			{{if eq .VarietyName "TEMPLATE_VARIETY_REPORT"}}
 				ProcessReport: func(ctx context.Context, insts map[string]proto.Message, attrs attribute.Bag, mapper expr.Evaluator, handler adapter.Handler) rpc.Status {
 					result := &multierror.Error{}
@@ -291,6 +326,28 @@ var (
 				ProcessReport: nil,
 				ProcessCheck: nil,
 			{{end}}
+
+
+			{{if eq .VarietyName "TEMPLATE_VARIETY_REPORT"}}
+				DispatchReportFn: func(ctx context.Context, insts interface{}, handler adapter.Handler) (adapter.ReportResult, error) {
+					return handler.({{.GoPackageName}}.Handler).Handle{{.Name}}(ctx, insts.([]*{{.GoPackageName}}.Instance));
+				},
+				DispatchCheckFn: nil,
+				DispatchQuotaFn: nil,
+			{{else if eq .VarietyName "TEMPLATE_VARIETY_CHECK"}}
+				DispatchCheckFn: func(ctx context.Context, insts interface{}, handler adapter.Handler) (adapter.CheckResult, error) {
+					return handler.({{.GoPackageName}}.Handler).Handle{{.Name}}(ctx, insts.(*{{.GoPackageName}}.Instance));
+				},
+				DispatchReportFn: nil,
+				DispatchQuotaFn: nil,
+			{{else}}
+				DispatchQuotaFn: func(ctx context.Context, insts interface{}, handler adapter.Handler, args adapter.QuotaRequestArgs) (adapter.QuotaResult, error) {
+					return handler.({{.GoPackageName}}.Handler).Handle{{.Name}}(ctx, insts.(*{{.GoPackageName}}.Instance), args);
+				},
+				DispatchReportFn: nil,
+				DispatchCheckFn: nil,
+			{{end}}
+
 		},
 	{{end}}
 	}
