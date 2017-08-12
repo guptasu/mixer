@@ -20,7 +20,7 @@ import (
 	"reflect"
 	"strings"
 	"testing"
-
+	rpc "github.com/googleapis/googleapis/google/rpc"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/ghodss/yaml"
 	"github.com/golang/protobuf/proto"
@@ -36,6 +36,7 @@ import (
 	sample_report "istio.io/mixer/template/sample/report"
 	"context"
 	"istio.io/mixer/pkg/expr"
+	"istio.io/mixer/pkg/status"
 )
 
 // Does not implement any template interfaces.
@@ -573,22 +574,18 @@ func TestConfigureType(t *testing.T) {
 	}
 }
 
-type ProcessTest struct {
-	name          string
-	instName      string
-	inst         proto.Message
-	hdlr          adapter.Handler
-	wantInstance  interface{}
-	wantQuotaResp adapter.QuotaResult      // only for quota calls
-	wantError     string
-}
-
 func TestEvaluate(t *testing.T) {
-	for _, tst := range []ProcessTest{
+	for _, tst := range []struct {
+		name         string
+		instName     string
+		instParam    proto.Message
+		wantInstance interface{}
+		wantError    string
+	}{
 		{
 			name: "Simple",
 			instName: "foo",
-			inst: &sample_report.InstanceParam{
+			instParam: &sample_report.InstanceParam{
 				Value: "1",
 				Dimensions:
 				map[string]string{"s": "2"},
@@ -598,7 +595,6 @@ func TestEvaluate(t *testing.T) {
 				StringPrimitive: `"myString"`,
 				Int64Map: map[string]string{"a": "1"},
 			},
-			hdlr: &fakeReportHandler{},
 			wantInstance: &sample_report.Instance{
 				Name:            "foo",
 				Value:           int64(1),
@@ -611,21 +607,19 @@ func TestEvaluate(t *testing.T) {
 			},
 		},
 		{
-			name: "EvalAllError",
-			inst: &sample_report.InstanceParam{Value: "1", Dimensions: map[string]string{"s": "bad.attributeName"}},
-			hdlr:      &fakeReportHandler{},
+			name:      "EvalAllError",
+			instParam: &sample_report.InstanceParam{Value: "1", Dimensions: map[string]string{"s": "bad.attributeName"}},
 			wantError: "unresolved attribute bad.attributeName",
 		},
 		{
-			name: "EvalError",
-			inst: &sample_report.InstanceParam{Value: "bad.attributeName", Dimensions: map[string]string{"s": "2"}},
-			hdlr:      &fakeReportHandler{},
+			name:      "EvalError",
+			instParam: &sample_report.InstanceParam{Value: "bad.attributeName", Dimensions: map[string]string{"s": "2"}},
 			wantError: "unresolved attribute bad.attributeName",
 		},
 	} {
 		t.Run(tst.name, func(t *testing.T) {
 			ev, _ := expr.NewCEXLEvaluator(expr.DefaultCacheSize)
-			res, err := SupportedTmplInfo[sample_report.TemplateName].Evaluate(tst.instName, tst.inst, fakeBag{}, ev)
+			res, err := SupportedTmplInfo[sample_report.TemplateName].Evaluate(tst.instName, tst.instParam, fakeBag{}, ev)
 
 			if tst.wantError != "" {
 				if !strings.Contains(err.Error(), tst.wantError) {
@@ -635,6 +629,62 @@ func TestEvaluate(t *testing.T) {
 				if !reflect.DeepEqual(res, tst.wantInstance) {
 					t.Errorf("Evaluate = %v, want %v", spew.Sdump(res), spew.Sdump(tst.wantInstance))
 				}
+			}
+		})
+	}
+}
+
+
+func TestDispatchReport(t *testing.T) {
+	for _, tst := range []struct {
+		name         string
+		insts        []*sample_report.Instance
+		hndlr        
+		retErr       error
+		retResult    adapter.ReportResult
+	}{
+		{
+			name:     "Valid",
+			insts:    []*sample_report.Instance {
+				&sample_report.Instance{
+					Name:            "foo",
+					Value:           int64(1),
+					Dimensions:      map[string]interface{}{"s": int64(2)},
+					BoolPrimitive:   true,
+					DoublePrimitive: 1.2,
+					Int64Primitive:  54362,
+					StringPrimitive: "myString",
+					Int64Map:        map[string]int64{"a": int64(1)},
+				},
+				&sample_report.Instance{
+					Name:            "bar",
+					Value:           int64(1),
+					Dimensions:      map[string]interface{}{"s": int64(2)},
+					BoolPrimitive:   true,
+					DoublePrimitive: 1.2,
+					Int64Primitive:  54362,
+					StringPrimitive: "myString",
+					Int64Map:        map[string]int64{"a": int64(1)},
+				},
+			},
+			retErr: nil,
+			retResult: adapter.ReportResult{Status: rpc.Status{Message:"some message"}},
+		},
+	} {
+		t.Run(tst.name, func(t *testing.T) {
+			hb := &tst.hdlrBldr
+			_ = SupportedTmplInfo[tst.tmpl].ConfigureType(tst.types, hb)
+
+			var c interface{}
+			if tst.tmpl == sample_report.TemplateName {
+				c = tst.hdlrBldr.(*fakeReportHandler).cnfgCallInput
+			} else if tst.tmpl == sample_check.TemplateName {
+				c = tst.hdlrBldr.(*fakeCheckHandler).cnfgCallInput
+			} else if tst.tmpl == sample_quota.TemplateName {
+				c = tst.hdlrBldr.(*fakeQuotaHandler).cnfgCallInput
+			}
+			if !reflect.DeepEqual(c, tst.want) {
+				t.Errorf("SupportedTmplInfo[%s].ConfigureType(%v) handler invoked value = %v, want %v", tst.tmpl, tst.types, c, tst.want)
 			}
 		})
 	}
