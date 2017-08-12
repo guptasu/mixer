@@ -63,7 +63,7 @@ type (
 	DispatchCheckFn func(context.Context, interface{}, adapter.Handler) (adapter.CheckResult, error)
 
 	// DispatchQuotaFn dispatches the instance to the handler.
-	DispatchQuotaFn func(context.Context, interface{}, adapter.Handler) (adapter.QuotaResult2, error)
+	DispatchQuotaFn func(context.Context, interface{}, adapter.Handler, adapter.QuotaRequestArgs) (adapter.QuotaResult2, error)
 
 	// SupportsTemplateFn check if the handlerBuilder supports template.
 	SupportsTemplateFn func(hndlrBuilder adapter.HandlerBuilder) bool
