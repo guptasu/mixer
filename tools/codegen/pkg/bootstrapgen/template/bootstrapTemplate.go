@@ -174,7 +174,7 @@ var (
 						_ = md
 					}
 
-					if err := handler.({{.GoPackageName}}.{{.Name}}Handler).Handle{{.Name}}(ctx, instances); err != nil {
+					if err := handler.({{.GoPackageName}}.Handler).Handle{{.Name}}(ctx, instances); err != nil {
 						result = multierror.Append(result, fmt.Errorf("failed to report all values: %v", err))
 					}
 
@@ -227,7 +227,7 @@ var (
 					_ = castedInst
 
 					var checkResult adapter.CheckResult
-					if checkResult, err = handler.({{.GoPackageName}}.{{.Name}}Handler).Handle{{.Name}}(ctx, instance); err != nil {
+					if checkResult, err = handler.({{.GoPackageName}}.Handler).Handle{{.Name}}(ctx, instance); err != nil {
 						return adapter.CheckResult{Status: status.WithError(err)}
 					}
 
@@ -274,7 +274,7 @@ var (
 					}
 
 					var qr adapter.QuotaResult2
-					if qr, err = handler.({{.GoPackageName}}.{{.Name}}Handler).Handle{{.Name}}(ctx, instance, qma); err != nil {
+					if qr, err = handler.({{.GoPackageName}}.Handler).Handle{{.Name}}(ctx, instance, qma); err != nil {
 						glog.Errorf("Quota allocation failed: %v", err)
 						return  adapter.QuotaResult2{Status: status.WithError(err)}
 					}

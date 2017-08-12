@@ -129,7 +129,7 @@ var (
 				_ = castedInst
 
 				var checkResult adapter.CheckResult
-				if checkResult, err = handler.(istio_mixer_adapter_sample_check.SampleHandler).HandleSample(ctx, instance); err != nil {
+				if checkResult, err = handler.(istio_mixer_adapter_sample_check.Handler).HandleSample(ctx, instance); err != nil {
 					return adapter.CheckResult{Status: status.WithError(err)}
 				}
 
@@ -223,7 +223,7 @@ var (
 				}
 
 				var qr adapter.QuotaResult2
-				if qr, err = handler.(istio_mixer_adapter_sample_quota.QuotaHandler).HandleQuota(ctx, instance, qma); err != nil {
+				if qr, err = handler.(istio_mixer_adapter_sample_quota.Handler).HandleQuota(ctx, instance, qma); err != nil {
 					glog.Errorf("Quota allocation failed: %v", err)
 					return adapter.QuotaResult2{Status: status.WithError(err)}
 				}
@@ -423,7 +423,7 @@ var (
 					_ = md
 				}
 
-				if err := handler.(istio_mixer_adapter_sample_report.SampleHandler).HandleSample(ctx, instances); err != nil {
+				if err := handler.(istio_mixer_adapter_sample_report.Handler).HandleSample(ctx, instances); err != nil {
 					result = multierror.Append(result, fmt.Errorf("failed to report all values: %v", err))
 				}
 

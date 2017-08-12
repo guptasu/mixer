@@ -94,7 +94,7 @@ var (
 				_ = castedInst
 
 				var checkResult adapter.CheckResult
-				if checkResult, err = handler.(checknothing.CheckNothingHandler).HandleCheckNothing(ctx, instance); err != nil {
+				if checkResult, err = handler.(checknothing.Handler).HandleCheckNothing(ctx, instance); err != nil {
 					return adapter.CheckResult{Status: status.WithError(err)}
 				}
 
@@ -167,7 +167,7 @@ var (
 				_ = castedInst
 
 				var checkResult adapter.CheckResult
-				if checkResult, err = handler.(listentry.ListEntryHandler).HandleListEntry(ctx, instance); err != nil {
+				if checkResult, err = handler.(listentry.Handler).HandleListEntry(ctx, instance); err != nil {
 					return adapter.CheckResult{Status: status.WithError(err)}
 				}
 
@@ -262,7 +262,7 @@ var (
 					_ = md
 				}
 
-				if err := handler.(logentry.LogEntryHandler).HandleLogEntry(ctx, instances); err != nil {
+				if err := handler.(logentry.Handler).HandleLogEntry(ctx, instances); err != nil {
 					result = multierror.Append(result, fmt.Errorf("failed to report all values: %v", err))
 				}
 
@@ -359,7 +359,7 @@ var (
 					_ = md
 				}
 
-				if err := handler.(metric.MetricHandler).HandleMetric(ctx, instances); err != nil {
+				if err := handler.(metric.Handler).HandleMetric(ctx, instances); err != nil {
 					result = multierror.Append(result, fmt.Errorf("failed to report all values: %v", err))
 				}
 
@@ -433,7 +433,7 @@ var (
 				}
 
 				var qr adapter.QuotaResult2
-				if qr, err = handler.(quota.QuotaHandler).HandleQuota(ctx, instance, qma); err != nil {
+				if qr, err = handler.(quota.Handler).HandleQuota(ctx, instance, qma); err != nil {
 					glog.Errorf("Quota allocation failed: %v", err)
 					return adapter.QuotaResult2{Status: status.WithError(err)}
 				}
@@ -501,7 +501,7 @@ var (
 					_ = md
 				}
 
-				if err := handler.(reportnothing.ReportNothingHandler).HandleReportNothing(ctx, instances); err != nil {
+				if err := handler.(reportnothing.Handler).HandleReportNothing(ctx, instances); err != nil {
 					result = multierror.Append(result, fmt.Errorf("failed to report all values: %v", err))
 				}
 
