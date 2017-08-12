@@ -15,19 +15,13 @@
 package adapter
 
 import (
-	"time"
-
 	rpc "github.com/googleapis/googleapis/google/rpc"
 )
 
 // TODO revisit the comment on this adapter struct.
 
-// CheckResult provides return values from check calls
-type CheckResult struct {
+// ReportResult provides return values from report calls
+type ReportResult struct {
 	// The outcome of the operation.
 	Status rpc.Status
-	// ValidDuration represents amount of time for which this result can be considered valid.
-	ValidDuration time.Duration
-	// ValidUseCount represent the number of uses for which this result can be considered valid.
-	ValidUseCount int64
 }

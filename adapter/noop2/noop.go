@@ -23,6 +23,7 @@ import (
 
 	"github.com/gogo/protobuf/types"
 	"github.com/golang/protobuf/proto"
+	rpc "github.com/googleapis/googleapis/google/rpc"
 
 	"istio.io/mixer/pkg/adapter"
 	"istio.io/mixer/template/checknothing"
@@ -31,7 +32,6 @@ import (
 	"istio.io/mixer/template/metric"
 	"istio.io/mixer/template/quota"
 	"istio.io/mixer/template/reportnothing"
-	rpc "github.com/googleapis/googleapis/google/rpc"
 )
 
 type (
@@ -84,37 +84,41 @@ func (builder) ConfigureQuotaHandler(map[string]*quota.Type) error {
 
 ////////////////// Runtime Methods //////////////////////////
 
-var checkResult = adapter.CheckResult {
+var checkResult = adapter.CheckResult{
+	Status:        rpc.Status{Code: int32(rpc.OK)},
 	ValidDuration: 1000000000 * time.Second,
 	ValidUseCount: 1000000000,
+}
+var reportResult = adapter.ReportResult{
+	Status: rpc.Status{Code: int32(rpc.OK)},
 }
 
 func (handler) HandleCheckNothing(context.Context, *checknothing.Instance) (adapter.CheckResult, error) {
 	return checkResult, nil
 }
 
-func (handler) HandleReportNothing(context.Context, []*reportnothing.Instance) error {
-	return nil
+func (handler) HandleReportNothing(context.Context, []*reportnothing.Instance) (adapter.ReportResult, error) {
+	return reportResult, nil
 }
 
 func (handler) HandleListEntry(context.Context, *listentry.Instance) (adapter.CheckResult, error) {
 	return checkResult, nil
 }
 
-func (handler) HandleLogEntry(context.Context, []*logentry.Instance) error {
-	return nil
+func (handler) HandleLogEntry(context.Context, []*logentry.Instance) (adapter.ReportResult, error) {
+	return reportResult, nil
 }
 
-func (handler) HandleMetric(context.Context, []*metric.Instance) error {
-	return nil
+func (handler) HandleMetric(context.Context, []*metric.Instance) (adapter.ReportResult, error) {
+	return reportResult, nil
 }
 
 func (handler) HandleQuota(ctx context.Context, _ *quota.Instance, args adapter.QuotaRequestArgs) (adapter.QuotaResult2, error) {
-	return adapter.QuotaResult2 {
-		Status: rpc.Status{Code: int32(rpc.OK)},
-		ValidDuration: 1000000000 * time.Second,
-		Amount:     args.QuotaAmount,
-	},
+	return adapter.QuotaResult2{
+			Status:        rpc.Status{Code: int32(rpc.OK)},
+			ValidDuration: 1000000000 * time.Second,
+			Amount:        args.QuotaAmount,
+		},
 		nil
 }
 

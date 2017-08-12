@@ -248,7 +248,7 @@ var (
 				_ = castedInst
 
 				var checkResult adapter.CheckResult
-				if checkResult, err = handler.(istio_mixer_template_list.ListHandler).HandleList(ctx, instance); err != nil {
+				if checkResult, err = handler.(istio_mixer_template_list.Handler).HandleList(ctx, instance); err != nil {
 					return adapter.CheckResult{Status: status.WithError(err)}
 				}
 
@@ -456,7 +456,7 @@ var (
 					_ = md
 				}
 
-				if err := handler.(istio_mixer_template_quota.QuotaHandler).HandleQuota(ctx, instances); err != nil {
+				if err := handler.(istio_mixer_template_quota.Handler).HandleQuota(ctx, instances); err != nil {
 					result = multierror.Append(result, fmt.Errorf("failed to report all values: %v", err))
 				}
 
@@ -669,7 +669,7 @@ var (
 					_ = md
 				}
 
-				if err := handler.(istio_mixer_template_log.LogHandler).HandleLog(ctx, instances); err != nil {
+				if err := handler.(istio_mixer_template_log.Handler).HandleLog(ctx, instances); err != nil {
 					result = multierror.Append(result, fmt.Errorf("failed to report all values: %v", err))
 				}
 
@@ -882,7 +882,7 @@ var (
 					_ = md
 				}
 
-				if err := handler.(istio_mixer_template_metric.MetricHandler).HandleMetric(ctx, instances); err != nil {
+				if err := handler.(istio_mixer_template_metric.Handler).HandleMetric(ctx, instances); err != nil {
 					result = multierror.Append(result, fmt.Errorf("failed to report all values: %v", err))
 				}
 
