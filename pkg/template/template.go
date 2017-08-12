@@ -15,6 +15,7 @@
 package template
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/golang/protobuf/proto"
@@ -42,14 +43,14 @@ type (
 	ConfigureTypeFn func(types map[string]proto.Message, builder *adapter.HandlerBuilder) error
 
 	// ProcessReportFn instantiates the instance object and dispatches them to the handler.
-	ProcessReportFn func(allCnstrs map[string]proto.Message, attrs attribute.Bag, mapper expr.Evaluator, handler adapter.Handler) rpc.Status
+	ProcessReportFn func(ctx context.Context, allCnstrs map[string]proto.Message, attrs attribute.Bag, mapper expr.Evaluator, handler adapter.Handler) rpc.Status
 
 	// ProcessCheckFn instantiates the instance object and dispatches them to the handler.
-	ProcessCheckFn func(instName string, cnstr proto.Message, attrs attribute.Bag, mapper expr.Evaluator,
+	ProcessCheckFn func(ctx context.Context, instName string, cnstr proto.Message, attrs attribute.Bag, mapper expr.Evaluator,
 		handler adapter.Handler) (rpc.Status, adapter.CacheabilityInfo)
 
 	// ProcessQuotaFn instantiates the instance object and dispatches them to the handler.
-	ProcessQuotaFn func(quotaName string, cnstr proto.Message, attrs attribute.Bag, mapper expr.Evaluator, handler adapter.Handler,
+	ProcessQuotaFn func(ctx context.Context, quotaName string, cnstr proto.Message, attrs attribute.Bag, mapper expr.Evaluator, handler adapter.Handler,
 		args adapter.QuotaRequestArgs) (rpc.Status, adapter.CacheabilityInfo, adapter.QuotaResult)
 
 	// SupportsTemplateFn check if the handlerBuilder supports template.

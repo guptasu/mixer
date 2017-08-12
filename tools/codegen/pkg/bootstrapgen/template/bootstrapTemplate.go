@@ -37,6 +37,7 @@ package {{.PkgName}}
 import (
 	"github.com/golang/protobuf/proto"
 	"fmt"
+	"context"
 	"istio.io/mixer/pkg/attribute"
 	rpc "github.com/googleapis/googleapis/google/rpc"
 	"github.com/hashicorp/go-multierror"
@@ -128,7 +129,7 @@ var (
 				return castedBuilder.Configure{{.Name}}Handler(castedTypes)
 			},
 			{{if eq .VarietyName "TEMPLATE_VARIETY_REPORT"}}
-				ProcessReport: func(insts map[string]proto.Message, attrs attribute.Bag, mapper expr.Evaluator, handler adapter.Handler) rpc.Status {
+				ProcessReport: func(ctx context.Context, insts map[string]proto.Message, attrs attribute.Bag, mapper expr.Evaluator, handler adapter.Handler) rpc.Status {
 					result := &multierror.Error{}
 					var instances []*{{.GoPackageName}}.Instance
 
@@ -173,7 +174,7 @@ var (
 						_ = md
 					}
 
-					if err := handler.({{.GoPackageName}}.{{.Name}}Handler).Handle{{.Name}}(instances); err != nil {
+					if err := handler.({{.GoPackageName}}.{{.Name}}Handler).Handle{{.Name}}(ctx, instances); err != nil {
 						result = multierror.Append(result, fmt.Errorf("failed to report all values: %v", err))
 					}
 
@@ -187,7 +188,7 @@ var (
 				ProcessCheck: nil,
 				ProcessQuota: nil,
 			{{else if eq .VarietyName "TEMPLATE_VARIETY_CHECK"}}
-				ProcessCheck: func(instName string, inst proto.Message, attrs attribute.Bag, mapper expr.Evaluator,
+				ProcessCheck: func(ctx context.Context, instName string, inst proto.Message, attrs attribute.Bag, mapper expr.Evaluator,
 				handler adapter.Handler) (rpc.Status, adapter.CacheabilityInfo) {
 					var found bool
 					var err error
@@ -228,7 +229,7 @@ var (
 					_ = castedInst
 
 					var cacheInfo adapter.CacheabilityInfo
-					if found, cacheInfo, err = handler.({{.GoPackageName}}.{{.Name}}Handler).Handle{{.Name}}(instance); err != nil {
+					if found, cacheInfo, err = handler.({{.GoPackageName}}.{{.Name}}Handler).Handle{{.Name}}(ctx, instance); err != nil {
 						return status.WithError(err), adapter.CacheabilityInfo{}
 					}
 
@@ -241,7 +242,7 @@ var (
 				ProcessReport: nil,
 				ProcessQuota: nil,
 			{{else}}
-				ProcessQuota: func(quotaName string, inst proto.Message, attrs attribute.Bag, mapper expr.Evaluator, handler adapter.Handler,
+				ProcessQuota: func(ctx context.Context, quotaName string, inst proto.Message, attrs attribute.Bag, mapper expr.Evaluator, handler adapter.Handler,
 				qma adapter.QuotaRequestArgs) (rpc.Status, adapter.CacheabilityInfo, adapter.QuotaResult) {
 					castedInst := inst.(*{{.GoPackageName}}.InstanceParam)
 					{{range .TemplateMessage.Fields}}
@@ -280,7 +281,7 @@ var (
 
 					var qr adapter.QuotaResult
 					var cacheInfo adapter.CacheabilityInfo
-					if qr, cacheInfo, err = handler.({{.GoPackageName}}.{{.Name}}Handler).Handle{{.Name}}(instance, qma); err != nil {
+					if qr, cacheInfo, err = handler.({{.GoPackageName}}.{{.Name}}Handler).Handle{{.Name}}(ctx, instance, qma); err != nil {
 						glog.Errorf("Quota allocation failed: %v", err)
 						return status.WithError(err), adapter.CacheabilityInfo{}, adapter.QuotaResult{}
 					}

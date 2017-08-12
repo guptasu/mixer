@@ -34,6 +34,7 @@ import (
 	sample_check "istio.io/mixer/template/sample/check"
 	sample_quota "istio.io/mixer/template/sample/quota"
 	sample_report "istio.io/mixer/template/sample/report"
+	"context"
 )
 
 // Does not implement any template interfaces.
@@ -52,7 +53,7 @@ type fakeReportHandler struct {
 }
 
 func (h *fakeReportHandler) Close() error { return nil }
-func (h *fakeReportHandler) HandleSample(instances []*sample_report.Instance) error {
+func (h *fakeReportHandler) HandleSample(ctx context.Context, instances []*sample_report.Instance) error {
 	h.procCallInput = instances
 	return h.retProcError
 }
@@ -74,7 +75,7 @@ type fakeCheckHandler struct {
 }
 
 func (h *fakeCheckHandler) Close() error { return nil }
-func (h *fakeCheckHandler) HandleSample(instance *sample_check.Instance) (bool, adapter.CacheabilityInfo, error) {
+func (h *fakeCheckHandler) HandleSample(ctx context.Context, instance *sample_check.Instance) (bool, adapter.CacheabilityInfo, error) {
 	h.procCallInput = instance
 	return h.ret, h.retCache, h.retProcError
 }
@@ -96,7 +97,7 @@ type fakeQuotaHandler struct {
 }
 
 func (h *fakeQuotaHandler) Close() error { return nil }
-func (h *fakeQuotaHandler) HandleQuota(instance *sample_quota.Instance, qra adapter.QuotaRequestArgs) (adapter.QuotaResult, adapter.CacheabilityInfo, error) {
+func (h *fakeQuotaHandler) HandleQuota(ctx context.Context, instance *sample_quota.Instance, qra adapter.QuotaRequestArgs) (adapter.QuotaResult, adapter.CacheabilityInfo, error) {
 	h.procCallInput = instance
 	return h.retQuotaRes, h.retCache, h.retProcError
 }
@@ -645,7 +646,7 @@ func TestProcessReport(t *testing.T) {
 		t.Run(tst.name, func(t *testing.T) {
 			h := &tst.hdlr
 			ev, _ := expr.NewCEXLEvaluator(expr.DefaultCacheSize)
-			s := SupportedTmplInfo[sample_report.TemplateName].ProcessReport(tst.insts, fakeBag{}, ev, *h)
+			s := SupportedTmplInfo[sample_report.TemplateName].ProcessReport(nil, tst.insts, fakeBag{}, ev, *h)
 
 			if tst.wantError != "" {
 				if !strings.Contains(s.Message, tst.wantError) {
@@ -704,7 +705,7 @@ func TestProcessCheck(t *testing.T) {
 		t.Run(tst.name, func(t *testing.T) {
 			h := &tst.hdlr
 			ev, _ := expr.NewCEXLEvaluator(expr.DefaultCacheSize)
-			s, cInfo := SupportedTmplInfo[sample_check.TemplateName].ProcessCheck(instName, tst.insts[instName], fakeBag{}, ev, *h)
+			s, cInfo := SupportedTmplInfo[sample_check.TemplateName].ProcessCheck(nil, instName, tst.insts[instName], fakeBag{}, ev, *h)
 
 			if tst.wantError != "" {
 				if !strings.Contains(s.Message, tst.wantError) {
@@ -765,7 +766,7 @@ func TestProcessQuota(t *testing.T) {
 		t.Run(tst.name, func(t *testing.T) {
 			h := &tst.hdlr
 			ev, _ := expr.NewCEXLEvaluator(expr.DefaultCacheSize)
-			s, cInfo, qr := SupportedTmplInfo[sample_quota.TemplateName].ProcessQuota("foo", tst.insts["foo"], fakeBag{}, ev, *h, adapter.QuotaRequestArgs{})
+			s, cInfo, qr := SupportedTmplInfo[sample_quota.TemplateName].ProcessQuota(nil, "foo", tst.insts["foo"], fakeBag{}, ev, *h, adapter.QuotaRequestArgs{})
 
 			if tst.wantError != "" {
 				if !strings.Contains(s.Message, tst.wantError) {

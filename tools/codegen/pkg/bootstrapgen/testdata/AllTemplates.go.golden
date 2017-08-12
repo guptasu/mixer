@@ -17,6 +17,7 @@
 package tmp
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/golang/glog"
@@ -157,7 +158,7 @@ var (
 				return castedBuilder.ConfigureListHandler(castedTypes)
 			},
 
-			ProcessCheck: func(instName string, inst proto.Message, attrs attribute.Bag, mapper expr.Evaluator,
+			ProcessCheck: func(ctx context.Context, instName string, inst proto.Message, attrs attribute.Bag, mapper expr.Evaluator,
 				handler adapter.Handler) (rpc.Status, adapter.CacheabilityInfo) {
 				var found bool
 				var err error
@@ -249,7 +250,7 @@ var (
 				_ = castedInst
 
 				var cacheInfo adapter.CacheabilityInfo
-				if found, cacheInfo, err = handler.(istio_mixer_template_list.ListHandler).HandleList(instance); err != nil {
+				if found, cacheInfo, err = handler.(istio_mixer_template_list.ListHandler).HandleList(ctx, instance); err != nil {
 					return status.WithError(err), adapter.CacheabilityInfo{}
 				}
 
@@ -366,7 +367,7 @@ var (
 				return castedBuilder.ConfigureQuotaHandler(castedTypes)
 			},
 
-			ProcessReport: func(insts map[string]proto.Message, attrs attribute.Bag, mapper expr.Evaluator, handler adapter.Handler) rpc.Status {
+			ProcessReport: func(ctx context.Context, insts map[string]proto.Message, attrs attribute.Bag, mapper expr.Evaluator, handler adapter.Handler) rpc.Status {
 				result := &multierror.Error{}
 				var instances []*istio_mixer_template_quota.Instance
 
@@ -461,7 +462,7 @@ var (
 					_ = md
 				}
 
-				if err := handler.(istio_mixer_template_quota.QuotaHandler).HandleQuota(instances); err != nil {
+				if err := handler.(istio_mixer_template_quota.QuotaHandler).HandleQuota(ctx, instances); err != nil {
 					result = multierror.Append(result, fmt.Errorf("failed to report all values: %v", err))
 				}
 
@@ -579,7 +580,7 @@ var (
 				return castedBuilder.ConfigureLogHandler(castedTypes)
 			},
 
-			ProcessReport: func(insts map[string]proto.Message, attrs attribute.Bag, mapper expr.Evaluator, handler adapter.Handler) rpc.Status {
+			ProcessReport: func(ctx context.Context, insts map[string]proto.Message, attrs attribute.Bag, mapper expr.Evaluator, handler adapter.Handler) rpc.Status {
 				result := &multierror.Error{}
 				var instances []*istio_mixer_template_log.Instance
 
@@ -674,7 +675,7 @@ var (
 					_ = md
 				}
 
-				if err := handler.(istio_mixer_template_log.LogHandler).HandleLog(instances); err != nil {
+				if err := handler.(istio_mixer_template_log.LogHandler).HandleLog(ctx, instances); err != nil {
 					result = multierror.Append(result, fmt.Errorf("failed to report all values: %v", err))
 				}
 
@@ -792,7 +793,7 @@ var (
 				return castedBuilder.ConfigureMetricHandler(castedTypes)
 			},
 
-			ProcessReport: func(insts map[string]proto.Message, attrs attribute.Bag, mapper expr.Evaluator, handler adapter.Handler) rpc.Status {
+			ProcessReport: func(ctx context.Context, insts map[string]proto.Message, attrs attribute.Bag, mapper expr.Evaluator, handler adapter.Handler) rpc.Status {
 				result := &multierror.Error{}
 				var instances []*istio_mixer_template_metric.Instance
 
@@ -887,7 +888,7 @@ var (
 					_ = md
 				}
 
-				if err := handler.(istio_mixer_template_metric.MetricHandler).HandleMetric(instances); err != nil {
+				if err := handler.(istio_mixer_template_metric.MetricHandler).HandleMetric(ctx, instances); err != nil {
 					result = multierror.Append(result, fmt.Errorf("failed to report all values: %v", err))
 				}
 

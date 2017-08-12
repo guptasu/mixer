@@ -17,6 +17,7 @@
 package sample
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/golang/glog"
@@ -94,7 +95,7 @@ var (
 				return castedBuilder.ConfigureSampleHandler(castedTypes)
 			},
 
-			ProcessCheck: func(instName string, inst proto.Message, attrs attribute.Bag, mapper expr.Evaluator,
+			ProcessCheck: func(ctx context.Context, instName string, inst proto.Message, attrs attribute.Bag, mapper expr.Evaluator,
 				handler adapter.Handler) (rpc.Status, adapter.CacheabilityInfo) {
 				var found bool
 				var err error
@@ -130,7 +131,7 @@ var (
 				_ = castedInst
 
 				var cacheInfo adapter.CacheabilityInfo
-				if found, cacheInfo, err = handler.(istio_mixer_adapter_sample_check.SampleHandler).HandleSample(instance); err != nil {
+				if found, cacheInfo, err = handler.(istio_mixer_adapter_sample_check.SampleHandler).HandleSample(ctx, instance); err != nil {
 					return status.WithError(err), adapter.CacheabilityInfo{}
 				}
 
@@ -193,7 +194,7 @@ var (
 				return castedBuilder.ConfigureQuotaHandler(castedTypes)
 			},
 
-			ProcessQuota: func(quotaName string, inst proto.Message, attrs attribute.Bag, mapper expr.Evaluator, handler adapter.Handler,
+			ProcessQuota: func(ctx context.Context, quotaName string, inst proto.Message, attrs attribute.Bag, mapper expr.Evaluator, handler adapter.Handler,
 				qma adapter.QuotaRequestArgs) (rpc.Status, adapter.CacheabilityInfo, adapter.QuotaResult) {
 				castedInst := inst.(*istio_mixer_adapter_sample_quota.InstanceParam)
 
@@ -229,7 +230,7 @@ var (
 
 				var qr adapter.QuotaResult
 				var cacheInfo adapter.CacheabilityInfo
-				if qr, cacheInfo, err = handler.(istio_mixer_adapter_sample_quota.QuotaHandler).HandleQuota(instance, qma); err != nil {
+				if qr, cacheInfo, err = handler.(istio_mixer_adapter_sample_quota.QuotaHandler).HandleQuota(ctx, instance, qma); err != nil {
 					glog.Errorf("Quota allocation failed: %v", err)
 					return status.WithError(err), adapter.CacheabilityInfo{}, adapter.QuotaResult{}
 				}
@@ -343,7 +344,7 @@ var (
 				return castedBuilder.ConfigureSampleHandler(castedTypes)
 			},
 
-			ProcessReport: func(insts map[string]proto.Message, attrs attribute.Bag, mapper expr.Evaluator, handler adapter.Handler) rpc.Status {
+			ProcessReport: func(ctx context.Context, insts map[string]proto.Message, attrs attribute.Bag, mapper expr.Evaluator, handler adapter.Handler) rpc.Status {
 				result := &multierror.Error{}
 				var instances []*istio_mixer_adapter_sample_report.Instance
 
@@ -429,7 +430,7 @@ var (
 					_ = md
 				}
 
-				if err := handler.(istio_mixer_adapter_sample_report.SampleHandler).HandleSample(instances); err != nil {
+				if err := handler.(istio_mixer_adapter_sample_report.SampleHandler).HandleSample(ctx, instances); err != nil {
 					result = multierror.Append(result, fmt.Errorf("failed to report all values: %v", err))
 				}
 

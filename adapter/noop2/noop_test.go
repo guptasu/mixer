@@ -85,7 +85,7 @@ func TestBasic(t *testing.T) {
 	}
 
 	checkNothingHandler := handler.(checknothing.CheckNothingHandler)
-	result, caching, err := checkNothingHandler.HandleCheckNothing(nil)
+	result, caching, err := checkNothingHandler.HandleCheckNothing(nil, nil)
 	if err != nil {
 		t.Errorf("Got error %v, expecting success", err)
 	}
@@ -103,12 +103,12 @@ func TestBasic(t *testing.T) {
 	}
 
 	reportNothingHandler := handler.(reportnothing.ReportNothingHandler)
-	if err = reportNothingHandler.HandleReportNothing(nil); err != nil {
+	if err = reportNothingHandler.HandleReportNothing(nil, nil); err != nil {
 		t.Errorf("Got error %v, expecting success", err)
 	}
 
 	listEntryHandler := handler.(listentry.ListEntryHandler)
-	result, caching, err = listEntryHandler.HandleListEntry(nil)
+	result, caching, err = listEntryHandler.HandleListEntry(nil, nil)
 	if err != nil {
 		t.Errorf("Got error %v, expecting success", err)
 	}
@@ -126,12 +126,12 @@ func TestBasic(t *testing.T) {
 	}
 
 	logEntryHandler := handler.(logentry.LogEntryHandler)
-	if err = logEntryHandler.HandleLogEntry(nil); err != nil {
+	if err = logEntryHandler.HandleLogEntry(nil, nil); err != nil {
 		t.Errorf("Got error %v, expecting success", err)
 	}
 
 	metricHandler := handler.(metric.MetricHandler)
-	if err = metricHandler.HandleMetric(nil); err != nil {
+	if err = metricHandler.HandleMetric(nil, nil); err != nil {
 		t.Errorf("Got error %v, expecting success", err)
 	}
 
@@ -140,7 +140,7 @@ func TestBasic(t *testing.T) {
 	}
 
 	quotaHandler := handler.(quota.QuotaHandler)
-	qr, caching, err := quotaHandler.HandleQuota(nil, adapter.QuotaRequestArgs{QuotaAmount: 100})
+	qr, caching, err := quotaHandler.HandleQuota(nil, nil, adapter.QuotaRequestArgs{QuotaAmount: 100})
 	if err != nil {
 		t.Errorf("Got error %v, expecting success", err)
 	}
