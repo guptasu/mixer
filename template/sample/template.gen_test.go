@@ -21,7 +21,7 @@ import (
 	"strings"
 	"testing"
 
-	//"github.com/davecgh/go-spew/spew"
+	"github.com/davecgh/go-spew/spew"
 	"github.com/ghodss/yaml"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/empty"
@@ -35,6 +35,7 @@ import (
 	sample_quota "istio.io/mixer/template/sample/quota"
 	sample_report "istio.io/mixer/template/sample/report"
 	"context"
+	"istio.io/mixer/pkg/expr"
 )
 
 // Does not implement any template interfaces.
@@ -574,246 +575,69 @@ func TestConfigureType(t *testing.T) {
 
 type ProcessTest struct {
 	name          string
-	insts         map[string]proto.Message
+	instName      string
+	inst         proto.Message
 	hdlr          adapter.Handler
 	wantInstance  interface{}
 	wantQuotaResp adapter.QuotaResult      // only for quota calls
 	wantError     string
 }
 
-/*
-func TestProcessReport(t *testing.T) {
+func TestEvaluate(t *testing.T) {
 	for _, tst := range []ProcessTest{
 		{
 			name: "Simple",
-			insts: map[string]proto.Message{
-				"foo": &sample_report.InstanceParam{Value: "1", Dimensions: map[string]string{"s": "2"}, BoolPrimitive: "true",
-					DoublePrimitive: "1.2", Int64Primitive: "54362", StringPrimitive: `"myString"`, Int64Map: map[string]string{"a": "1"}},
-				"bar": &sample_report.InstanceParam{Value: "2", Dimensions: map[string]string{"k": "3"}, BoolPrimitive: "true",
-					DoublePrimitive: "1.2", Int64Primitive: "54362", StringPrimitive: `"myString"`, Int64Map: map[string]string{"b": "1"}},
+			instName: "foo",
+			inst: &sample_report.InstanceParam{
+				Value: "1",
+				Dimensions:
+				map[string]string{"s": "2"},
+				BoolPrimitive: "true",
+				DoublePrimitive: "1.2",
+				Int64Primitive: "54362",
+				StringPrimitive: `"myString"`,
+				Int64Map: map[string]string{"a": "1"},
 			},
 			hdlr: &fakeReportHandler{},
-			wantInstance: []*sample_report.Instance{
-				{
-					Name:            "foo",
-					Value:           int64(1),
-					Dimensions:      map[string]interface{}{"s": int64(2)},
-					BoolPrimitive:   true,
-					DoublePrimitive: 1.2,
-					Int64Primitive:  54362,
-					StringPrimitive: "myString",
-					Int64Map:        map[string]int64{"a": int64(1)},
-				},
-				{
-					Name:            "bar",
-					Value:           int64(2),
-					Dimensions:      map[string]interface{}{"k": int64(3)},
-					BoolPrimitive:   true,
-					DoublePrimitive: 1.2,
-					Int64Primitive:  54362,
-					StringPrimitive: "myString",
-					Int64Map:        map[string]int64{"b": int64(1)},
-				},
+			wantInstance: &sample_report.Instance{
+				Name:            "foo",
+				Value:           int64(1),
+				Dimensions:      map[string]interface{}{"s": int64(2)},
+				BoolPrimitive:   true,
+				DoublePrimitive: 1.2,
+				Int64Primitive:  54362,
+				StringPrimitive: "myString",
+				Int64Map:        map[string]int64{"a": int64(1)},
 			},
 		},
 		{
 			name: "EvalAllError",
-			insts: map[string]proto.Message{
-				"foo": &sample_report.InstanceParam{Value: "1", Dimensions: map[string]string{"s": "bad.attributeName"}},
-			},
+			inst: &sample_report.InstanceParam{Value: "1", Dimensions: map[string]string{"s": "bad.attributeName"}},
 			hdlr:      &fakeReportHandler{},
 			wantError: "unresolved attribute bad.attributeName",
 		},
 		{
 			name: "EvalError",
-			insts: map[string]proto.Message{
-				"foo": &sample_report.InstanceParam{Value: "bad.attributeName", Dimensions: map[string]string{"s": "2"}},
-			},
+			inst: &sample_report.InstanceParam{Value: "bad.attributeName", Dimensions: map[string]string{"s": "2"}},
 			hdlr:      &fakeReportHandler{},
 			wantError: "unresolved attribute bad.attributeName",
 		},
-		{
-			name: "ProcessError",
-			insts: map[string]proto.Message{
-				"foo": &sample_report.InstanceParam{Value: "1", Dimensions: map[string]string{"s": "2"}},
-			},
-			hdlr:      &fakeReportHandler{retProcError: fmt.Errorf("error from process method")},
-			wantError: "error from process method",
-		},
 	} {
 		t.Run(tst.name, func(t *testing.T) {
-			h := &tst.hdlr
 			ev, _ := expr.NewCEXLEvaluator(expr.DefaultCacheSize)
-			s := SupportedTmplInfo[sample_report.TemplateName].ProcessReport(nil, tst.insts, fakeBag{}, ev, *h)
+			res, err := SupportedTmplInfo[sample_report.TemplateName].Evaluate(tst.instName, tst.inst, fakeBag{}, ev)
 
 			if tst.wantError != "" {
-				if !strings.Contains(s.Message, tst.wantError) {
-					t.Errorf("ProcessReport got error = %s, want %s", s.Message, tst.wantError)
+				if !strings.Contains(err.Error(), tst.wantError) {
+					t.Errorf("Evaluate got error = %s, want %s", err.Error(), tst.wantError)
 				}
 			} else {
-				if s.Code != int32(rpc.OK) {
-					t.Errorf("ProcessReport got error status %v , want success", s)
-				}
-				v := (*h).(*fakeReportHandler).procCallInput.([]*sample_report.Instance)
-				if !cmp(v, tst.wantInstance) {
-					t.Errorf("ProcessReport handler invoked value = %v, want %v", spew.Sdump(v), spew.Sdump(tst.wantInstance))
+				if !reflect.DeepEqual(res, tst.wantInstance) {
+					t.Errorf("Evaluate = %v, want %v", spew.Sdump(res), spew.Sdump(tst.wantInstance))
 				}
 			}
 		})
 	}
-}
-
-func TestProcessCheck(t *testing.T) {
-	instName := "foo"
-	for _, tst := range []ProcessTest{
-		{
-			name: "Simple",
-			insts: map[string]proto.Message{
-				instName: &sample_check.InstanceParam{CheckExpression: `"abcd asd"`, StringMap: map[string]string{"a": `"aaa"`}},
-			},
-			hdlr: &fakeCheckHandler{ret: true, retCache: adapter.CacheabilityInfo{ValidUseCount: 111}},
-			wantInstance: &sample_check.Instance{Name: instName, CheckExpression: "abcd asd", StringMap: map[string]string{"a": "aaa"}},
-			wantCache: adapter.CacheabilityInfo{ValidUseCount: 111},
-		},
-		{
-			name: "EvalError",
-			insts: map[string]proto.Message{
-				instName: &sample_check.InstanceParam{CheckExpression: `bad.attributeName`},
-			},
-			hdlr:      &fakeCheckHandler{ret: true},
-			wantError: "unresolved attribute bad.attributeName",
-		},
-		{
-			name: "ProcessError",
-			insts: map[string]proto.Message{
-				instName: &sample_check.InstanceParam{CheckExpression: `"abcd asd"`},
-			},
-			hdlr:      &fakeCheckHandler{retProcError: fmt.Errorf("error from process method")},
-			wantError: "error from process method",
-		},
-		{
-			name: "ProcRetFalse",
-			insts: map[string]proto.Message{
-				instName: &sample_check.InstanceParam{CheckExpression: `"abcd asd"`},
-			},
-			hdlr:      &fakeCheckHandler{ret: false},
-			wantError: " rejected",
-		},
-	} {
-		t.Run(tst.name, func(t *testing.T) {
-			h := &tst.hdlr
-			ev, _ := expr.NewCEXLEvaluator(expr.DefaultCacheSize)
-			s, cInfo := SupportedTmplInfo[sample_check.TemplateName].ProcessCheck(nil, instName, tst.insts[instName], fakeBag{}, ev, *h)
-
-			if tst.wantError != "" {
-				if !strings.Contains(s.Message, tst.wantError) {
-					t.Errorf("SupportedTmplInfo[sample_check.TemplateName].CheckSample(%v) got error = %s, want %s", tst.insts, s.Message, tst.wantError)
-				}
-			} else {
-				if s.Code != int32(rpc.OK) {
-					t.Errorf("CheckSample got error status %v , want success", s)
-				}
-				v := (*h).(*fakeCheckHandler).procCallInput
-				if !reflect.DeepEqual(v, tst.wantInstance) || !reflect.DeepEqual(tst.wantCache, cInfo) {
-					t.Errorf("CheckSample handler "+
-						"invoked value = %v,%v want %v,%v", spew.Sdump(v), cInfo, spew.Sdump(tst.wantInstance), tst.wantCache)
-				}
-			}
-		})
-	}
-}
-
-func TestProcessQuota(t *testing.T) {
-	for _, tst := range []ProcessTest{
-		{
-			name: "Simple",
-			insts: map[string]proto.Message{
-				"foo": &sample_quota.InstanceParam{Dimensions: map[string]string{"s": "2"}, BoolMap: map[string]string{"a": "true"}},
-			},
-			hdlr: &fakeQuotaHandler{retQuotaRes: adapter.QuotaResult{Amount: 100}, retCache: adapter.CacheabilityInfo{ValidUseCount: 111}},
-
-			wantInstance:  &sample_quota.Instance{Name: "foo", Dimensions: map[string]interface{}{"s": int64(2)}, BoolMap: map[string]bool{"a": true}},
-			wantCache:     adapter.CacheabilityInfo{ValidUseCount: 111},
-			wantQuotaResp: adapter.QuotaResult{Amount: 100},
-		},
-		{
-			name: "EvalError",
-			insts: map[string]proto.Message{
-				"foo": &sample_quota.InstanceParam{Dimensions: map[string]string{"s": "bad.attributeName"}},
-			},
-			hdlr:      &fakeQuotaHandler{},
-			wantError: "unresolved attribute bad.attributeName",
-		},
-		{
-			name: "ProcessError",
-			insts: map[string]proto.Message{
-				"foo": &sample_quota.InstanceParam{Dimensions: map[string]string{"s": "2"}},
-			},
-			hdlr:      &fakeQuotaHandler{retProcError: fmt.Errorf("error from process method")},
-			wantError: "error from process method",
-		},
-		{
-			name: "AmtZero",
-			insts: map[string]proto.Message{
-				"foo": &sample_quota.InstanceParam{Dimensions: map[string]string{"s": "2"}},
-			},
-			hdlr:      &fakeQuotaHandler{retQuotaRes: adapter.QuotaResult{Amount: 0}, retCache: adapter.CacheabilityInfo{ValidUseCount: 111}},
-			wantError: "Unable to allocate",
-		},
-	} {
-		t.Run(tst.name, func(t *testing.T) {
-			h := &tst.hdlr
-			ev, _ := expr.NewCEXLEvaluator(expr.DefaultCacheSize)
-			s, cInfo, qr := SupportedTmplInfo[sample_quota.TemplateName].ProcessQuota(nil, "foo", tst.insts["foo"], fakeBag{}, ev, *h, adapter.QuotaRequestArgs{})
-
-			if tst.wantError != "" {
-				if !strings.Contains(s.Message, tst.wantError) {
-					t.Errorf("SupportedTmplInfo[sample_quota.TemplateName].AllocQuota(%v) got error = %s, want %s", tst.insts, s.Message, tst.wantError)
-				}
-			} else {
-				if s.Code != int32(rpc.OK) {
-					t.Errorf("CheckSample got error status %v , want success", s)
-				}
-				v := (*h).(*fakeQuotaHandler).procCallInput
-				if !reflect.DeepEqual(v, tst.wantInstance) || !reflect.DeepEqual(tst.wantCache, cInfo) || !reflect.DeepEqual(tst.wantQuotaResp, qr) {
-					t.Errorf("ProcessQuota handler invoked value = %v,%v,%v  want %v,%v,%v", spew.Sdump(v), cInfo, qr, spew.Sdump(tst.wantInstance), tst.wantCache, tst.wantQuotaResp)
-				}
-			}
-		})
-	}
-}
-*/
-
-func cmp(m interface{}, n interface{}) bool {
-	a := InterfaceSlice(m)
-	b := InterfaceSlice(n)
-	if len(a) != len(b) {
-		return false
-	}
-
-	for _, x1 := range a {
-		f := false
-		for _, x2 := range b {
-			if reflect.DeepEqual(x1, x2) {
-				f = true
-			}
-		}
-		if !f {
-			return false
-		}
-	}
-	return true
-}
-
-func InterfaceSlice(slice interface{}) []interface{} {
-	s := reflect.ValueOf(slice)
-
-	ret := make([]interface{}, s.Len())
-	for i := 0; i < s.Len(); i++ {
-		ret[i] = s.Index(i).Interface()
-	}
-
-	return ret
 }
 
 func fillProto(cfg string, o interface{}) error {
