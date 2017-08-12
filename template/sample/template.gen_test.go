@@ -53,9 +53,9 @@ type fakeReportHandler struct {
 }
 
 func (h *fakeReportHandler) Close() error { return nil }
-func (h *fakeReportHandler) HandleSample(ctx context.Context, instances []*sample_report.Instance) error {
+func (h *fakeReportHandler) HandleSample(ctx context.Context, instances []*sample_report.Instance) (adapter.ReportResult, error) {
 	h.procCallInput = instances
-	return h.retProcError
+	return adapter.ReportResult{}, h.retProcError
 }
 func (h *fakeReportHandler) Build(proto.Message, adapter.Env) (adapter.Handler, error) {
 	return nil, nil
@@ -74,9 +74,9 @@ type fakeCheckHandler struct {
 }
 
 func (h *fakeCheckHandler) Close() error { return nil }
-func (h *fakeCheckHandler) HandleSample(ctx context.Context, instance *sample_check.Instance) (bool, error) {
+func (h *fakeCheckHandler) HandleSample(ctx context.Context, instance *sample_check.Instance) (adapter.CheckResult, error) {
 	h.procCallInput = instance
-	return h.ret, h.retProcError
+	return adapter.CheckResult{}, h.retProcError
 }
 func (h *fakeCheckHandler) Build(proto.Message, adapter.Env) (adapter.Handler, error) {
 	return nil, nil
@@ -91,11 +91,11 @@ type fakeQuotaHandler struct {
 	retProcError  error
 	cnfgCallInput interface{}
 	procCallInput interface{}
-	retQuotaRes   adapter.QuotaResult
+	retQuotaRes   adapter.QuotaResult2
 }
 
 func (h *fakeQuotaHandler) Close() error { return nil }
-func (h *fakeQuotaHandler) HandleQuota(ctx context.Context, instance *sample_quota.Instance, qra adapter.QuotaRequestArgs) (adapter.QuotaResult, error) {
+func (h *fakeQuotaHandler) HandleQuota(ctx context.Context, instance *sample_quota.Instance, qra adapter.QuotaRequestArgs) (adapter.QuotaResult2, error) {
 	h.procCallInput = instance
 	return h.retQuotaRes, h.retProcError
 }

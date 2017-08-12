@@ -18,6 +18,7 @@ package noop2
 //       known to Mixer. For now, it's manually curated.
 
 import (
+	"context"
 	"reflect"
 	"testing"
 	"time"
@@ -82,9 +83,11 @@ func TestBasic(t *testing.T) {
 		t.Errorf("Got error %v, expecting success", err)
 	}
 
-	handler, err := builder.Build(nil, nil)
-	if err != nil {
+	var handler adapter.Handler
+	if h, err := builder.Build(nil, nil); err != nil {
 		t.Errorf("Got error %v, expecting success", err)
+	} else {
+		handler = h
 	}
 
 	var exptCheckRes = adapter.CheckResult{
@@ -97,41 +100,41 @@ func TestBasic(t *testing.T) {
 	}
 
 	checkNothingHandler := handler.(checknothing.Handler)
-	if result, err := checkNothingHandler.HandleCheckNothing(nil, nil); err != nil {
+	if result, err := checkNothingHandler.HandleCheckNothing(context.TODO(), nil); err != nil {
 		t.Errorf("Got error %v, expecting success", err)
 	} else if !reflect.DeepEqual(result, exptCheckRes) {
 		t.Errorf("Got %v, expecting %v result", result, exptCheckRes)
 	}
 
 	reportNothingHandler := handler.(reportnothing.Handler)
-	if result, err := reportNothingHandler.HandleReportNothing(nil, nil); err != nil {
+	if result, err := reportNothingHandler.HandleReportNothing(context.TODO(), nil); err != nil {
 		t.Errorf("Got error %v, expecting success", err)
 	} else if !reflect.DeepEqual(result, exptReportResult) {
 		t.Errorf("Got %v, expecting %v result", result, exptReportResult)
 	}
 
 	listEntryHandler := handler.(listentry.Handler)
-	if result, err := listEntryHandler.HandleListEntry(nil, nil); err != nil {
+	if result, err := listEntryHandler.HandleListEntry(context.TODO(), nil); err != nil {
 		t.Errorf("Got error %v, expecting success", err)
 	} else if !reflect.DeepEqual(result, exptCheckRes) {
 		t.Errorf("Got %v, expecting %v result", result, exptCheckRes)
 	}
 
 	logEntryHandler := handler.(logentry.Handler)
-	if result, err := logEntryHandler.HandleLogEntry(nil, nil); err != nil {
+	if result, err := logEntryHandler.HandleLogEntry(context.TODO(), nil); err != nil {
 		t.Errorf("Got error %v, expecting success", err)
 	} else if !reflect.DeepEqual(result, exptReportResult) {
 		t.Errorf("Got %v, expecting %v result", result, exptReportResult)
 	}
 
 	metricHandler := handler.(metric.Handler)
-	if result, err := metricHandler.HandleMetric(nil, nil); err != nil {
+	if result, err := metricHandler.HandleMetric(context.TODO(), nil); err != nil {
 		t.Errorf("Got error %v, expecting success", err)
 	} else if !reflect.DeepEqual(result, exptReportResult) {
 		t.Errorf("Got %v, expecting %v result", result, exptReportResult)
 	}
 
-	if err = handler.Close(); err != nil {
+	if err := handler.Close(); err != nil {
 		t.Errorf("Got error %v, expecting success", err)
 	}
 
@@ -142,7 +145,7 @@ func TestBasic(t *testing.T) {
 	}
 
 	quotaHandler := handler.(quota.Handler)
-	if result, err := quotaHandler.HandleQuota(nil, nil, adapter.QuotaRequestArgs{QuotaAmount: 100}); err != nil {
+	if result, err := quotaHandler.HandleQuota(context.TODO(), nil, adapter.QuotaRequestArgs{QuotaAmount: 100}); err != nil {
 		t.Errorf("Got error %v, expecting success", err)
 	} else if !reflect.DeepEqual(result, exptQuotaResult) {
 		t.Errorf("Got %v, expecting %v result", result, exptQuotaResult)
