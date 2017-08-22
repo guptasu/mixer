@@ -28,10 +28,10 @@ import (
 
 const fullProtoNameOfValueTypeEnum = "istio.mixer.v1.config.descriptor.ValueType"
 
-//var SupportedCustomMessageTypes = map[string]string{
-//	"google.protobuf.Timestamp": "",
-//	"google.protobuf.Duration":  "",
-//}
+var SupportedCustomMessageTypes = map[string]string{
+	"google.protobuf.Timestamp": "",
+	"google.protobuf.Duration":  "",
+}
 
 type (
 	// Model represents the object used to code generate mixer artifacts.
@@ -271,6 +271,9 @@ func createInvalidTypeError(field string, err error) error {
 
 }
 func getTypeName(g *FileDescriptorSetParser, field *descriptor.FieldDescriptorProto) (protoType TypeInfo, goType TypeInfo, err error) {
+	fmt.Println("**")
+	fmt.Println(field.GetTypeName()[1:])
+
 	switch *field.Type {
 	case descriptor.FieldDescriptorProto_TYPE_STRING:
 		return TypeInfo{Name: "string"}, TypeInfo{Name: sSTRING}, nil
