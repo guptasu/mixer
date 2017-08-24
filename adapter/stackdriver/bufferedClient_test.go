@@ -20,9 +20,9 @@ import (
 	"strings"
 	"testing"
 
-	gax "github.com/googleapis/gax-go"
+	"github.com/googleapis/gax-go"
 	xcontext "golang.org/x/net/context"
-	monitoring "google.golang.org/api/monitoring/v3"
+	"google.golang.org/genproto/googleapis/monitoring/v3"
 
 	"istio.io/mixer/pkg/adapter/test"
 )
