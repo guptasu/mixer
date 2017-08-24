@@ -28,9 +28,23 @@ import (
 
 const fullProtoNameOfValueTypeEnum = "istio.mixer.v1.config.descriptor.ValueType"
 
-var SupportedCustomMessageTypes = map[string]string{
-	"google.protobuf.Timestamp": "",
-	"google.protobuf.Duration":  "",
+type customTypeMetadata struct {
+	name string
+	importName string
+
+	protoAnnotation string
+	protoImportName string
+}
+
+var customProtoToGoTypeMapping = map[string]customTypeMetadata{
+	".google.protobuf.Timestamp": customTypeMetadata{
+		name: "time.Time",
+		importName: "time",
+	},
+	".google.protobuf.Duration":  customTypeMetadata{
+		name: "time.Duration",
+		importName: "time",
+	},
 }
 
 type (
@@ -271,9 +285,6 @@ func createInvalidTypeError(field string, err error) error {
 
 }
 func getTypeName(g *FileDescriptorSetParser, field *descriptor.FieldDescriptorProto) (protoType TypeInfo, goType TypeInfo, err error) {
-	fmt.Println("**")
-	fmt.Println(field.GetTypeName()[1:])
-
 	switch *field.Type {
 	case descriptor.FieldDescriptorProto_TYPE_STRING:
 		return TypeInfo{Name: "string"}, TypeInfo{Name: sSTRING}, nil
@@ -289,6 +300,11 @@ func getTypeName(g *FileDescriptorSetParser, field *descriptor.FieldDescriptorPr
 			return TypeInfo{Name: field.GetTypeName()[1:], IsValueType: true}, TypeInfo{Name: g.TypeName(desc), IsValueType: true}, nil
 		}
 	case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
+		if v, ok := customProtoToGoTypeMapping[field.GetTypeName()]; ok {
+			fmt.Println("**")
+			fmt.Println(field.GetTypeName()[1:])
+			fmt.Println(v)
+		}
 		desc := g.ObjectNamed(field.GetTypeName())
 		if d, ok := desc.(*Descriptor); ok && d.GetOptions().GetMapEntry() {
 			keyField, valField := d.Field[0], d.Field[1]
