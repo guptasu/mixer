@@ -28,22 +28,26 @@ import (
 
 const fullProtoNameOfValueTypeEnum = "istio.mixer.v1.config.descriptor.ValueType"
 
-type customTypeMetadata struct {
-	name string
-	importName string
+type typeMetadata struct {
+	goName       string
+	goImportName string
 
 	protoAnnotation string
 	protoImportName string
 }
 
-var customProtoToGoTypeMapping = map[string]customTypeMetadata{
-	".google.protobuf.Timestamp": customTypeMetadata{
-		name: "time.Time",
-		importName: "time",
+var customProtoToGoTypeMapping = map[string]typeMetadata{
+	".google.protobuf.Timestamp": {
+		goName:       "time.Time",
+		goImportName: "time",
+
+		protoImportName: "google/protobuf/timestamp.proto",
 	},
-	".google.protobuf.Duration":  customTypeMetadata{
-		name: "time.Duration",
-		importName: "time",
+	".google.protobuf.Duration": {
+		goName:       "time.Duration",
+		goImportName: "time",
+
+		protoImportName: "google/protobuf/duration.proto",
 	},
 }
 
@@ -87,7 +91,7 @@ type (
 		IsValueType bool
 		MapKey      *TypeInfo
 		MapValue    *TypeInfo
-		importName  string
+		ImportName  string
 	}
 
 	// MessageInfo contains the data about the type/message
@@ -305,7 +309,9 @@ func getTypeName(g *FileDescriptorSetParser, field *descriptor.FieldDescriptorPr
 			fmt.Println("**")
 			fmt.Println(field.GetTypeName()[1:])
 			fmt.Println(v)
-			return TypeInfo{Name: field.GetTypeName()[1:], IsValueType: true}, TypeInfo{Name: v.name, importName:v.importName, IsValueType: true}, nil
+			return TypeInfo{Name: field.GetTypeName()[1:], IsValueType: true, ImportName: v.protoImportName},
+				TypeInfo{Name: v.goName, IsValueType: true, ImportName: v.goImportName},
+				nil
 		}
 		desc := g.ObjectNamed(field.GetTypeName())
 		if d, ok := desc.(*Descriptor); ok && d.GetOptions().GetMapEntry() {
@@ -322,16 +328,18 @@ func getTypeName(g *FileDescriptorSetParser, field *descriptor.FieldDescriptorPr
 
 			if protoKeyType.Name == "string" {
 				return TypeInfo{
-						Name:     fmt.Sprintf("map<%s, %s>", protoKeyType.Name, protoValType.Name),
-						IsMap:    true,
-						MapKey:   &protoKeyType,
-						MapValue: &protoValType,
+						Name:       fmt.Sprintf("map<%s, %s>", protoKeyType.Name, protoValType.Name),
+						IsMap:      true,
+						MapKey:     &protoKeyType,
+						MapValue:   &protoValType,
+						ImportName: protoValType.ImportName,
 					},
 					TypeInfo{
-						Name:     fmt.Sprintf("map[%s]%s", goKeyType.Name, goValType.Name),
-						IsMap:    true,
-						MapKey:   &goKeyType,
-						MapValue: &goValType,
+						Name:       fmt.Sprintf("map[%s]%s", goKeyType.Name, goValType.Name),
+						IsMap:      true,
+						MapKey:     &goKeyType,
+						MapValue:   &goValType,
+						ImportName: goValType.ImportName,
 					},
 					nil
 			}
