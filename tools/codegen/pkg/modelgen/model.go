@@ -87,6 +87,7 @@ type (
 		IsValueType bool
 		MapKey      *TypeInfo
 		MapValue    *TypeInfo
+		importName  string
 	}
 
 	// MessageInfo contains the data about the type/message
@@ -304,6 +305,7 @@ func getTypeName(g *FileDescriptorSetParser, field *descriptor.FieldDescriptorPr
 			fmt.Println("**")
 			fmt.Println(field.GetTypeName()[1:])
 			fmt.Println(v)
+			return TypeInfo{Name: field.GetTypeName()[1:], IsValueType: true}, TypeInfo{Name: v.name, importName:v.importName, IsValueType: true}, nil
 		}
 		desc := g.ObjectNamed(field.GetTypeName())
 		if d, ok := desc.(*Descriptor); ok && d.GetOptions().GetMapEntry() {
