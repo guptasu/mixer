@@ -30,26 +30,26 @@ const fullProtoNameOfValueTypeEnum = "istio.mixer.v1.config.descriptor.ValueType
 
 type typeMetadata struct {
 	goName        string
-	goImportNames string
+	goImportNames []string
 
-	protoAnnotations string
-	protoImportNames string
+	//protoAnnotations string
+	protoImportNames []string
 }
 
 var customProtoToGoTypeMapping = map[string]typeMetadata{
 	".google.protobuf.Timestamp": {
 		goName:        "time.Time",
-		goImportNames: "time",
+		goImportNames: []string{"time"},
 
-		protoImportNames: "google/protobuf/timestamp.proto",
-		protoAnnotations: "[(gogoproto.stdtime) = true]",
+		protoImportNames: []string{"google/protobuf/timestamp.proto"},
+		//protoAnnotations: "[(gogoproto.stdtime) = true]",
 	},
 	".google.protobuf.Duration": {
 		goName:        "time.Duration",
-		goImportNames: "time",
+		goImportNames: []string{"time"},
 
-		protoImportNames: "google/protobuf/duration.proto",
-		protoAnnotations: "[(gogoproto.stdduration) = true]",
+		protoImportNames: []string{"google/protobuf/duration.proto"},
+		//protoAnnotations: "[(gogoproto.stdduration) = true]",
 	},
 }
 
@@ -87,13 +87,13 @@ type (
 
 	// TypeInfo contains the data about the field
 	TypeInfo struct {
-		Name        string
-		IsRepeated  bool
-		IsMap       bool
-		IsValueType bool
-		MapKey      *TypeInfo
-		MapValue    *TypeInfo
-		ImportName  string
+		Name             string
+		IsRepeated       bool
+		IsMap            bool
+		IsValueType      bool
+		MapKey           *TypeInfo
+		MapValue         *TypeInfo
+		ImportNames      []string
 	}
 
 	// MessageInfo contains the data about the type/message
@@ -308,11 +308,8 @@ func getTypeName(g *FileDescriptorSetParser, field *descriptor.FieldDescriptorPr
 		}
 	case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
 		if v, ok := customProtoToGoTypeMapping[field.GetTypeName()]; ok {
-			fmt.Println("**")
-			fmt.Println(field.GetTypeName()[1:])
-			fmt.Println(v)
-			return TypeInfo{Name: field.GetTypeName()[1:], IsValueType: true, ImportName: v.protoImportNames},
-				TypeInfo{Name: v.goName, IsValueType: true, ImportName: v.goImportNames},
+			return TypeInfo{Name: field.GetTypeName()[1:], ImportNames: v.protoImportNames},
+				TypeInfo{Name: v.goName, ImportNames: v.goImportNames},
 				nil
 		}
 		desc := g.ObjectNamed(field.GetTypeName())
@@ -330,18 +327,18 @@ func getTypeName(g *FileDescriptorSetParser, field *descriptor.FieldDescriptorPr
 
 			if protoKeyType.Name == "string" {
 				return TypeInfo{
-						Name:       fmt.Sprintf("map<%s, %s>", protoKeyType.Name, protoValType.Name),
-						IsMap:      true,
-						MapKey:     &protoKeyType,
-						MapValue:   &protoValType,
-						ImportName: protoValType.ImportName,
+						Name:        fmt.Sprintf("map<%s, %s>", protoKeyType.Name, protoValType.Name),
+						IsMap:       true,
+						MapKey:      &protoKeyType,
+						MapValue:    &protoValType,
+						ImportNames: protoValType.ImportNames,
 					},
 					TypeInfo{
-						Name:       fmt.Sprintf("map[%s]%s", goKeyType.Name, goValType.Name),
-						IsMap:      true,
-						MapKey:     &goKeyType,
-						MapValue:   &goValType,
-						ImportName: goValType.ImportName,
+						Name:        fmt.Sprintf("map[%s]%s", goKeyType.Name, goValType.Name),
+						IsMap:       true,
+						MapKey:      &goKeyType,
+						MapValue:    &goValType,
+						ImportNames: goValType.ImportNames,
 					},
 					nil
 			}

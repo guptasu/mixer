@@ -129,10 +129,12 @@ func (g *Generator) getInterfaceGoFileContent(model *modelgen.Model) ([]byte, er
 			// The template's responsibility is to have a placeholder for printing the imports $$imports$$ and
 			// the generator will replace it with imports for fields that were actually printed in the generated file.
 			"reportTypeUsed": func(ti modelgen.TypeInfo) string {
-				if len(ti.ImportName) > 0 {
-					imptStm := fmt.Sprintf(goFileImportFmt, ti.ImportName)
-					if !contains(importsStms, imptStm) {
-						importsStms = append(importsStms, imptStm)
+				if len(ti.ImportNames) > 0 {
+					for _, i := range ti.ImportNames {
+						imptStm := fmt.Sprintf(goFileImportFmt, i)
+						if !contains(importsStms, imptStm) {
+							importsStms = append(importsStms, imptStm)
+						}
 					}
 				}
 				// do nothing, just record the import so that we can add them later (only for the types that got printed)
@@ -185,15 +187,15 @@ func (g *Generator) getAugmentedProtoContent(model *modelgen.Model) ([]byte, err
 			// The template's responsibility is to have a placeholder for printing the imports $$imports$$ and
 			// the generator will replace it with imports for fields that were actually printed in the generated file.
 			"reportTypeUsed": func(ti modelgen.TypeInfo) string {
-				impt := ""
-				if len(ti.ImportName) > 0 {
-					impt = ti.ImportName
-
+				if len(ti.ImportNames) > 0 {
+					for _,i := range ti.ImportNames {
+						imptStm := fmt.Sprintf(protoFileImportFmt, i)
+						if !contains(imports, imptStm) {
+							imports = append(imports, imptStm)
+						}
+					}
 				} else if containsValueType(ti) {
-					impt = protoValueTypeImport
-				}
-				if impt != "" {
-					imptStm := fmt.Sprintf(protoFileImportFmt, impt)
+					imptStm := fmt.Sprintf(protoFileImportFmt, protoValueTypeImport)
 					if !contains(imports, imptStm) {
 						imports = append(imports, imptStm)
 					}

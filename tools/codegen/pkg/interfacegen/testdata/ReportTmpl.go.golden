@@ -18,7 +18,7 @@ package istio_mixer_adapter_metric
 
 import "context"
 import "istio.io/mixer/pkg/adapter"
-
+import "time"
 
 // 
 // Overview of what metric is etc..
@@ -59,6 +59,12 @@ type Instance struct {
   
   
   DimensionsFixedInt64ValueDType map[string]int64
+  
+  
+  TimeStamp time.Time
+  
+  
+  Duration time.Duration
   
 }
 
