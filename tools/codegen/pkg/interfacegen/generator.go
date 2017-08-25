@@ -188,7 +188,7 @@ func (g *Generator) getAugmentedProtoContent(model *modelgen.Model) ([]byte, err
 			// the generator will replace it with imports for fields that were actually printed in the generated file.
 			"reportTypeUsed": func(ti modelgen.TypeInfo) string {
 				if len(ti.ImportNames) > 0 {
-					for _,i := range ti.ImportNames {
+					for _, i := range ti.ImportNames {
 						imptStm := fmt.Sprintf(protoFileImportFmt, i)
 						if !contains(imports, imptStm) {
 							imports = append(imports, imptStm)

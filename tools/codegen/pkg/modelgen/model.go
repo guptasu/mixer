@@ -87,13 +87,13 @@ type (
 
 	// TypeInfo contains the data about the field
 	TypeInfo struct {
-		Name             string
-		IsRepeated       bool
-		IsMap            bool
-		IsValueType      bool
-		MapKey           *TypeInfo
-		MapValue         *TypeInfo
-		ImportNames      []string
+		Name        string
+		IsRepeated  bool
+		IsMap       bool
+		IsValueType bool
+		MapKey      *TypeInfo
+		MapValue    *TypeInfo
+		ImportNames []string
 	}
 
 	// MessageInfo contains the data about the type/message
