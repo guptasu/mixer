@@ -19,29 +19,42 @@ package foo_bar_mylistchecker
 import "context"
 import "istio.io/mixer/pkg/adapter"
 
+
+
+
+
 // Fully qualified name of this template
 const TemplateName = "foo.bar.mylistchecker"
 
 // Instance is constructed by Mixer for the 'foo.bar.mylistchecker.List' template.
 type Instance struct {
-	// Name of the instance as specified in configuration.
-	Name string
-
-	CheckExpression string
-
-	Dimensions map[string]interface{}
-
-	Int64Primitive int64
-
-	BoolPrimitive bool
-
-	DoublePrimitive float64
-
-	StringPrimitive string
-
-	AnotherValueType interface{}
-
-	DimensionsFixedInt64ValueDType map[string]int64
+  // Name of the instance as specified in configuration.
+  Name string
+  
+  
+  CheckExpression string
+  
+  
+  Dimensions map[string]interface{}
+  
+  
+  Int64Primitive int64
+  
+  
+  BoolPrimitive bool
+  
+  
+  DoublePrimitive float64
+  
+  
+  StringPrimitive string
+  
+  
+  AnotherValueType interface{}
+  
+  
+  DimensionsFixedInt64ValueDType map[string]int64
+  
 }
 
 // HandlerBuilder must be implemented by adapters if they want to
@@ -68,9 +81,10 @@ type HandlerBuilder interface {
 // The name of each instance can be used as a key into the Type map supplied to the adapter
 // at configuration time. These types provide descriptions of each specific instances.
 type Handler interface {
-	adapter.Handler
+  adapter.Handler
 
-	// HandleList is called by Mixer at request time to deliver instances to
-	// to an adapter.
-	HandleList(context.Context, *Instance) (adapter.CheckResult, error)
+  // HandleList is called by Mixer at request time to deliver instances to
+  // to an adapter.
+  HandleList(context.Context, *Instance) (adapter.CheckResult, error)
+  
 }

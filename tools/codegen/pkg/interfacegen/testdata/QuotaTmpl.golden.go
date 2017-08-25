@@ -19,6 +19,10 @@ package istio_mixer_adapter_quota
 import "context"
 import "istio.io/mixer/pkg/adapter"
 
+
+
+
+
 // Fully qualified name of this template
 const TemplateName = "istio.mixer.adapter.quota"
 
@@ -26,23 +30,30 @@ const TemplateName = "istio.mixer.adapter.quota"
 //
 // template ...
 type Instance struct {
-	// Name of the instance as specified in configuration.
-	Name string
-
-	// dimensions are ...
-	Dimensions map[string]interface{}
-
-	Int64Primitive int64
-
-	BoolPrimitive bool
-
-	DoublePrimitive float64
-
-	StringPrimitive string
-
-	AnotherValueType interface{}
-
-	DimensionsFixedInt64ValueDType map[string]int64
+  // Name of the instance as specified in configuration.
+  Name string
+  
+  // dimensions are ...
+  Dimensions map[string]interface{}
+  
+  
+  Int64Primitive int64
+  
+  
+  BoolPrimitive bool
+  
+  
+  DoublePrimitive float64
+  
+  
+  StringPrimitive string
+  
+  
+  AnotherValueType interface{}
+  
+  
+  DimensionsFixedInt64ValueDType map[string]int64
+  
 }
 
 // HandlerBuilder must be implemented by adapters if they want to
@@ -69,9 +80,10 @@ type HandlerBuilder interface {
 // The name of each instance can be used as a key into the Type map supplied to the adapter
 // at configuration time. These types provide descriptions of each specific instances.
 type Handler interface {
-	adapter.Handler
+  adapter.Handler
 
-	// HandleQuota is called by Mixer at request time to deliver instances to
-	// to an adapter.
-	HandleQuota(context.Context, *Instance, adapter.QuotaRequestArgs) (adapter.QuotaResult2, error)
+  // HandleQuota is called by Mixer at request time to deliver instances to
+  // to an adapter.
+  HandleQuota(context.Context, *Instance, adapter.QuotaRequestArgs) (adapter.QuotaResult2, error)
+  
 }
