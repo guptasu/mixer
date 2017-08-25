@@ -29,25 +29,27 @@ import (
 const fullProtoNameOfValueTypeEnum = "istio.mixer.v1.config.descriptor.ValueType"
 
 type typeMetadata struct {
-	goName       string
-	goImportName string
+	goName        string
+	goImportNames string
 
-	protoAnnotation string
-	protoImportName string
+	protoAnnotations string
+	protoImportNames string
 }
 
 var customProtoToGoTypeMapping = map[string]typeMetadata{
 	".google.protobuf.Timestamp": {
-		goName:       "time.Time",
-		goImportName: "time",
+		goName:        "time.Time",
+		goImportNames: "time",
 
-		protoImportName: "google/protobuf/timestamp.proto",
+		protoImportNames: "google/protobuf/timestamp.proto",
+		protoAnnotations: "[(gogoproto.stdtime) = true]",
 	},
 	".google.protobuf.Duration": {
-		goName:       "time.Duration",
-		goImportName: "time",
+		goName:        "time.Duration",
+		goImportNames: "time",
 
-		protoImportName: "google/protobuf/duration.proto",
+		protoImportNames: "google/protobuf/duration.proto",
+		protoAnnotations: "[(gogoproto.stdduration) = true]",
 	},
 }
 
@@ -309,8 +311,8 @@ func getTypeName(g *FileDescriptorSetParser, field *descriptor.FieldDescriptorPr
 			fmt.Println("**")
 			fmt.Println(field.GetTypeName()[1:])
 			fmt.Println(v)
-			return TypeInfo{Name: field.GetTypeName()[1:], IsValueType: true, ImportName: v.protoImportName},
-				TypeInfo{Name: v.goName, IsValueType: true, ImportName: v.goImportName},
+			return TypeInfo{Name: field.GetTypeName()[1:], IsValueType: true, ImportName: v.protoImportNames},
+				TypeInfo{Name: v.goName, IsValueType: true, ImportName: v.goImportNames},
 				nil
 		}
 		desc := g.ObjectNamed(field.GetTypeName())

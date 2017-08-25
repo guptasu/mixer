@@ -37,7 +37,7 @@ message Template {
 
     map<string, int64> dimensionsFixedInt64ValueDType = 8;
 
-    // google.protobuf.Timestamp timeStamp = 9;
+    //google.protobuf.Timestamp timeStamp = 9;
 
     //google.protobuf.Duration duration = 10;
 }
