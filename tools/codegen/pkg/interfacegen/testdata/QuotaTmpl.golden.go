@@ -16,11 +16,8 @@
 
 package istio_mixer_adapter_quota
 
-import (
-	"context"
-
-	"istio.io/mixer/pkg/adapter"
-)
+import "context"
+import "istio.io/mixer/pkg/adapter"
 
 // Fully qualified name of this template
 const TemplateName = "istio.mixer.adapter.quota"

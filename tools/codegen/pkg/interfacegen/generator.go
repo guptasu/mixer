@@ -112,11 +112,31 @@ func (g *Generator) Generate(fdsFile string) error {
 	return nil
 }
 
+const goFileImportFmt = "import \"%s\""
+
 func (g *Generator) getInterfaceGoFileContent(model *modelgen.Model) ([]byte, error) {
+	importsStms := make([]string, 0)
 	intfaceTmpl, err := template.New("ProcInterface").Funcs(
 		template.FuncMap{
 			"replaceGoValueTypeToInterface": func(typeInfo modelgen.TypeInfo) string {
 				return strings.Replace(typeInfo.Name, fullGoNameOfValueTypeEnum, "interface{}", 1)
+			},
+			// The text/templates have code logic using which it decides the fields to be printed. Example
+			// when printing 'Type' we skip fields that have static types. So, this callback method 'reportTypeUsed'
+			// allows the template code to register which fields and types it actually printed. Based on what was actually
+			// printed we can decide which imports should be added to the file. Therefore, import adding is a last step
+			// after all fields and messages / structs are printed.
+			// The template's responsibility is to have a placeholder for printing the imports $$imports$$ and
+			// the generator will replace it with imports for fields that were actually printed in the generated file.
+			"reportTypeUsed": func(ti modelgen.TypeInfo) string {
+				if len(ti.ImportName) > 0 {
+					imptStm := fmt.Sprintf(goFileImportFmt, ti.ImportName)
+					if !contains(importsStms, imptStm) {
+						importsStms = append(importsStms, imptStm)
+					}
+				}
+				// do nothing, just record the import so that we can add them later (only for the types that got printed)
+				return ""
 			},
 		}).Parse(tmpl.InterfaceTemplate)
 	if err != nil {
@@ -128,7 +148,9 @@ func (g *Generator) getInterfaceGoFileContent(model *modelgen.Model) ([]byte, er
 		return nil, fmt.Errorf("cannot execute the template with the given data: %v", err)
 	}
 
-	fmtd, err := format.Source(intfaceBuf.Bytes())
+	str := strings.Replace(string(intfaceBuf.Bytes()), "$$additional_imports$$", strings.Join(importsStms, "\n"), 1)
+
+	fmtd, err := format.Source([]byte(str))
 	if err != nil {
 		return nil, fmt.Errorf("could not format generated code: %v : %s", err, string(intfaceBuf.Bytes()))
 	}
@@ -139,15 +161,48 @@ func (g *Generator) getInterfaceGoFileContent(model *modelgen.Model) ([]byte, er
 	if err != nil {
 		return nil, fmt.Errorf("could not fix imports for generated code: %v", err)
 	}
+
+	return []byte(str), nil
+
 	return imptd, nil
 }
 
+const protoFileImportFmt = "import \"%s\";"
+const protoValueTypeImport = "mixer/v1/config/descriptor/value_type.proto"
+
 func (g *Generator) getAugmentedProtoContent(model *modelgen.Model) ([]byte, error) {
+	imports := make([]string, 0)
+
 	augmentedTemplateTmpl, err := template.New("AugmentedTemplateTmpl").Funcs(
 		template.FuncMap{
 			"containsValueType": containsValueType,
 			"stringify":         stringify,
-		}).Parse(tmpl.RevisedTemplateTmpl)
+			// The text/templates have code logic using which it decides the fields to be printed. Example
+			// when printing 'Type' we skip fields that have static types. So, this callback method 'reportTypeUsed'
+			// allows the template code to register which fields and types it actually printed. Based on what was actually
+			// printed we can decide which imports should be added to the file. Therefore, import adding is a last step
+			// after all fields and messages / structs are printed.
+			// The template's responsibility is to have a placeholder for printing the imports $$imports$$ and
+			// the generator will replace it with imports for fields that were actually printed in the generated file.
+			"reportTypeUsed": func(ti modelgen.TypeInfo) string {
+				impt := ""
+				if len(ti.ImportName) > 0 {
+					impt = ti.ImportName
+
+				} else if containsValueType(ti) {
+					impt = protoValueTypeImport
+				}
+				if impt != "" {
+					imptStm := fmt.Sprintf(protoFileImportFmt, impt)
+					if !contains(imports, imptStm) {
+						imports = append(imports, imptStm)
+					}
+				}
+				// do nothing, just record the import so that we can add them later (only for the types that got printed)
+				return ""
+			},
+		},
+	).Parse(tmpl.RevisedTemplateTmpl)
 	if err != nil {
 		return nil, fmt.Errorf("cannot load template: %v", err)
 	}
@@ -158,7 +213,8 @@ func (g *Generator) getAugmentedProtoContent(model *modelgen.Model) ([]byte, err
 		return nil, fmt.Errorf("cannot execute the template with the given data: %v", err)
 	}
 
-	return tmplBuf.Bytes(), nil
+	str := strings.Replace(string(tmplBuf.Bytes()), "$$additional_imports$$", strings.Join(imports, "\n"), 1)
+	return []byte(str), nil
 }
 
 func getFileDescSet(path string) (*descriptor.FileDescriptorSet, error) {
@@ -174,4 +230,13 @@ func getFileDescSet(path string) (*descriptor.FileDescriptorSet, error) {
 	}
 
 	return fds, nil
+}
+
+func contains(s []string, e string) bool {
+	for _, a := range s {
+		if a == e {
+			return true
+		}
+	}
+	return false
 }

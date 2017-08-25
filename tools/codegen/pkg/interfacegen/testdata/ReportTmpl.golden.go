@@ -16,11 +16,8 @@
 
 package istio_mixer_adapter_metric
 
-import (
-	"context"
-
-	"istio.io/mixer/pkg/adapter"
-)
+import "context"
+import "istio.io/mixer/pkg/adapter"
 
 //
 // Overview of what metric is etc..

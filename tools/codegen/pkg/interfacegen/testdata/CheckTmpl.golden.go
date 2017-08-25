@@ -16,11 +16,8 @@
 
 package foo_bar_mylistchecker
 
-import (
-	"context"
-
-	"istio.io/mixer/pkg/adapter"
-)
+import "context"
+import "istio.io/mixer/pkg/adapter"
 
 // Fully qualified name of this template
 const TemplateName = "foo.bar.mylistchecker"
