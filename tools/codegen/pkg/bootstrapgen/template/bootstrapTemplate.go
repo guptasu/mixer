@@ -48,6 +48,7 @@ import (
 	{{range .TemplateModels}}
 		"{{.PackageImportPath}}"
 	{{end}}
+	$$additional_imports$$
 )
 
 var (

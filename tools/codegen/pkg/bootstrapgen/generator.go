@@ -31,6 +31,7 @@ import (
 	"istio.io/api/mixer/v1/config/descriptor"
 	tmplPkg "istio.io/mixer/tools/codegen/pkg/bootstrapgen/template"
 	"istio.io/mixer/tools/codegen/pkg/modelgen"
+	"strings"
 )
 
 // Generator creates a Go file that will be build inside mixer framework. The generated file contains all the
@@ -46,10 +47,12 @@ const (
 
 // TODO share the code between this generator and the interfacegen code generator.
 var primitiveToValueType = map[string]string{
-	"string":  fullGoNameOfValueTypePkgName + istio_mixer_v1_config_descriptor.STRING.String(),
-	"bool":    fullGoNameOfValueTypePkgName + istio_mixer_v1_config_descriptor.BOOL.String(),
-	"int64":   fullGoNameOfValueTypePkgName + istio_mixer_v1_config_descriptor.INT64.String(),
-	"float64": fullGoNameOfValueTypePkgName + istio_mixer_v1_config_descriptor.DOUBLE.String(),
+	"string":        fullGoNameOfValueTypePkgName + istio_mixer_v1_config_descriptor.STRING.String(),
+	"bool":          fullGoNameOfValueTypePkgName + istio_mixer_v1_config_descriptor.BOOL.String(),
+	"int64":         fullGoNameOfValueTypePkgName + istio_mixer_v1_config_descriptor.INT64.String(),
+	"float64":       fullGoNameOfValueTypePkgName + istio_mixer_v1_config_descriptor.DOUBLE.String(),
+	"time.Duration": fullGoNameOfValueTypePkgName + istio_mixer_v1_config_descriptor.DURATION.String(),
+	"time.Time":     fullGoNameOfValueTypePkgName + istio_mixer_v1_config_descriptor.TIMESTAMP.String(),
 }
 
 func containsValueType(ti modelgen.TypeInfo) bool {
@@ -61,16 +64,29 @@ type bootstrapModel struct {
 	TemplateModels []*modelgen.Model
 }
 
+const goFileImportFmt = "import \"%s\""
 // Generate creates a Go file that will be build inside mixer framework. The generated file contains all the
 // template specific code that mixer needs to add support for different passed in templates.
 func (g *Generator) Generate(fdsFiles map[string]string) error {
-
+	importsStms := make([]string, 0)
 	tmpl, err := template.New("MixerBootstrap").Funcs(
 		template.FuncMap{
 			"getValueType": func(goType modelgen.TypeInfo) string {
 				return primitiveToValueType[goType.Name]
 			},
 			"containsValueType": containsValueType,
+			"reportTypeUsed": func(ti modelgen.TypeInfo) string {
+				if len(ti.ImportNames) > 0 {
+					for _, i := range ti.ImportNames {
+						imptStm := fmt.Sprintf(goFileImportFmt, i)
+						if !contains(importsStms, imptStm) {
+							importsStms = append(importsStms, imptStm)
+						}
+					}
+				}
+				// do nothing, just record the import so that we can add them later (only for the types that got printed)
+				return ""
+			},
 		}).Parse(tmplPkg.InterfaceTemplate)
 
 	if err != nil {
@@ -113,7 +129,9 @@ func (g *Generator) Generate(fdsFiles map[string]string) error {
 	if err != nil {
 		return fmt.Errorf("cannot execute the template with the given data: %v", err)
 	}
-	fmtd, err := format.Source(buf.Bytes())
+	str := strings.Replace(string(buf.Bytes()), "$$additional_imports$$", strings.Join(importsStms, "\n"), 1)
+
+	fmtd, err := format.Source([]byte(str))
 	if err != nil {
 		return fmt.Errorf("could not format generated code: %v. Source code is %s", err, string(buf.Bytes()))
 	}
@@ -155,4 +173,13 @@ func getFileDescSet(path string) (*descriptor.FileDescriptorSet, error) {
 	}
 
 	return fds, nil
+}
+
+func contains(s []string, e string) bool {
+	for _, a := range s {
+		if a == e {
+			return true
+		}
+	}
+	return false
 }

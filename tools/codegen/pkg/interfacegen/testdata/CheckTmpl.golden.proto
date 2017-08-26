@@ -53,4 +53,8 @@ message InstanceParam {
   
   map<string, string> dimensionsFixedInt64ValueDType = 8;
   
+  string timeStamp = 9;
+  
+  string duration = 10;
+  
 }

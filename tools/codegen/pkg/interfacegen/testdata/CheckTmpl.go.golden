@@ -18,7 +18,7 @@ package foo_bar_mylistchecker
 
 import "context"
 import "istio.io/mixer/pkg/adapter"
-
+import "time"
 
 
 
@@ -54,6 +54,12 @@ type Instance struct {
   
   
   DimensionsFixedInt64ValueDType map[string]int64
+  
+  
+  TimeStamp time.Time
+  
+  
+  Duration time.Duration
   
 }
 
