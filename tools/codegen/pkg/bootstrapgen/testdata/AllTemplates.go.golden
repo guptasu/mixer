@@ -37,6 +37,8 @@ import (
 	"istio.io/mixer/template/log"
 
 	"istio.io/mixer/template/metric"
+
+	"time"
 )
 
 var (

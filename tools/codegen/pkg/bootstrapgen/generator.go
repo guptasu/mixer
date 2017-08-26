@@ -64,7 +64,7 @@ type bootstrapModel struct {
 	TemplateModels []*modelgen.Model
 }
 
-const goFileImportFmt = "import \"%s\""
+const goFileImportFmt = "\"%s\""
 // Generate creates a Go file that will be build inside mixer framework. The generated file contains all the
 // template specific code that mixer needs to add support for different passed in templates.
 func (g *Generator) Generate(fdsFiles map[string]string) error {

@@ -35,6 +35,8 @@ import (
 	"istio.io/mixer/template/sample/quota"
 
 	"istio.io/mixer/template/sample/report"
+
+	"time"
 )
 
 var (
@@ -79,6 +81,26 @@ var (
 					}
 				}
 
+				if cpb.TimeStamp == "" {
+					return nil, fmt.Errorf("expression for field TimeStamp cannot be empty")
+				}
+				if t, e := tEvalFn(cpb.TimeStamp); e != nil || t != istio_mixer_v1_config_descriptor.TIMESTAMP {
+					if e != nil {
+						return nil, fmt.Errorf("failed to evaluate expression for field TimeStamp: %v", e)
+					}
+					return nil, fmt.Errorf("error type checking for field TimeStamp: Evaluated expression type %v want %v", t, istio_mixer_v1_config_descriptor.TIMESTAMP)
+				}
+
+				if cpb.Duration == "" {
+					return nil, fmt.Errorf("expression for field Duration cannot be empty")
+				}
+				if t, e := tEvalFn(cpb.Duration); e != nil || t != istio_mixer_v1_config_descriptor.DURATION {
+					if e != nil {
+						return nil, fmt.Errorf("failed to evaluate expression for field Duration: %v", e)
+					}
+					return nil, fmt.Errorf("error type checking for field Duration: Evaluated expression type %v want %v", t, istio_mixer_v1_config_descriptor.DURATION)
+				}
+
 				_ = cpb
 				return infrdType, err
 			},
@@ -114,6 +136,22 @@ var (
 					return adapter.CheckResult{}, fmt.Errorf(msg)
 				}
 
+				TimeStamp, err := mapper.Eval(castedInst.TimeStamp, attrs)
+
+				if err != nil {
+					msg := fmt.Sprintf("failed to eval TimeStamp for instance '%s': %v", instName, err)
+					glog.Error(msg)
+					return adapter.CheckResult{}, fmt.Errorf(msg)
+				}
+
+				Duration, err := mapper.Eval(castedInst.Duration, attrs)
+
+				if err != nil {
+					msg := fmt.Sprintf("failed to eval Duration for instance '%s': %v", instName, err)
+					glog.Error(msg)
+					return adapter.CheckResult{}, fmt.Errorf(msg)
+				}
+
 				_ = castedInst
 
 				instance := &istio_mixer_adapter_sample_check.Instance{
@@ -128,6 +166,10 @@ var (
 						}
 						return res
 					}(StringMap),
+
+					TimeStamp: TimeStamp.(time.Time),
+
+					Duration: Duration.(time.Duration),
 				}
 				return handler.(istio_mixer_adapter_sample_check.Handler).HandleSample(ctx, instance)
 			},
@@ -169,6 +211,26 @@ var (
 					}
 				}
 
+				if cpb.TimeStamp == "" {
+					return nil, fmt.Errorf("expression for field TimeStamp cannot be empty")
+				}
+				if t, e := tEvalFn(cpb.TimeStamp); e != nil || t != istio_mixer_v1_config_descriptor.TIMESTAMP {
+					if e != nil {
+						return nil, fmt.Errorf("failed to evaluate expression for field TimeStamp: %v", e)
+					}
+					return nil, fmt.Errorf("error type checking for field TimeStamp: Evaluated expression type %v want %v", t, istio_mixer_v1_config_descriptor.TIMESTAMP)
+				}
+
+				if cpb.Duration == "" {
+					return nil, fmt.Errorf("expression for field Duration cannot be empty")
+				}
+				if t, e := tEvalFn(cpb.Duration); e != nil || t != istio_mixer_v1_config_descriptor.DURATION {
+					if e != nil {
+						return nil, fmt.Errorf("failed to evaluate expression for field Duration: %v", e)
+					}
+					return nil, fmt.Errorf("error type checking for field Duration: Evaluated expression type %v want %v", t, istio_mixer_v1_config_descriptor.DURATION)
+				}
+
 				_ = cpb
 				return infrdType, err
 			},
@@ -204,6 +266,22 @@ var (
 					return adapter.QuotaResult2{}, fmt.Errorf(msg)
 				}
 
+				TimeStamp, err := mapper.Eval(castedInst.TimeStamp, attrs)
+
+				if err != nil {
+					msg := fmt.Sprintf("failed to eval TimeStamp for instance '%s': %v", quotaName, err)
+					glog.Error(msg)
+					return adapter.QuotaResult2{}, fmt.Errorf(msg)
+				}
+
+				Duration, err := mapper.Eval(castedInst.Duration, attrs)
+
+				if err != nil {
+					msg := fmt.Sprintf("failed to eval Duration for instance '%s': %v", quotaName, err)
+					glog.Error(msg)
+					return adapter.QuotaResult2{}, fmt.Errorf(msg)
+				}
+
 				instance := &istio_mixer_adapter_sample_quota.Instance{
 					Name: quotaName,
 
@@ -216,6 +294,10 @@ var (
 						}
 						return res
 					}(BoolMap),
+
+					TimeStamp: TimeStamp.(time.Time),
+
+					Duration: Duration.(time.Duration),
 				}
 
 				return handler.(istio_mixer_adapter_sample_quota.Handler).HandleQuota(ctx, instance, args)
@@ -305,6 +387,26 @@ var (
 					}
 				}
 
+				if cpb.TimeStamp == "" {
+					return nil, fmt.Errorf("expression for field TimeStamp cannot be empty")
+				}
+				if t, e := tEvalFn(cpb.TimeStamp); e != nil || t != istio_mixer_v1_config_descriptor.TIMESTAMP {
+					if e != nil {
+						return nil, fmt.Errorf("failed to evaluate expression for field TimeStamp: %v", e)
+					}
+					return nil, fmt.Errorf("error type checking for field TimeStamp: Evaluated expression type %v want %v", t, istio_mixer_v1_config_descriptor.TIMESTAMP)
+				}
+
+				if cpb.Duration == "" {
+					return nil, fmt.Errorf("expression for field Duration cannot be empty")
+				}
+				if t, e := tEvalFn(cpb.Duration); e != nil || t != istio_mixer_v1_config_descriptor.DURATION {
+					if e != nil {
+						return nil, fmt.Errorf("failed to evaluate expression for field Duration: %v", e)
+					}
+					return nil, fmt.Errorf("error type checking for field Duration: Evaluated expression type %v want %v", t, istio_mixer_v1_config_descriptor.DURATION)
+				}
+
 				_ = cpb
 				return infrdType, err
 			},
@@ -381,6 +483,22 @@ var (
 						return fmt.Errorf(msg)
 					}
 
+					TimeStamp, err := mapper.Eval(md.TimeStamp, attrs)
+
+					if err != nil {
+						msg := fmt.Sprintf("failed to eval TimeStamp for instance '%s': %v", name, err)
+						glog.Error(msg)
+						return fmt.Errorf(msg)
+					}
+
+					Duration, err := mapper.Eval(md.Duration, attrs)
+
+					if err != nil {
+						msg := fmt.Sprintf("failed to eval Duration for instance '%s': %v", name, err)
+						glog.Error(msg)
+						return fmt.Errorf(msg)
+					}
+
 					instances = append(instances, &istio_mixer_adapter_sample_report.Instance{
 						Name: name,
 
@@ -403,6 +521,10 @@ var (
 							}
 							return res
 						}(Int64Map),
+
+						TimeStamp: TimeStamp.(time.Time),
+
+						Duration: Duration.(time.Duration),
 					})
 					_ = md
 				}
