@@ -276,6 +276,7 @@ type inferTypeTest struct {
 
 func getExprEvalFunc(err error) func(string) (pb.ValueType, error) {
 	return func(expr string) (pb.ValueType, error) {
+		expr = strings.ToLower(expr)
 		retType := pb.VALUE_TYPE_UNSPECIFIED
 		if strings.HasSuffix(expr, "string") {
 			retType = pb.STRING
@@ -288,6 +289,12 @@ func getExprEvalFunc(err error) func(string) (pb.ValueType, error) {
 		}
 		if strings.HasSuffix(expr, "int64") {
 			retType = pb.INT64
+		}
+		if strings.HasSuffix(expr, "duration") {
+			retType = pb.DURATION
+		}
+		if strings.HasSuffix(expr, "timestamp") {
+			retType = pb.TIMESTAMP
 		}
 		return retType, err
 	}
@@ -303,6 +310,8 @@ int64Primitive: source.int64
 boolPrimitive: source.bool
 doublePrimitive: source.double
 stringPrimitive: source.string
+timeStamp: source.timestamp
+duration: source.duration
 dimensions:
   source: source.string
   target: source.string
@@ -322,6 +331,8 @@ value: source.int64
 boolPrimitive: source.bool
 doublePrimitive: source.double
 stringPrimitive: source.string
+timeStamp: source.timestamp
+duration: source.duration
 dimensions:
   source: source.string
   target: source.string
@@ -341,6 +352,8 @@ int64Primitive: source.int64 # missing int64Primitive
 boolPrimitive: source.bool
 doublePrimitive: source.double
 stringPrimitive: source.double # Double does not match string
+timeStamp: source.timestamp
+duration: source.duration
 dimensions:
   source: source.string
   target: source.string
