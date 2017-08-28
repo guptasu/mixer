@@ -26,7 +26,6 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/empty"
 	rpc "github.com/googleapis/googleapis/google/rpc"
-	//rpc "github.com/googleapis/googleapis/google/rpc"
 
 	pb "istio.io/api/mixer/v1/config/descriptor"
 	"istio.io/mixer/pkg/adapter"
@@ -37,7 +36,6 @@ import (
 	sample_check "istio.io/mixer/template/sample/check"
 	sample_quota "istio.io/mixer/template/sample/quota"
 	sample_report "istio.io/mixer/template/sample/report"
-	//"istio.io/mixer/pkg/expr"
 	"istio.io/mixer/pkg/expr"
 	"time"
 	"istio.io/mixer/pkg/attribute"

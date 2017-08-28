@@ -35,7 +35,9 @@ type typeMetadata struct {
 	protoImport string
 }
 
-var customProtoToGoMapping = map[string]typeMetadata{
+// Hardcoded proto->go type mapping along with imports for the
+// generated code.
+var customMessageTypeMetadata = map[string]typeMetadata{
 	".google.protobuf.Timestamp": {
 		goName:      "time.Time",
 		goImport:    "time",
@@ -302,7 +304,7 @@ func getTypeName(g *FileDescriptorSetParser, field *descriptor.FieldDescriptorPr
 			return TypeInfo{Name: field.GetTypeName()[1:], IsValueType: true}, TypeInfo{Name: g.TypeName(desc), IsValueType: true}, nil
 		}
 	case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
-		if v, ok := customProtoToGoMapping[field.GetTypeName()]; ok {
+		if v, ok := customMessageTypeMetadata[field.GetTypeName()]; ok {
 			return TypeInfo{Name: field.GetTypeName()[1:], Import: v.protoImport},
 				TypeInfo{Name: v.goName, Import: v.goImport},
 				nil

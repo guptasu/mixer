@@ -75,7 +75,7 @@ func (g *Generator) Generate(fdsFile string) error {
 		return err
 	}
 
-	interfaceFileContent, err := g.getInterfaceGoFileContent(model)
+	interfaceFileData, err := g.getInterfaceGoContent(model)
 	if err != nil {
 		return err
 	}
@@ -92,7 +92,7 @@ func (g *Generator) Generate(fdsFile string) error {
 	}
 	defer func() { _ = f1.Close() }() // nolint: gas
 
-	if _, err = f1.Write(interfaceFileContent); err != nil { // nolint: gas
+	if _, err = f1.Write(interfaceFileData); err != nil { // nolint: gas
 		_ = f1.Close()           // nolint: gas
 		_ = os.Remove(f1.Name()) // nolint: gas
 		return err
@@ -114,7 +114,7 @@ func (g *Generator) Generate(fdsFile string) error {
 
 const goFileImportFmt = "\"%s\""
 
-func (g *Generator) getInterfaceGoFileContent(model *modelgen.Model) ([]byte, error) {
+func (g *Generator) getInterfaceGoContent(model *modelgen.Model) ([]byte, error) {
 	imprts := make([]string, 0)
 	intfaceTmpl, err := template.New("ProcInterface").Funcs(
 		template.FuncMap{
