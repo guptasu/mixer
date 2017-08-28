@@ -112,10 +112,10 @@ func (g *Generator) Generate(fdsFile string) error {
 	return nil
 }
 
-const goFileImportFmt = "import \"%s\""
+const goFileImportFmt = "\"%s\""
 
 func (g *Generator) getInterfaceGoFileContent(model *modelgen.Model) ([]byte, error) {
-	importsStms := make([]string, 0)
+	imprts := make([]string, 0)
 	intfaceTmpl, err := template.New("ProcInterface").Funcs(
 		template.FuncMap{
 			"replaceGoValueTypeToInterface": func(typeInfo modelgen.TypeInfo) string {
@@ -126,15 +126,13 @@ func (g *Generator) getInterfaceGoFileContent(model *modelgen.Model) ([]byte, er
 			// allows the template code to register which fields and types it actually printed. Based on what was actually
 			// printed we can decide which imports should be added to the file. Therefore, import adding is a last step
 			// after all fields and messages / structs are printed.
-			// The template's responsibility is to have a placeholder for printing the imports $$imports$$ and
-			// the generator will replace it with imports for fields that were actually printed in the generated file.
+			// The template has a placeholder '$$imports$$' for printing the imports and
+			// the this generator code will replace it with imports for fields that were recorded via this callback.
 			"reportTypeUsed": func(ti modelgen.TypeInfo) string {
-				if len(ti.ImportNames) > 0 {
-					for _, i := range ti.ImportNames {
-						imptStm := fmt.Sprintf(goFileImportFmt, i)
-						if !contains(importsStms, imptStm) {
-							importsStms = append(importsStms, imptStm)
-						}
+				if len(ti.Import) > 0 {
+					imprt := fmt.Sprintf(goFileImportFmt, ti.Import)
+					if !contains(imprts, imprt) {
+						imprts = append(imprts, imprt)
 					}
 				}
 				// do nothing, just record the import so that we can add them later (only for the types that got printed)
@@ -150,7 +148,7 @@ func (g *Generator) getInterfaceGoFileContent(model *modelgen.Model) ([]byte, er
 		return nil, fmt.Errorf("cannot execute the template with the given data: %v", err)
 	}
 
-	str := strings.Replace(string(intfaceBuf.Bytes()), "$$additional_imports$$", strings.Join(importsStms, "\n"), 1)
+	str := strings.Replace(string(intfaceBuf.Bytes()), "$$additional_imports$$", strings.Join(imprts, "\n"), 1)
 
 	fmtd, err := format.Source([]byte(str))
 	if err != nil {
@@ -179,14 +177,9 @@ func (g *Generator) getAugmentedProtoContent(model *modelgen.Model) ([]byte, err
 		template.FuncMap{
 			"containsValueType": containsValueType,
 			"stringify":         stringify,
-			// The text/templates have code logic using which it decides the fields to be printed. Example
-			// when printing 'Type' we skip fields that have static types. So, this callback method 'reportTypeUsed'
-			// allows the template code to register which fields and types it actually printed. Based on what was actually
-			// printed we can decide which imports should be added to the file. Therefore, import adding is a last step
-			// after all fields and messages / structs are printed.
-			// The template's responsibility is to have a placeholder for printing the imports $$imports$$ and
-			// the generator will replace it with imports for fields that were actually printed in the generated file.
 			"reportTypeUsed": func(ti modelgen.TypeInfo) string {
+				// Only record of type has ValueType. In augmented proto,
+				// the only types that are printed are ValueType or string.
 				if containsValueType(ti) {
 					imptStm := fmt.Sprintf(protoFileImportFmt, protoValueTypeImport)
 					if !contains(imports, imptStm) {

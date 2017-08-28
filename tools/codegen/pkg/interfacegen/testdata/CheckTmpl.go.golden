@@ -16,9 +16,11 @@
 
 package foo_bar_mylistchecker
 
-import "context"
-import "istio.io/mixer/pkg/adapter"
-import "time"
+import (
+  "context"
+  "istio.io/mixer/pkg/adapter"
+  "time"
+)
 
 
 

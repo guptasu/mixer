@@ -811,19 +811,11 @@ func TestProcessCheck(t *testing.T) {
 			inst: &sample_check.InstanceParam{
 				CheckExpression: `"abcd asd"`,
 				StringMap:       map[string]string{"a": `"aaa"`},
-				TimeStamp: "request.timestamp",
-				Duration: "request.duration",
 			},
 			hdlr: &fakeCheckHandler{
 				retResult: adapter.CheckResult{Status: rpc.Status{Message: "msg"}},
 			},
-			wantInstance:    &sample_check.Instance{
-				Name: "foo",
-				CheckExpression: "abcd asd",
-				StringMap: map[string]string{"a": "aaa"},
-				TimeStamp: time.Date(2017, time.January, 01, 0,0,0,0, time.UTC),
-				Duration: 10 * time.Second,
-			},
+			wantInstance:    &sample_check.Instance{Name: "foo", CheckExpression: "abcd asd", StringMap: map[string]string{"a": "aaa"}},
 			wantCheckResult: adapter.CheckResult{Status: rpc.Status{Message: "msg"}},
 		},
 		{
@@ -832,8 +824,6 @@ func TestProcessCheck(t *testing.T) {
 			inst: &sample_check.InstanceParam{
 				CheckExpression: `"abcd asd"`,
 				StringMap:       map[string]string{"a": "bad.attribute"},
-				TimeStamp: "request.timestamp",
-				Duration: "request.duration",
 			},
 			wantError: "unresolved attribute bad.attribute",
 		},
@@ -843,8 +833,6 @@ func TestProcessCheck(t *testing.T) {
 			inst: &sample_check.InstanceParam{
 				CheckExpression: `"abcd asd"`,
 				StringMap:       map[string]string{"a": `"aaa"`},
-				TimeStamp: "request.timestamp",
-				Duration: "request.duration",
 			},
 			hdlr: &fakeCheckHandler{
 				retError: fmt.Errorf("some error"),
@@ -854,7 +842,8 @@ func TestProcessCheck(t *testing.T) {
 	} {
 		t.Run(tst.name, func(t *testing.T) {
 			h := &tst.hdlr
-			res, err := SupportedTmplInfo[sample_check.TemplateName].ProcessCheck(context.TODO(), tst.instName, tst.inst, fakeBag{}, newFakeExpr(), *h)
+			ev, _ := expr.NewCEXLEvaluator(expr.DefaultCacheSize)
+			res, err := SupportedTmplInfo[sample_check.TemplateName].ProcessCheck(context.TODO(), tst.instName, tst.inst, fakeBag{}, ev, *h)
 
 			if tst.wantError != "" {
 				if !strings.Contains(err.Error(), tst.wantError) {
@@ -890,19 +879,11 @@ func TestProcessQuota(t *testing.T) {
 			inst: &sample_quota.InstanceParam{
 				Dimensions: map[string]string{"a": `"str"`},
 				BoolMap:    map[string]string{"a": "true"},
-				TimeStamp: "request.timestamp",
-				Duration: "request.duration",
 			},
 			hdlr: &fakeQuotaHandler{
 				retResult: adapter.QuotaResult2{Amount: 1},
 			},
-			wantInstance:    &sample_quota.Instance{
-				Name: "foo",
-				Dimensions: map[string]interface{}{"a": "str"},
-				BoolMap: map[string]bool{"a": true},
-				TimeStamp: time.Date(2017, time.January, 01, 0,0,0,0, time.UTC),
-				Duration: 10 * time.Second,
-			},
+			wantInstance:    &sample_quota.Instance{Name: "foo", Dimensions: map[string]interface{}{"a": "str"}, BoolMap: map[string]bool{"a": true}},
 			wantQuotaResult: adapter.QuotaResult2{Amount: 1},
 		},
 		{
@@ -911,8 +892,6 @@ func TestProcessQuota(t *testing.T) {
 			inst: &sample_quota.InstanceParam{
 				Dimensions: map[string]string{"a": "bad.attribute"},
 				BoolMap:    map[string]string{"a": "true"},
-				TimeStamp: "request.timestamp",
-				Duration: "request.duration",
 			},
 			wantError: "unresolved attribute bad.attribute",
 		},
@@ -922,8 +901,6 @@ func TestProcessQuota(t *testing.T) {
 			inst: &sample_quota.InstanceParam{
 				Dimensions: map[string]string{"a": `"str"`},
 				BoolMap:    map[string]string{"a": "true"},
-				TimeStamp: "request.timestamp",
-				Duration: "request.duration",
 			},
 			hdlr: &fakeQuotaHandler{
 				retError: fmt.Errorf("some error"),
@@ -933,7 +910,8 @@ func TestProcessQuota(t *testing.T) {
 	} {
 		t.Run(tst.name, func(t *testing.T) {
 			h := &tst.hdlr
-			res, err := SupportedTmplInfo[sample_quota.TemplateName].ProcessQuota(context.TODO(), tst.instName, tst.inst, fakeBag{}, newFakeExpr(), *h, adapter.QuotaRequestArgs{})
+			ev, _ := expr.NewCEXLEvaluator(expr.DefaultCacheSize)
+			res, err := SupportedTmplInfo[sample_quota.TemplateName].ProcessQuota(context.TODO(), tst.instName, tst.inst, fakeBag{}, ev, *h, adapter.QuotaRequestArgs{})
 
 			if tst.wantError != "" {
 				if !strings.Contains(err.Error(), tst.wantError) {

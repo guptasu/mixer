@@ -64,12 +64,12 @@ type bootstrapModel struct {
 	TemplateModels []*modelgen.Model
 }
 
-const goFileImportFmt = "\"%s\""
+const goImportFmt = "\"%s\""
 
 // Generate creates a Go file that will be build inside mixer framework. The generated file contains all the
 // template specific code that mixer needs to add support for different passed in templates.
 func (g *Generator) Generate(fdsFiles map[string]string) error {
-	importsStms := make([]string, 0)
+	imprts := make([]string, 0)
 	tmpl, err := template.New("MixerBootstrap").Funcs(
 		template.FuncMap{
 			"getValueType": func(goType modelgen.TypeInfo) string {
@@ -77,12 +77,10 @@ func (g *Generator) Generate(fdsFiles map[string]string) error {
 			},
 			"containsValueType": containsValueType,
 			"reportTypeUsed": func(ti modelgen.TypeInfo) string {
-				if len(ti.ImportNames) > 0 {
-					for _, i := range ti.ImportNames {
-						imptStm := fmt.Sprintf(goFileImportFmt, i)
-						if !contains(importsStms, imptStm) {
-							importsStms = append(importsStms, imptStm)
-						}
+				if len(ti.Import) > 0 {
+					imprt := fmt.Sprintf(goImportFmt, ti.Import)
+					if !contains(imprts, imprt) {
+						imprts = append(imprts, imprt)
 					}
 				}
 				// do nothing, just record the import so that we can add them later (only for the types that got printed)
@@ -130,7 +128,7 @@ func (g *Generator) Generate(fdsFiles map[string]string) error {
 	if err != nil {
 		return fmt.Errorf("cannot execute the template with the given data: %v", err)
 	}
-	str := strings.Replace(string(buf.Bytes()), "$$additional_imports$$", strings.Join(importsStms, "\n"), 1)
+	str := strings.Replace(string(buf.Bytes()), "$$additional_imports$$", strings.Join(imprts, "\n"), 1)
 
 	fmtd, err := format.Source([]byte(str))
 	if err != nil {

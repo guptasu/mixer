@@ -20,9 +20,11 @@ var InterfaceTemplate = `// Copyright 2017 Istio Authors
 
 package {{.GoPackageName}}
 
-import "context"
-import "istio.io/mixer/pkg/adapter"
-$$additional_imports$$
+import (
+  "context"
+  "istio.io/mixer/pkg/adapter"
+  $$additional_imports$$
+)
 
 {{.Comment}}
 

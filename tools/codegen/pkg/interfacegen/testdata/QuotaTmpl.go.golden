@@ -16,9 +16,11 @@
 
 package istio_mixer_adapter_quota
 
-import "context"
-import "istio.io/mixer/pkg/adapter"
-import "time"
+import (
+  "context"
+  "istio.io/mixer/pkg/adapter"
+  "time"
+)
 
 
 

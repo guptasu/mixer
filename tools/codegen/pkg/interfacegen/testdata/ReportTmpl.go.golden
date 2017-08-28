@@ -16,9 +16,11 @@
 
 package istio_mixer_adapter_metric
 
-import "context"
-import "istio.io/mixer/pkg/adapter"
-import "time"
+import (
+  "context"
+  "istio.io/mixer/pkg/adapter"
+  "time"
+)
 
 // 
 // Overview of what metric is etc..
