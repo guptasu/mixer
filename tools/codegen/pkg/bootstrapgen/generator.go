@@ -128,9 +128,8 @@ func (g *Generator) Generate(fdsFiles map[string]string) error {
 	if err != nil {
 		return fmt.Errorf("cannot execute the template with the given data: %v", err)
 	}
-	str := strings.Replace(string(buf.Bytes()), "$$additional_imports$$", strings.Join(imprts, "\n"), 1)
-
-	fmtd, err := format.Source([]byte(str))
+	bytesWithImpts := bytes.Replace(buf.Bytes(), []byte("$$additional_imports$$"), []byte(strings.Join(imprts, "\n")), 1)
+	fmtd, err := format.Source(bytesWithImpts)
 	if err != nil {
 		return fmt.Errorf("could not format generated code: %v. Source code is %s", err, string(buf.Bytes()))
 	}

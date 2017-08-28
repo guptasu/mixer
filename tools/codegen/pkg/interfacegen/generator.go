@@ -148,9 +148,8 @@ func (g *Generator) getInterfaceGoFileContent(model *modelgen.Model) ([]byte, er
 		return nil, fmt.Errorf("cannot execute the template with the given data: %v", err)
 	}
 
-	str := strings.Replace(string(intfaceBuf.Bytes()), "$$additional_imports$$", strings.Join(imprts, "\n"), 1)
-
-	fmtd, err := format.Source([]byte(str))
+	bytesWithImpts := bytes.Replace(intfaceBuf.Bytes(), []byte("$$additional_imports$$"), []byte(strings.Join(imprts, "\n")), 1)
+	fmtd, err := format.Source(bytesWithImpts)
 	if err != nil {
 		return nil, fmt.Errorf("could not format generated code: %v : %s", err, string(intfaceBuf.Bytes()))
 	}
@@ -161,8 +160,6 @@ func (g *Generator) getInterfaceGoFileContent(model *modelgen.Model) ([]byte, er
 	if err != nil {
 		return nil, fmt.Errorf("could not fix imports for generated code: %v", err)
 	}
-
-	return []byte(str), nil
 
 	return imptd, nil
 }
@@ -201,8 +198,7 @@ func (g *Generator) getAugmentedProtoContent(model *modelgen.Model) ([]byte, err
 		return nil, fmt.Errorf("cannot execute the template with the given data: %v", err)
 	}
 
-	str := strings.Replace(string(tmplBuf.Bytes()), "$$additional_imports$$", strings.Join(imports, "\n"), 1)
-	return []byte(str), nil
+	return bytes.Replace(tmplBuf.Bytes(), []byte("$$additional_imports$$"), []byte(strings.Join(imports, "\n")), 1), nil
 }
 
 func getFileDescSet(path string) (*descriptor.FileDescriptorSet, error) {
