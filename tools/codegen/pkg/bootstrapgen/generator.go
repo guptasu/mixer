@@ -22,6 +22,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 	"text/template"
 
 	"github.com/gogo/protobuf/proto"
@@ -31,7 +32,6 @@ import (
 	"istio.io/api/mixer/v1/config/descriptor"
 	tmplPkg "istio.io/mixer/tools/codegen/pkg/bootstrapgen/template"
 	"istio.io/mixer/tools/codegen/pkg/modelgen"
-	"strings"
 )
 
 // Generator creates a Go file that will be build inside mixer framework. The generated file contains all the
@@ -65,6 +65,7 @@ type bootstrapModel struct {
 }
 
 const goFileImportFmt = "\"%s\""
+
 // Generate creates a Go file that will be build inside mixer framework. The generated file contains all the
 // template specific code that mixer needs to add support for different passed in templates.
 func (g *Generator) Generate(fdsFiles map[string]string) error {
