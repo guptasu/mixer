@@ -33,6 +33,8 @@ import (
 	mixerRuntime "istio.io/mixer/pkg/runtime"
 	"istio.io/mixer/pkg/template"
 	e2eTmpl "istio.io/mixer/test/e2e/template"
+	"context"
+	"istio.io/mixer/pkg/attribute"
 )
 
 const (
@@ -115,7 +117,7 @@ func testConfigFlow(
 		eval = ilEval
 	}
 
-	var _ mixerRuntime.Dispatcher
+	var dispatcher mixerRuntime.Dispatcher
 
 	adapters := []adapter.InfoFn{GetFakeHndlrBuilderInfo}
 	adapterMap := adp.InventoryMap(adapters)
@@ -123,7 +125,7 @@ func testConfigFlow(
 	if err != nil {
 		t.Fatalf("Failed to connect to the configuration2 server. %v", err)
 	}
-	_, err = mixerRuntime.New(eval, gp, adapterGP,
+	dispatcher, err = mixerRuntime.New(eval, gp, adapterGP,
 		configIdentityAttribute, configDefaultNamespace,
 		store2, adapterMap, e2eTmpl.SupportedTmplInfo,
 	)
@@ -131,7 +133,6 @@ func testConfigFlow(
 		t.Fatalf("Failed to create runtime dispatcher. %v", err)
 	}
 
-	//////
 	adapterMgr := adaptManager.NewManager(
 		[]adapter.RegisterFn{
 			noop.Register,
@@ -168,6 +169,13 @@ func testConfigFlow(
 
 	if globalActualHandlerCallInfoToValidate["ConfigureSampleReport"] == nil || globalActualHandlerCallInfoToValidate["Build"] == nil {
 		t.Errorf("got call info as : %v. \nwant calls %s and %s to have been called", globalActualHandlerCallInfoToValidate, "ConfigureSample", "Build")
+	}
+
+	requestBag := attribute.GetMutableBag(nil)
+	requestBag.Set(configIdentityAttribute, identityDomainAttribute)
+	err = dispatcher.Report(context.TODO(), requestBag, )
+	if err != nil {
+		t.Errorf("Report call failed. %v", err)
 	}
 }
 func getAdapterGoRoutinePool(adapterPoolSize int, singleThreadedGoRoutinePool bool) *pool.GoroutinePool {

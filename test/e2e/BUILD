@@ -24,6 +24,7 @@ go_test(
         "//pkg/pool:go_default_library",
         "//pkg/runtime:go_default_library",
         "//pkg/template:go_default_library",
+        "//pkg/attribute:go_default_library",
         "//test/e2e/template:go_default_library",
         "//test/e2e/template/report:go_default_library",
         "@com_github_gogo_protobuf//types:go_default_library",
