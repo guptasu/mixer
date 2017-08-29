@@ -14,6 +14,7 @@ go_test(
         "//adapter/noop:go_default_library",
         "//pkg/adapter:go_default_library",
         "//pkg/adapterManager:go_default_library",
+        "//test/e2e/template:go_default_library",
         "//pkg/aspect:go_default_library",
         "//pkg/config:go_default_library",
         "//pkg/config/descriptor:go_default_library",

@@ -157,7 +157,6 @@ func testConfigFlow(
 ) {
 	// TODO replace
 	useIL := false
-
 	globalActualHandlerCallInfoToValidate = make(map[string]interface{})
 	apiPoolSize := 1024
 	adapterPoolSize := 1024
@@ -166,16 +165,10 @@ func testConfigFlow(
 	loopDelay := time.Second * 5
 	singleThreadedGoRoutinePool := false
 	configDefaultNamespace := "istio-config-default"
+	gp := getGoRoutinePool(apiPoolSize, singleThreadedGoRoutinePool)
+	adapterGP := getAdapterGoRoutinePool(adapterPoolSize, singleThreadedGoRoutinePool)
 
-	gp := pool.NewGoroutinePool(apiPoolSize, singleThreadedGoRoutinePool)
-	gp.AddWorkers(apiPoolSize)
-	gp.AddWorkers(apiPoolSize)
-	defer gp.Close()
-
-	adapterGP := pool.NewGoroutinePool(adapterPoolSize, singleThreadedGoRoutinePool)
-	adapterGP.AddWorkers(adapterPoolSize)
-	defer adapterGP.Close()
-
+	adptInfos := []adapter.InfoFn{GetFakeHndlrBuilderInfo}
 	eval, err := expr.NewCEXLEvaluator(expr.DefaultCacheSize)
 	if err != nil {
 		t.Errorf("Failed to create expression evaluator: %v", err)
@@ -191,8 +184,6 @@ func testConfigFlow(
 
 	var _ mixerRuntime.Dispatcher
 
-	var _ mixerRuntime.Dispatcher
-	//////
 	adapters := []adapter.InfoFn{GetFakeHndlrBuilderInfo}
 	adapterMap := adp.InventoryMap(adapters)
 	store2, err := store.NewRegistry2(config.Store2Inventory()...).NewStore2(configStore2URL)
@@ -219,13 +210,12 @@ func testConfigFlow(
 	)
 
 	store, err := config.NewCompatFSStore(declaredGlobalCnfgFilePath, declarativeSrvcCnfgFilePath)
-
 	if err != nil {
 		t.Errorf("NewCompatFSStore failed: %v", err)
 		return
 	}
 
-	configManager := config.NewManager(eval, adapterMgr.AspectValidatorFinder, adapterMgr.BuilderValidatorFinder, []adapter.InfoFn{GetFakeHndlrBuilderInfo},
+	configManager := config.NewManager(eval, adapterMgr.AspectValidatorFinder, adapterMgr.BuilderValidatorFinder, adptInfos,
 		adapterMgr.SupportedKinds,
 		template.NewRepository(sample.SupportedTmplInfo),
 		store,
@@ -246,6 +236,19 @@ func testConfigFlow(
 	if globalActualHandlerCallInfoToValidate["ConfigureSample"] == nil || globalActualHandlerCallInfoToValidate["Build"] == nil {
 		t.Errorf("got call info as : %v. \nwant calls %s and %s to have been called", globalActualHandlerCallInfoToValidate, "ConfigureSample", "Build")
 	}
+}
+func getAdapterGoRoutinePool(adapterPoolSize int, singleThreadedGoRoutinePool bool) *pool.GoroutinePool {
+	adapterGP := pool.NewGoroutinePool(adapterPoolSize, singleThreadedGoRoutinePool)
+	adapterGP.AddWorkers(adapterPoolSize)
+	defer adapterGP.Close()
+	return adapterGP
+}
+func getGoRoutinePool(apiPoolSize int, singleThreadedGoRoutinePool bool) *pool.GoroutinePool {
+	gp := pool.NewGoroutinePool(apiPoolSize, singleThreadedGoRoutinePool)
+	gp.AddWorkers(apiPoolSize)
+	gp.AddWorkers(apiPoolSize)
+	defer gp.Close()
+	return gp
 }
 
 func TestConfigFlow(t *testing.T) {
