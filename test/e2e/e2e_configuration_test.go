@@ -12,19 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package adapterManager
+package e2e
 
 import (
 	"bytes"
 	"io/ioutil"
 	"os"
+	"path"
 	"testing"
 	"time"
 
 	"github.com/gogo/protobuf/types"
+
 	adp "istio.io/mixer/adapter"
 	"istio.io/mixer/adapter/noop"
 	"istio.io/mixer/pkg/adapter"
+	adaptManager "istio.io/mixer/pkg/adapterManager"
 	"istio.io/mixer/pkg/aspect"
 	"istio.io/mixer/pkg/config"
 	"istio.io/mixer/pkg/config/store"
@@ -35,7 +38,6 @@ import (
 	"istio.io/mixer/pkg/template"
 	"istio.io/mixer/template/sample"
 	sample_report "istio.io/mixer/template/sample/report"
-	"path"
 )
 
 // The adapter implementation fills this data and test can verify what was called.
@@ -151,7 +153,7 @@ func testConfigFlow(
 	t *testing.T,
 	declarativeSrvcCnfgFilePath string,
 	declaredGlobalCnfgFilePath string,
-	configStore2URL             string,
+	configStore2URL string,
 ) {
 	// TODO replace
 	useIL := false
@@ -206,7 +208,7 @@ func testConfigFlow(
 	}
 
 	//////
-	adapterMgr := NewManager(
+	adapterMgr := adaptManager.NewManager(
 		[]adapter.RegisterFn{
 			noop.Register,
 		},
@@ -248,7 +250,7 @@ func testConfigFlow(
 
 func TestConfigFlow(t *testing.T) {
 	sc, gsc := getCnfgs()
-	testConfigFlow(t, sc.Name(), gsc.Name(), "fs://"+ path.Dir(sc.Name()))
+	testConfigFlow(t, sc.Name(), gsc.Name(), "fs://"+path.Dir(sc.Name()))
 	_ = os.Remove(sc.Name())
 	_ = os.Remove(gsc.Name())
 }
