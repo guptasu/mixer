@@ -35,7 +35,6 @@ go_test(
     name = "go_default_test",
     size = "small",
     srcs = [
-        "e2e_configuration_test.go",
         "env_test.go",
         "manager_test.go",
         "registry_test.go",
@@ -45,6 +44,32 @@ go_test(
         "//adapter/noop:go_default_library",
         "//pkg/adapter:go_default_library",
         "//pkg/config/descriptor:go_default_library",
+        "//pkg/il/evaluator:go_default_library",
+        "//pkg/runtime:go_default_library",
+        "//pkg/template:go_default_library",
+        "//template/sample:go_default_library",
+        "//template/sample/report:go_default_library",
+        "@com_github_gogo_protobuf//types:go_default_library",
+        "@com_github_googleapis_googleapis//:google/rpc",
+        "@com_github_istio_api//:mixer/v1/config/descriptor",  # keep
+    ],
+)
+
+go_test(
+    name = "go_default_test_e2e",
+    size = "small",
+    srcs = [
+        "e2e_configuration_test.go",
+    ],
+    library = ":go_default_library",
+    deps = [
+        "//adapter/noop:go_default_library",
+        "//pkg/adapter:go_default_library",
+        "//pkg/config/descriptor:go_default_library",
+        "//pkg/il/evaluator:go_default_library",
+        "//pkg/runtime:go_default_library",
+        "//pkg/config/store:go_default_library",
+        "//adapter:go_default_library",
         "//pkg/template:go_default_library",
         "//template/sample:go_default_library",
         "//template/sample/report:go_default_library",

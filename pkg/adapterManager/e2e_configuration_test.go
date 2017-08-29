@@ -22,16 +22,20 @@ import (
 	"time"
 
 	"github.com/gogo/protobuf/types"
-
+	adp "istio.io/mixer/adapter"
 	"istio.io/mixer/adapter/noop"
 	"istio.io/mixer/pkg/adapter"
 	"istio.io/mixer/pkg/aspect"
 	"istio.io/mixer/pkg/config"
+	"istio.io/mixer/pkg/config/store"
 	"istio.io/mixer/pkg/expr"
+	"istio.io/mixer/pkg/il/evaluator"
 	"istio.io/mixer/pkg/pool"
+	mixerRuntime "istio.io/mixer/pkg/runtime"
 	"istio.io/mixer/pkg/template"
 	"istio.io/mixer/template/sample"
 	sample_report "istio.io/mixer/template/sample/report"
+	"path"
 )
 
 // The adapter implementation fills this data and test can verify what was called.
@@ -127,8 +131,9 @@ instances:
 )
 
 func getCnfgs() (declarativeSrvcCnfg *os.File, declaredGlobalCnfg *os.File) {
-	srvcCnfgFile, _ := ioutil.TempFile("", "e2eConfigTest")
-	globalCnfgFile, _ := ioutil.TempFile("", "e2eConfigTest")
+	dir2, _ := ioutil.TempDir("e2eStoreDir", "")
+	srvcCnfgFile, _ := os.Create(path.Join(dir2, "srvc.yaml"))
+	globalCnfgFile, _ := os.Create(path.Join(dir2, "global.yaml"))
 
 	_, _ = globalCnfgFile.Write([]byte(globalCnfg))
 	_ = globalCnfgFile.Close()
@@ -142,14 +147,23 @@ func getCnfgs() (declarativeSrvcCnfg *os.File, declaredGlobalCnfg *os.File) {
 	return srvcCnfgFile, globalCnfgFile
 }
 
-func testConfigFlow(t *testing.T, declarativeSrvcCnfgFilePath string, declaredGlobalCnfgFilePath string) {
+func testConfigFlow(
+	t *testing.T,
+	declarativeSrvcCnfgFilePath string,
+	declaredGlobalCnfgFilePath string,
+	configStore2URL             string,
+) {
+	// TODO replace
+	useIL := false
+
 	globalActualHandlerCallInfoToValidate = make(map[string]interface{})
 	apiPoolSize := 1024
 	adapterPoolSize := 1024
-	identityAttribute := "target.service"
+	configIdentityAttribute := "target.service"
 	identityDomainAttribute := "svc.cluster.local"
 	loopDelay := time.Second * 5
 	singleThreadedGoRoutinePool := false
+	configDefaultNamespace := "istio-config-default"
 
 	gp := pool.NewGoroutinePool(apiPoolSize, singleThreadedGoRoutinePool)
 	gp.AddWorkers(apiPoolSize)
@@ -164,21 +178,63 @@ func testConfigFlow(t *testing.T, declarativeSrvcCnfgFilePath string, declaredGl
 	if err != nil {
 		t.Errorf("Failed to create expression evaluator: %v", err)
 	}
-	adapterMgr := NewManager([]adapter.RegisterFn{
-		noop.Register,
-	}, aspect.Inventory(), eval, gp, adapterGP)
+	var ilEval *evaluator.IL
+	if useIL {
+		ilEval, err = evaluator.NewILEvaluator(expr.DefaultCacheSize)
+		if err != nil {
+			t.Fatalf("Failed to create IL expression evaluator with cache size %d: %v", 1024, err)
+		}
+		eval = ilEval
+	}
+
+	var _ mixerRuntime.Dispatcher
+
+	var _ mixerRuntime.Dispatcher
+	//////
+	adapters := []adapter.InfoFn{GetFakeHndlrBuilderInfo}
+	adapterMap := adp.InventoryMap(adapters)
+	store2, err := store.NewRegistry2(config.Store2Inventory()...).NewStore2(configStore2URL)
+	if err != nil {
+		t.Fatalf("Failed to connect to the configuration2 server. %v", err)
+	}
+	_, err = mixerRuntime.New(eval, gp, adapterGP,
+		configIdentityAttribute, configDefaultNamespace,
+		store2, adapterMap, sample.SupportedTmplInfo,
+	)
+	if err != nil {
+		t.Fatalf("Failed to create runtime dispatcher. %v", err)
+	}
+
+	//////
+	adapterMgr := NewManager(
+		[]adapter.RegisterFn{
+			noop.Register,
+		},
+		aspect.Inventory(),
+		eval,
+		gp,
+		adapterGP,
+	)
+
 	store, err := config.NewCompatFSStore(declaredGlobalCnfgFilePath, declarativeSrvcCnfgFilePath)
+
 	if err != nil {
 		t.Errorf("NewCompatFSStore failed: %v", err)
 		return
 	}
 
-	cnfgMgr := config.NewManager(eval, adapterMgr.AspectValidatorFinder, adapterMgr.BuilderValidatorFinder, []adapter.InfoFn{GetFakeHndlrBuilderInfo},
-		adapterMgr.SupportedKinds, template.NewRepository(sample.SupportedTmplInfo), store,
+	configManager := config.NewManager(eval, adapterMgr.AspectValidatorFinder, adapterMgr.BuilderValidatorFinder, []adapter.InfoFn{GetFakeHndlrBuilderInfo},
+		adapterMgr.SupportedKinds,
+		template.NewRepository(sample.SupportedTmplInfo),
+		store,
 		loopDelay,
-		identityAttribute, identityDomainAttribute)
-	cnfgMgr.Register(adapterMgr)
-	cnfgMgr.Start()
+		configIdentityAttribute, identityDomainAttribute)
+
+	if useIL {
+		configManager.Register(ilEval)
+	}
+	configManager.Register(adapterMgr)
+	configManager.Start()
 
 	// validate globalActualHandlerCallInfoToValidate
 	if len(globalActualHandlerCallInfoToValidate) != 2 {
@@ -192,7 +248,7 @@ func testConfigFlow(t *testing.T, declarativeSrvcCnfgFilePath string, declaredGl
 
 func TestConfigFlow(t *testing.T) {
 	sc, gsc := getCnfgs()
-	testConfigFlow(t, sc.Name(), gsc.Name())
+	testConfigFlow(t, sc.Name(), gsc.Name(), "fs://"+ path.Dir(sc.Name()))
 	_ = os.Remove(sc.Name())
 	_ = os.Remove(gsc.Name())
 }
