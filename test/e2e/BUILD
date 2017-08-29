@@ -8,13 +8,13 @@ go_test(
     size = "small",
     srcs = [
         "e2e_configuration_test.go",
+        "fake.go",
     ],
     deps = [
         "//adapter:go_default_library",
         "//adapter/noop:go_default_library",
         "//pkg/adapter:go_default_library",
         "//pkg/adapterManager:go_default_library",
-        "//test/e2e/template:go_default_library",
         "//pkg/aspect:go_default_library",
         "//pkg/config:go_default_library",
         "//pkg/config/descriptor:go_default_library",
@@ -24,8 +24,8 @@ go_test(
         "//pkg/pool:go_default_library",
         "//pkg/runtime:go_default_library",
         "//pkg/template:go_default_library",
-        "//template/sample:go_default_library",
-        "//template/sample/report:go_default_library",
+        "//test/e2e/template:go_default_library",
+        "//test/e2e/template/report:go_default_library",
         "@com_github_gogo_protobuf//types:go_default_library",
         "@com_github_googleapis_googleapis//:google/rpc",
         "@com_github_istio_api//:mixer/v1/config/descriptor",  # keep

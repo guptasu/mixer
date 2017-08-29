@@ -15,14 +15,10 @@
 package e2e
 
 import (
-	"bytes"
-	"io/ioutil"
 	"os"
 	"path"
 	"testing"
 	"time"
-
-	"github.com/gogo/protobuf/types"
 
 	adp "istio.io/mixer/adapter"
 	"istio.io/mixer/adapter/noop"
@@ -36,48 +32,8 @@ import (
 	"istio.io/mixer/pkg/pool"
 	mixerRuntime "istio.io/mixer/pkg/runtime"
 	"istio.io/mixer/pkg/template"
-	"istio.io/mixer/template/sample"
-	sample_report "istio.io/mixer/template/sample/report"
+	e2eTmpl "istio.io/mixer/test/e2e/template"
 )
-
-// The adapter implementation fills this data and test can verify what was called.
-// To use this variable across tests, every test should clean this variable value.
-var globalActualHandlerCallInfoToValidate map[string]interface{}
-
-type (
-	fakeHndlr     struct{}
-	fakeHndlrBldr struct{}
-)
-
-func (fakeHndlrBldr) Build(cnfg adapter.Config, _ adapter.Env) (adapter.Handler, error) {
-	globalActualHandlerCallInfoToValidate["Build"] = cnfg
-	fakeHndlrObj := fakeHndlr{}
-	return fakeHndlrObj, nil
-}
-func (fakeHndlrBldr) ConfigureSampleHandler(typeParams map[string]*sample_report.Type) error {
-	globalActualHandlerCallInfoToValidate["ConfigureSample"] = typeParams
-	return nil
-}
-func (fakeHndlr) HandleSample(instances []*sample_report.Instance) error {
-	globalActualHandlerCallInfoToValidate["ReportSample"] = instances
-	return nil
-}
-func (fakeHndlr) Close() error {
-	globalActualHandlerCallInfoToValidate["Close"] = nil
-	return nil
-}
-func GetFakeHndlrBuilderInfo() adapter.BuilderInfo {
-	return adapter.BuilderInfo{
-		Name:                 "fakeHandler",
-		Description:          "",
-		SupportedTemplates:   []string{sample_report.TemplateName},
-		CreateHandlerBuilder: func() adapter.HandlerBuilder { return fakeHndlrBldr{} },
-		DefaultConfig:        &types.Empty{},
-		ValidateConfig: func(msg adapter.Config) *adapter.ConfigErrors {
-			return nil
-		},
-	}
-}
 
 const (
 	globalCnfg = `
@@ -106,8 +62,6 @@ manifests:
       attr.int64:
         value_type: INT64
 `
-	// TODO : If a value is a literal, does it have to be in quotes ?
-	// Seems like if I do not put in quotes, decoding this yaml fails.
 	srvConfig = `
 subject: namespace:ns
 action_rules:
@@ -119,35 +73,14 @@ action_rules:
 
 instances:
 - name: fooInstance
-  template: "istio.mixer.adapter.sample.report"
+  template: "report"
   params:
     value: "2"
-    int64Primitive: attr.int64 | 2
-    boolPrimitive: attr.bool | true
-    doublePrimitive: attr.double | 12.4
-    stringPrimitive: "\"\""
     dimensions:
       source: source.name
       target_ip: target.name
 `
 )
-
-func getCnfgs() (declarativeSrvcCnfg *os.File, declaredGlobalCnfg *os.File) {
-	dir2, _ := ioutil.TempDir("e2eStoreDir", "")
-	srvcCnfgFile, _ := os.Create(path.Join(dir2, "srvc.yaml"))
-	globalCnfgFile, _ := os.Create(path.Join(dir2, "global.yaml"))
-
-	_, _ = globalCnfgFile.Write([]byte(globalCnfg))
-	_ = globalCnfgFile.Close()
-
-	var srvcCnfgBuffer bytes.Buffer
-	srvcCnfgBuffer.WriteString(srvConfig)
-
-	_, _ = srvcCnfgFile.Write([]byte(srvcCnfgBuffer.String()))
-	_ = srvcCnfgFile.Close()
-
-	return srvcCnfgFile, globalCnfgFile
-}
 
 func testConfigFlow(
 	t *testing.T,
@@ -192,7 +125,7 @@ func testConfigFlow(
 	}
 	_, err = mixerRuntime.New(eval, gp, adapterGP,
 		configIdentityAttribute, configDefaultNamespace,
-		store2, adapterMap, sample.SupportedTmplInfo,
+		store2, adapterMap, e2eTmpl.SupportedTmplInfo,
 	)
 	if err != nil {
 		t.Fatalf("Failed to create runtime dispatcher. %v", err)
@@ -217,7 +150,7 @@ func testConfigFlow(
 
 	configManager := config.NewManager(eval, adapterMgr.AspectValidatorFinder, adapterMgr.BuilderValidatorFinder, adptInfos,
 		adapterMgr.SupportedKinds,
-		template.NewRepository(sample.SupportedTmplInfo),
+		template.NewRepository(e2eTmpl.SupportedTmplInfo),
 		store,
 		loopDelay,
 		configIdentityAttribute, identityDomainAttribute)
@@ -233,7 +166,7 @@ func testConfigFlow(
 		t.Errorf("got call count %d\nwant %d", len(globalActualHandlerCallInfoToValidate), 2)
 	}
 
-	if globalActualHandlerCallInfoToValidate["ConfigureSample"] == nil || globalActualHandlerCallInfoToValidate["Build"] == nil {
+	if globalActualHandlerCallInfoToValidate["ConfigureSampleReport"] == nil || globalActualHandlerCallInfoToValidate["Build"] == nil {
 		t.Errorf("got call info as : %v. \nwant calls %s and %s to have been called", globalActualHandlerCallInfoToValidate, "ConfigureSample", "Build")
 	}
 }
@@ -252,7 +185,7 @@ func getGoRoutinePool(apiPoolSize int, singleThreadedGoRoutinePool bool) *pool.G
 }
 
 func TestConfigFlow(t *testing.T) {
-	sc, gsc := getCnfgs()
+	sc, gsc := getCnfgs(srvConfig, globalCnfg)
 	testConfigFlow(t, sc.Name(), gsc.Name(), "fs://"+path.Dir(sc.Name()))
 	_ = os.Remove(sc.Name())
 	_ = os.Remove(gsc.Name())
