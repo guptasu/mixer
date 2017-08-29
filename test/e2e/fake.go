@@ -15,19 +15,11 @@
 package e2e
 
 import (
-	"bytes"
-	"io/ioutil"
-	"os"
-	"path"
 	"github.com/gogo/protobuf/types"
 
 	"istio.io/mixer/pkg/adapter"
 	reportTmpl "istio.io/mixer/test/e2e/template/report"
 )
-
-// The adapter implementation fills this data and test can verify what was called.
-// To use this variable across tests, every test should clean this variable value.
-var globalActualHandlerCallInfoToValidate map[string]interface{}
 
 type (
 	fakeHndlr     struct{}
@@ -62,21 +54,4 @@ func GetFakeHndlrBuilderInfo() adapter.BuilderInfo {
 			return nil
 		},
 	}
-}
-
-func getCnfgs(srvcCnfg, attrCnfg string) (declarativeSrvcCnfg *os.File, declaredGlobalCnfg *os.File) {
-	dir2, _ := ioutil.TempDir("e2eStoreDir", "")
-	srvcCnfgFile, _ := os.Create(path.Join(dir2, "srvc.yaml"))
-	globalCnfgFile, _ := os.Create(path.Join(dir2, "global.yaml"))
-
-	_, _ = globalCnfgFile.Write([]byte(attrCnfg))
-	_ = globalCnfgFile.Close()
-
-	var srvcCnfgBuffer bytes.Buffer
-	srvcCnfgBuffer.WriteString(srvcCnfg)
-
-	_, _ = srvcCnfgFile.Write([]byte(srvcCnfgBuffer.String()))
-	_ = srvcCnfgFile.Close()
-
-	return srvcCnfgFile, globalCnfgFile
 }

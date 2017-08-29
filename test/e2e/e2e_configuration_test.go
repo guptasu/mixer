@@ -18,26 +18,17 @@ import (
 	"os"
 	"path"
 	"testing"
-	"time"
-
-	adp "istio.io/mixer/adapter"
-	"istio.io/mixer/adapter/noop"
-	"istio.io/mixer/pkg/adapter"
-	adaptManager "istio.io/mixer/pkg/adapterManager"
-	"istio.io/mixer/pkg/aspect"
-	"istio.io/mixer/pkg/config"
-	"istio.io/mixer/pkg/config/store"
-	"istio.io/mixer/pkg/expr"
-	"istio.io/mixer/pkg/il/evaluator"
-	"istio.io/mixer/pkg/pool"
-	mixerRuntime "istio.io/mixer/pkg/runtime"
-	"istio.io/mixer/pkg/template"
-	e2eTmpl "istio.io/mixer/test/e2e/template"
 	"context"
 	"istio.io/mixer/pkg/attribute"
+	"istio.io/mixer/pkg/adapter"
 )
 
+// The adapter implementation fills this data and test can verify what was called.
+// To use this variable across tests, every test should clean this variable value.
+var globalActualHandlerCallInfoToValidate map[string]interface{}
+
 const (
+
 	globalCnfg = `
 subject: namespace:ns
 revision: "2022"
@@ -84,83 +75,32 @@ instances:
 `
 )
 
-func testConfigFlow(
+func executeReport(
 	t *testing.T,
 	declarativeSrvcCnfgFilePath string,
 	declaredGlobalCnfgFilePath string,
 	configStore2URL string,
-) {
-	// TODO replace
-	useIL := false
+	requestBag attribute.Bag,
+	adptInfos []adapter.InfoFn,
+) error {
+	dispatcher := getDispatcher(t, configStore2URL, declaredGlobalCnfgFilePath, declarativeSrvcCnfgFilePath, adptInfos)
+	return dispatcher.Report(context.TODO(), requestBag)
+}
+
+func TestConfigFlow(t *testing.T) {
+	sc, gsc := getCnfgs(srvConfig, globalCnfg)
+	defer func() {
+		_ = os.Remove(sc.Name())
+		_ = os.Remove(gsc.Name())
+	}() // nolint: gas
+
 	globalActualHandlerCallInfoToValidate = make(map[string]interface{})
-	apiPoolSize := 1024
-	adapterPoolSize := 1024
-	configIdentityAttribute := "target.service"
-	identityDomainAttribute := "svc.cluster.local"
-	loopDelay := time.Second * 5
-	singleThreadedGoRoutinePool := false
-	configDefaultNamespace := "istio-config-default"
-	gp := getGoRoutinePool(apiPoolSize, singleThreadedGoRoutinePool)
-	adapterGP := getAdapterGoRoutinePool(adapterPoolSize, singleThreadedGoRoutinePool)
 
-	adptInfos := []adapter.InfoFn{GetFakeHndlrBuilderInfo}
-	eval, err := expr.NewCEXLEvaluator(expr.DefaultCacheSize)
-	if err != nil {
-		t.Errorf("Failed to create expression evaluator: %v", err)
-	}
-	var ilEval *evaluator.IL
-	if useIL {
-		ilEval, err = evaluator.NewILEvaluator(expr.DefaultCacheSize)
-		if err != nil {
-			t.Fatalf("Failed to create IL expression evaluator with cache size %d: %v", 1024, err)
-		}
-		eval = ilEval
-	}
-
-	var dispatcher mixerRuntime.Dispatcher
-
+	requestBag := attribute.GetMutableBag(nil)
+	requestBag.Set(configIdentityAttribute, identityDomainAttribute)
 	adapters := []adapter.InfoFn{GetFakeHndlrBuilderInfo}
-	adapterMap := adp.InventoryMap(adapters)
-	store2, err := store.NewRegistry2(config.Store2Inventory()...).NewStore2(configStore2URL)
-	if err != nil {
-		t.Fatalf("Failed to connect to the configuration2 server. %v", err)
-	}
-	dispatcher, err = mixerRuntime.New(eval, gp, adapterGP,
-		configIdentityAttribute, configDefaultNamespace,
-		store2, adapterMap, e2eTmpl.SupportedTmplInfo,
-	)
-	if err != nil {
-		t.Fatalf("Failed to create runtime dispatcher. %v", err)
-	}
 
-	adapterMgr := adaptManager.NewManager(
-		[]adapter.RegisterFn{
-			noop.Register,
-		},
-		aspect.Inventory(),
-		eval,
-		gp,
-		adapterGP,
-	)
-
-	store, err := config.NewCompatFSStore(declaredGlobalCnfgFilePath, declarativeSrvcCnfgFilePath)
-	if err != nil {
-		t.Errorf("NewCompatFSStore failed: %v", err)
-		return
-	}
-
-	configManager := config.NewManager(eval, adapterMgr.AspectValidatorFinder, adapterMgr.BuilderValidatorFinder, adptInfos,
-		adapterMgr.SupportedKinds,
-		template.NewRepository(e2eTmpl.SupportedTmplInfo),
-		store,
-		loopDelay,
-		configIdentityAttribute, identityDomainAttribute)
-
-	if useIL {
-		configManager.Register(ilEval)
-	}
-	configManager.Register(adapterMgr)
-	configManager.Start()
+	executeReport(t, sc.Name(), gsc.Name(), "fs://"+path.Dir(sc.Name()), requestBag, adapters)
 
 	// validate globalActualHandlerCallInfoToValidate
 	if len(globalActualHandlerCallInfoToValidate) != 2 {
@@ -170,31 +110,4 @@ func testConfigFlow(
 	if globalActualHandlerCallInfoToValidate["ConfigureSampleReport"] == nil || globalActualHandlerCallInfoToValidate["Build"] == nil {
 		t.Errorf("got call info as : %v. \nwant calls %s and %s to have been called", globalActualHandlerCallInfoToValidate, "ConfigureSample", "Build")
 	}
-
-	requestBag := attribute.GetMutableBag(nil)
-	requestBag.Set(configIdentityAttribute, identityDomainAttribute)
-	err = dispatcher.Report(context.TODO(), requestBag, )
-	if err != nil {
-		t.Errorf("Report call failed. %v", err)
-	}
-}
-func getAdapterGoRoutinePool(adapterPoolSize int, singleThreadedGoRoutinePool bool) *pool.GoroutinePool {
-	adapterGP := pool.NewGoroutinePool(adapterPoolSize, singleThreadedGoRoutinePool)
-	adapterGP.AddWorkers(adapterPoolSize)
-	defer adapterGP.Close()
-	return adapterGP
-}
-func getGoRoutinePool(apiPoolSize int, singleThreadedGoRoutinePool bool) *pool.GoroutinePool {
-	gp := pool.NewGoroutinePool(apiPoolSize, singleThreadedGoRoutinePool)
-	gp.AddWorkers(apiPoolSize)
-	gp.AddWorkers(apiPoolSize)
-	defer gp.Close()
-	return gp
-}
-
-func TestConfigFlow(t *testing.T) {
-	sc, gsc := getCnfgs(srvConfig, globalCnfg)
-	testConfigFlow(t, sc.Name(), gsc.Name(), "fs://"+path.Dir(sc.Name()))
-	_ = os.Remove(sc.Name())
-	_ = os.Remove(gsc.Name())
 }

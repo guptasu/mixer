@@ -9,6 +9,7 @@ go_test(
     srcs = [
         "e2e_configuration_test.go",
         "fake.go",
+        "util.go",
     ],
     deps = [
         "//adapter:go_default_library",
@@ -16,6 +17,7 @@ go_test(
         "//pkg/adapter:go_default_library",
         "//pkg/adapterManager:go_default_library",
         "//pkg/aspect:go_default_library",
+        "//pkg/attribute:go_default_library",
         "//pkg/config:go_default_library",
         "//pkg/config/descriptor:go_default_library",
         "//pkg/config/store:go_default_library",
@@ -24,7 +26,6 @@ go_test(
         "//pkg/pool:go_default_library",
         "//pkg/runtime:go_default_library",
         "//pkg/template:go_default_library",
-        "//pkg/attribute:go_default_library",
         "//test/e2e/template:go_default_library",
         "//test/e2e/template/report:go_default_library",
         "@com_github_gogo_protobuf//types:go_default_library",
