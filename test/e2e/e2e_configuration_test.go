@@ -18,7 +18,6 @@ import (
 	"os"
 	"testing"
 	"context"
-	"istio.io/mixer/pkg/attribute"
 	"istio.io/mixer/pkg/adapter"
 	e2eTmpl "istio.io/mixer/test/e2e/template"
 	"istio.io/mixer/pkg/template"
@@ -94,28 +93,32 @@ type adptr struct {
 	builder adapter.HandlerBuilder
 }
 
+type testData struct {
+	name          string
+	oprtrCnfg     string
+	adptBehaviors []AdptBehavior
+	templates     map[string]template.Info
+	attribs       map[string]interface{}
+	validate      func(t *testing.T, err error, sypAdpts []spyAdapter)
+}
+
 func TestReport(t *testing.T) {
 
-	tests := []struct {
-		name      string
-		oprtrCnfg string
-		adapters map[string]Behavior
-		templates map[string]template.Info
-		validate func(t *testing.T, err error, callInfos map[string]interface{})
-	}{
+	tests := []testData{
 		{
-			name:      "Report",
-			oprtrCnfg: reportTestCnfg,
-			adapters: map[string]Behavior {"fakeHandler": Behavior{name:"fakeHandler"}},
-			templates: e2eTmpl.SupportedTmplInfo,
-			validate: func(t *testing.T, err error, callInfo map[string]interface{}) {
+			name:          "Report",
+			oprtrCnfg:     reportTestCnfg,
+			adptBehaviors: []AdptBehavior{AdptBehavior{name:"fakeHandler"}},
+			templates:     e2eTmpl.SupportedTmplInfo,
+			attribs:       map[string]interface{}{},
+			validate: func(t *testing.T, err error, spyAdpts []spyAdapter) {
 				// validate globalActualHandlerCallInfoToValidate
-				if len(callInfo) != 2 {
-					t.Errorf("got call count %d\nwant %d", len(callInfo), 2)
+				if len(spyAdpts[0].builderCallData.data) != 2 {
+					t.Errorf("got call count %d\nwant %d", len(spyAdpts[0].builderCallData.data), 2)
 				}
 
-				if callInfo["ConfigureSampleReport"] == nil || callInfo["Build"] == nil {
-					t.Errorf("got call info as : %v. \nwant calls %s and %s to have been called", callInfo, "ConfigureSample", "Build")
+				if spyAdpts[0].builderCallData.data["ConfigureSampleReport"] == nil || spyAdpts[0].builderCallData.data["Build"] == nil {
+					t.Errorf("got call info as : %v. \nwant calls %s and %s to have been called", spyAdpts[0].builderCallData.data, "ConfigureSample", "Build")
 				}
 			},
 		},
@@ -130,20 +133,10 @@ func TestReport(t *testing.T) {
 			}
 		}() // nolint: gas
 
-		requestBag := attribute.GetMutableBag(nil)
-		requestBag.Set(configIdentityAttribute, identityDomainAttribute)
-
-		var adapterInfos []adapter.InfoFn = make([]adapter.InfoFn, 0)
-		var spyAdapters []spyAdapter = make([]spyAdapter, 0)
-		tmpData := make(map[string]interface{})
-
-		for _, b:= range tt.adapters {
-			sa := spyAdapter{behavior: &b, builderCallData: &builderCallData{data:tmpData}}
-			spyAdapters = append(spyAdapters, sa)
-			adapterInfos = append(adapterInfos, sa.getFakeHndlrBldrInfoFn())
-		}
+		adapterInfos, spyAdapters := cnstrAdapterInfos(tt.adptBehaviors)
 		dispatcher := getDispatcher(t, "fs://"+configDir, adapterInfos, tt.templates)
-		err := dispatcher.Report(context.TODO(), requestBag)
-		tt.validate(t, err, tmpData)
+		err := dispatcher.Report(context.TODO(), getAttrBag(tt.attribs))
+
+		tt.validate(t, err, spyAdapters)
 	}
 }

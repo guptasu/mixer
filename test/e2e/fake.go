@@ -49,17 +49,18 @@ func (f fakeHndlr) Close() error {
 }
 
 type spyAdapter struct {
-	behavior *Behavior
+	behavior *AdptBehavior
 	builderCallData *builderCallData
 }
 
-type Behavior struct {
+type AdptBehavior struct {
 	name string
 }
 
 type builderCallData struct {
 	data map[string]interface{}
 }
+
 func (s *spyAdapter) getFakeHndlrBldrInfoFn() adapter.InfoFn {
 	return func() adapter.BuilderInfo {
 		return adapter.BuilderInfo{

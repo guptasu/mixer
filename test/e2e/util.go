@@ -33,6 +33,7 @@ import (
 	"os"
 	"path"
 	"istio.io/mixer/pkg/template"
+	"istio.io/mixer/pkg/attribute"
 )
 
 const (
@@ -109,4 +110,26 @@ func getCnfgs(srvcCnfg, attrCnfg string) (dir string) {
 	_ = srvcCnfgFile.Close()
 
 	return tmpDir
+}
+
+
+// return adapterInfoFns + corresponding SkyAdapter object.
+func cnstrAdapterInfos(adptBehaviors []AdptBehavior) ([]adapter.InfoFn, []spyAdapter) {
+	var adapterInfos []adapter.InfoFn = make([]adapter.InfoFn, 0)
+	var spyAdapters []spyAdapter = make([]spyAdapter, 0)
+	for _, b := range adptBehaviors {
+		sa := spyAdapter{behavior: &b, builderCallData: &builderCallData{data: make(map[string]interface{})}}
+		spyAdapters = append(spyAdapters, sa)
+		adapterInfos = append(adapterInfos, sa.getFakeHndlrBldrInfoFn())
+	}
+	return adapterInfos, spyAdapters
+}
+
+func getAttrBag(attribs map[string]interface{}) *attribute.MutableBag {
+	requestBag := attribute.GetMutableBag(nil)
+	requestBag.Set(configIdentityAttribute, identityDomainAttribute)
+	for k, v := range attribs {
+		requestBag.Set(k, v)
+	}
+	return requestBag
 }
