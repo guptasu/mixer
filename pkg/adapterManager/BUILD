@@ -35,7 +35,6 @@ go_test(
     name = "go_default_test",
     size = "small",
     srcs = [
-        "e2e_configuration_test.go",
         "env_test.go",
         "manager_test.go",
         "registry_test.go",
@@ -45,6 +44,8 @@ go_test(
         "//adapter/noop:go_default_library",
         "//pkg/adapter:go_default_library",
         "//pkg/config/descriptor:go_default_library",
+        "//pkg/il/evaluator:go_default_library",
+        "//pkg/runtime:go_default_library",
         "//pkg/template:go_default_library",
         "//template/sample:go_default_library",
         "//template/sample/report:go_default_library",
