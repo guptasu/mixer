@@ -21,8 +21,13 @@ import (
 	reportTmpl "istio.io/mixer/test/e2e/template/report"
 )
 
+type SpyHandler struct {
+	Foo string
+}
 type (
-	fakeHndlr     struct{}
+	fakeHndlr     struct{
+		SpyHandler
+	}
 	fakeHndlrBldr struct{}
 )
 
@@ -44,10 +49,22 @@ func (fakeHndlr) Close() error {
 	return nil
 }
 
-func getFakeHndlrBldrInfoFn(name string) adapter.InfoFn {
+type spyAdapter struct {
+	behavior *Behavior
+	callData *callData
+}
+
+type Behavior struct {
+	name string
+}
+
+type callData struct {
+	data map[string]interface{}
+}
+func (s *spyAdapter) getFakeHndlrBldrInfoFn() adapter.InfoFn {
 	return func() adapter.BuilderInfo {
 		return adapter.BuilderInfo{
-			Name:                 name,
+			Name:                 s.behavior.name,
 			Description:          "",
 			SupportedTemplates:   []string{reportTmpl.TemplateName},
 			CreateHandlerBuilder: func() adapter.HandlerBuilder { return fakeHndlrBldr{} },

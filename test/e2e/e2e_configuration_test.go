@@ -102,14 +102,14 @@ func TestReport(t *testing.T) {
 	tests := []struct {
 		name      string
 		oprtrCnfg string
-		adapters []adapter.InfoFn
+		adapters map[string]Behavior
 		templates map[string]template.Info
 		validate func(t *testing.T, err error, callInfos map[string]interface{})
 	}{
 		{
 			name:      "Report",
 			oprtrCnfg: reportTestCnfg,
-			adapters: []adapter.InfoFn{getFakeHndlrBldrInfoFn("fakeHandler")},
+			adapters: map[string]Behavior {"fakeHandler": Behavior{name:"fakeHandler"}},
 			templates: e2eTmpl.SupportedTmplInfo,
 			validate: func(t *testing.T, err error, callInfo map[string]interface{}) {
 				// validate globalActualHandlerCallInfoToValidate
@@ -138,7 +138,15 @@ func TestReport(t *testing.T) {
 		requestBag := attribute.GetMutableBag(nil)
 		requestBag.Set(configIdentityAttribute, identityDomainAttribute)
 
-		dispatcher := getDispatcher(t, "fs://"+configDir, tt.adapters, tt.templates)
+		var adapterInfos []adapter.InfoFn = make([]adapter.InfoFn, 0)
+		var spyAdapters []spyAdapter = make([]spyAdapter, 0)
+
+		for _, b:= range tt.adapters {
+			sa := spyAdapter{behavior: &b}
+			spyAdapters = append(spyAdapters, sa)
+			adapterInfos = append(adapterInfos, sa.getFakeHndlrBldrInfoFn())
+		}
+		dispatcher := getDispatcher(t, "fs://"+configDir, adapterInfos, tt.templates)
 		err := dispatcher.Report(context.TODO(), requestBag)
 		tt.validate(t, err, globalActualHandlerCallInfoToValidate)
 	}
