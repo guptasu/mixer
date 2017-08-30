@@ -38,12 +38,12 @@ type (
 	}
 
 	spyAdapter struct {
-		behavior      AdptBehavior
+		behavior      adptBehavior
 		bldrCallData  *bldrCallData
 		hndlrCallData *hndlrCallData
 	}
 
-	AdptBehavior struct {
+	adptBehavior struct {
 		name          string
 		hndlrBehavior hndlrBehavior
 		bldrBehavior  builderBehavior
@@ -120,7 +120,7 @@ func (f fakeHndlr) Close() error {
 	return f.hndlrbehavior.Close_error
 }
 
-func newSpyAdapter(b AdptBehavior) *spyAdapter {
+func newSpyAdapter(b adptBehavior) *spyAdapter {
 	return &spyAdapter{behavior: b, bldrCallData: &bldrCallData{}, hndlrCallData: &hndlrCallData{}}
 }
 

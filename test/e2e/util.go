@@ -114,7 +114,7 @@ func getCnfgs(srvcCnfg, attrCnfg string) (dir string) {
 }
 
 // return adapterInfoFns + corresponding SkyAdapter object.
-func cnstrAdapterInfos(adptBehaviors []AdptBehavior) ([]adapter.InfoFn, []*spyAdapter) {
+func cnstrAdapterInfos(adptBehaviors []adptBehavior) ([]adapter.InfoFn, []*spyAdapter) {
 	var adapterInfos []adapter.InfoFn = make([]adapter.InfoFn, 0)
 	var spyAdapters []*spyAdapter = make([]*spyAdapter, 0)
 	for _, b := range adptBehaviors {
@@ -135,11 +135,11 @@ func getAttrBag(attribs map[string]interface{}) *attribute.MutableBag {
 }
 
 
-func cmpAndErr(msg string, t *testing.T, expt interface{}, actual interface{}) {
-	a := InterfaceSlice(expt)
-	b := InterfaceSlice(actual)
+func cmpSliceAndErr(msg string, t *testing.T, act, exp interface{}) {
+	a := InterfaceSlice(exp)
+	b := InterfaceSlice(act)
 	if len(a) != len(b) {
-		t.Errorf(fmt.Sprintf("Not equal -> %s.\nActual :\n%s\n\nExpected :\n%s",msg, spew.Sdump(actual), spew.Sdump(expt)))
+		t.Errorf(fmt.Sprintf("Not equal -> %s.\nActual :\n%s\n\nExpected :\n%s",msg, spew.Sdump(act), spew.Sdump(exp)))
 		return
 	}
 
@@ -151,8 +151,31 @@ func cmpAndErr(msg string, t *testing.T, expt interface{}, actual interface{}) {
 			}
 		}
 		if !f {
-			t.Errorf(fmt.Sprintf("Not equal -> %s.\nActual :\n%s\n\nExpected :\n%s",msg, spew.Sdump(actual), spew.Sdump(expt)))
+			t.Errorf(fmt.Sprintf("Not equal -> %s.\nActual :\n%s\n\nExpected :\n%s",msg, spew.Sdump(act), spew.Sdump(exp)))
 			return
+		}
+	}
+	return
+}
+
+
+func cmpMapAndErr(msg string, t *testing.T, act, exp interface{}) {
+	want := InterfaceMap(exp)
+	got := InterfaceMap(act)
+	if len(want) != len(got) {
+		t.Errorf(fmt.Sprintf("Not equal -> %s.\nActual :\n%s\n\nExpected :\n%s",msg, spew.Sdump(act), spew.Sdump(exp)))
+		return
+	}
+
+	for wk, wv := range want {
+		if v, found := got[wk]; !found {
+			t.Errorf(fmt.Sprintf("Not equal -> %s.\nActual :\n%s\n\nExpected :\n%s",msg, spew.Sdump(act), spew.Sdump(exp)))
+			return
+		} else {
+			if !reflect.DeepEqual(wv, v) {
+				t.Errorf(fmt.Sprintf("Not equal -> %s.\nActual :\n%s\n\nExpected :\n%s",msg, spew.Sdump(act), spew.Sdump(exp)))
+				return
+			}
 		}
 	}
 	return
@@ -165,6 +188,20 @@ func InterfaceSlice(slice interface{}) []interface{} {
 	ret := make([]interface{}, s.Len())
 	for i := 0; i < s.Len(); i++ {
 		ret[i] = s.Index(i).Interface()
+	}
+
+	return ret
+}
+
+
+func InterfaceMap(m interface{}) map[interface{}]interface{} {
+	s := reflect.ValueOf(m)
+
+	ret := make(map[interface{}]interface{}, s.Len())
+	for i := 0; i < s.Len(); i++ {
+		k := s.MapKeys()[i]
+		v := s.MapIndex(k)
+		ret[k.Interface()] = v.Interface()
 	}
 
 	return ret

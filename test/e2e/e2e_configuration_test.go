@@ -15,16 +15,17 @@
 package e2e
 
 import (
+	"context"
+	pb "istio.io/api/mixer/v1/config/descriptor"
+	"istio.io/mixer/pkg/adapter"
+	"istio.io/mixer/pkg/template"
+	e2eTmpl "istio.io/mixer/test/e2e/template"
+	reportTmpl "istio.io/mixer/test/e2e/template/report"
 	"os"
 	"testing"
-	"context"
-	"istio.io/mixer/pkg/adapter"
-	e2eTmpl "istio.io/mixer/test/e2e/template"
-	"istio.io/mixer/pkg/template"
 )
 
 const (
-
 	globalCnfg = `
 apiVersion: "config.istio.io/v1alpha2"
 kind: attribute-manifest
@@ -87,7 +88,7 @@ spec:
 )
 
 type adptr struct {
-	name string
+	name    string
 	handler adapter.Handler
 	builder adapter.HandlerBuilder
 }
@@ -95,7 +96,7 @@ type adptr struct {
 type testData struct {
 	name          string
 	oprtrCnfg     string
-	adptBehaviors []AdptBehavior
+	adptBehaviors []adptBehavior
 	templates     map[string]template.Info
 	attribs       map[string]interface{}
 	validate      func(t *testing.T, err error, sypAdpts []*spyAdapter)
@@ -106,12 +107,30 @@ func TestReport(t *testing.T) {
 		{
 			name:          "Report",
 			oprtrCnfg:     reportTestCnfg,
-			adptBehaviors: []AdptBehavior{AdptBehavior{name:"fakeHandler"}},
+			adptBehaviors: []adptBehavior{adptBehavior{name: "fakeHandler"}},
 			templates:     e2eTmpl.SupportedTmplInfo,
 			attribs:       map[string]interface{}{"target.name": "somesrvcname"},
 			validate: func(t *testing.T, err error, spyAdpts []*spyAdapter) {
 				adptr := spyAdpts[0]
-				//cmpAndErr("ConfigureSampleReportHandler input", t, nil, adptr.bldrCallData.ConfigureSampleReportHandler_types)
+				cmpMapAndErr("ConfigureSampleReportHandler input", t, adptr.bldrCallData.ConfigureSampleReportHandler_types,
+					map[string]interface{}{
+						"reportInstance": &reportTmpl.Type{
+							Value: pb.INT64,
+							Dimensions: map[string]pb.ValueType{"source": pb.STRING, "target_ip": pb.STRING},
+						},
+					},
+				)
+
+				cmpSliceAndErr("HandleSampleReport input", t, adptr.hndlrCallData.HandleSampleReport_instances,
+					[]*reportTmpl.Instance{
+						&reportTmpl.Instance{
+							Name:"reportInstance",
+							Value: int64(2),
+							Dimensions:map[string]interface{} {"source": "mysrc", "target_ip": "somesrvcname"},
+						},
+					},
+				)
+
 				if adptr.bldrCallData.ConfigureSampleReportHandler_types == nil {
 					t.Error("Call ConfigureSampleReportHandler not made on the builder")
 				}
