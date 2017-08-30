@@ -24,9 +24,6 @@ import (
 	"istio.io/mixer/pkg/template"
 )
 
-// The adapter implementation fills this data and test can verify what was called.
-// To use this variable across tests, every test should clean this variable value.
-var globalActualHandlerCallInfoToValidate map[string]interface{}
 
 const (
 
@@ -133,21 +130,20 @@ func TestReport(t *testing.T) {
 			}
 		}() // nolint: gas
 
-		globalActualHandlerCallInfoToValidate = make(map[string]interface{})
-
 		requestBag := attribute.GetMutableBag(nil)
 		requestBag.Set(configIdentityAttribute, identityDomainAttribute)
 
 		var adapterInfos []adapter.InfoFn = make([]adapter.InfoFn, 0)
 		var spyAdapters []spyAdapter = make([]spyAdapter, 0)
+		tmpData := make(map[string]interface{})
 
 		for _, b:= range tt.adapters {
-			sa := spyAdapter{behavior: &b}
+			sa := spyAdapter{behavior: &b, builderCallData: &builderCallData{data:tmpData}}
 			spyAdapters = append(spyAdapters, sa)
 			adapterInfos = append(adapterInfos, sa.getFakeHndlrBldrInfoFn())
 		}
 		dispatcher := getDispatcher(t, "fs://"+configDir, adapterInfos, tt.templates)
 		err := dispatcher.Report(context.TODO(), requestBag)
-		tt.validate(t, err, globalActualHandlerCallInfoToValidate)
+		tt.validate(t, err, tmpData)
 	}
 }

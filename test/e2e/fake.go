@@ -21,44 +21,43 @@ import (
 	reportTmpl "istio.io/mixer/test/e2e/template/report"
 )
 
-type SpyHandler struct {
-	Foo string
-}
 type (
-	fakeHndlr     struct{
-		SpyHandler
+	fakeHndlr struct {
+		callData map[string]interface{}
 	}
-	fakeHndlrBldr struct{}
+	fakeHndlrBldr struct{
+		callData map[string]interface{}
+	}
 )
 
-func (fakeHndlrBldr) Build(cnfg adapter.Config, _ adapter.Env) (adapter.Handler, error) {
-	globalActualHandlerCallInfoToValidate["Build"] = cnfg
+func (f fakeHndlrBldr) Build(cnfg adapter.Config, _ adapter.Env) (adapter.Handler, error) {
+	f.callData["Build"] = cnfg
 	fakeHndlrObj := fakeHndlr{}
 	return fakeHndlrObj, nil
 }
-func (fakeHndlrBldr) ConfigureSampleReportHandler(typeParams map[string]*reportTmpl.Type) error {
-	globalActualHandlerCallInfoToValidate["ConfigureSampleReport"] = typeParams
+func (f fakeHndlrBldr) ConfigureSampleReportHandler(typeParams map[string]*reportTmpl.Type) error {
+	f.callData["ConfigureSampleReport"] = typeParams
 	return nil
 }
-func (fakeHndlr) HandleSampleReport(instances []*reportTmpl.Instance) error {
-	globalActualHandlerCallInfoToValidate["HandleSampleReport"] = instances
+func (f fakeHndlr) HandleSampleReport(instances []*reportTmpl.Instance) error {
+	f.callData["HandleSampleReport"] = instances
 	return nil
 }
-func (fakeHndlr) Close() error {
-	globalActualHandlerCallInfoToValidate["Close"] = nil
+func (f fakeHndlr) Close() error {
+	f.callData["Close"] = nil
 	return nil
 }
 
 type spyAdapter struct {
 	behavior *Behavior
-	callData *callData
+	builderCallData *builderCallData
 }
 
 type Behavior struct {
 	name string
 }
 
-type callData struct {
+type builderCallData struct {
 	data map[string]interface{}
 }
 func (s *spyAdapter) getFakeHndlrBldrInfoFn() adapter.InfoFn {
@@ -67,12 +66,11 @@ func (s *spyAdapter) getFakeHndlrBldrInfoFn() adapter.InfoFn {
 			Name:                 s.behavior.name,
 			Description:          "",
 			SupportedTemplates:   []string{reportTmpl.TemplateName},
-			CreateHandlerBuilder: func() adapter.HandlerBuilder { return fakeHndlrBldr{} },
+			CreateHandlerBuilder: func() adapter.HandlerBuilder { return fakeHndlrBldr{callData: s.builderCallData.data} },
 			DefaultConfig:        &types.Empty{},
 			ValidateConfig: func(msg adapter.Config) *adapter.ConfigErrors {
 				return nil
 			},
 		}
 	}
-
 }
