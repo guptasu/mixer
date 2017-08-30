@@ -103,7 +103,6 @@ type testData struct {
 }
 
 func TestReport(t *testing.T) {
-
 	tests := []testData{
 		{
 			name:          "Report",
@@ -112,8 +111,6 @@ func TestReport(t *testing.T) {
 			templates:     e2eTmpl.SupportedTmplInfo,
 			attribs:       map[string]interface{}{},
 			validate: func(t *testing.T, err error, spyAdpts []*spyAdapter) {
-				// validate globalActualHandlerCallInfoToValidate
-
 				if spyAdpts[0].builderCallData.ConfigureSampleReportHandler_types == nil {
 					t.Error("Call ConfigureSampleReportHandler not made on the builder")
 				}

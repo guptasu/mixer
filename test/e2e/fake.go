@@ -68,7 +68,6 @@ func newSpyAdapter(b *AdptBehavior) *spyAdapter {
 }
 
 func (s *spyAdapter) getFakeHndlrBldrInfoFn() adapter.InfoFn {
-	//s.builderCallData = &builderCallData{}
 	return func() adapter.BuilderInfo {
 		return adapter.BuilderInfo{
 			Name:                 s.behavior.name,
