@@ -99,7 +99,7 @@ type testData struct {
 	adptBehaviors []AdptBehavior
 	templates     map[string]template.Info
 	attribs       map[string]interface{}
-	validate      func(t *testing.T, err error, sypAdpts []spyAdapter)
+	validate      func(t *testing.T, err error, sypAdpts []*spyAdapter)
 }
 
 func TestReport(t *testing.T) {
@@ -111,7 +111,7 @@ func TestReport(t *testing.T) {
 			adptBehaviors: []AdptBehavior{AdptBehavior{name:"fakeHandler"}},
 			templates:     e2eTmpl.SupportedTmplInfo,
 			attribs:       map[string]interface{}{},
-			validate: func(t *testing.T, err error, spyAdpts []spyAdapter) {
+			validate: func(t *testing.T, err error, spyAdpts []*spyAdapter) {
 				// validate globalActualHandlerCallInfoToValidate
 				if len(spyAdpts[0].builderCallData.data) != 2 {
 					t.Errorf("got call count %d\nwant %d", len(spyAdpts[0].builderCallData.data), 2)

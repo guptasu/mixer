@@ -27,6 +27,7 @@ type (
 	}
 	fakeHndlrBldr struct{
 		callData map[string]interface{}
+		builderCallData *builderCallData
 	}
 )
 
@@ -37,6 +38,7 @@ func (f fakeHndlrBldr) Build(cnfg adapter.Config, _ adapter.Env) (adapter.Handle
 }
 func (f fakeHndlrBldr) ConfigureSampleReportHandler(typeParams map[string]*reportTmpl.Type) error {
 	f.callData["ConfigureSampleReport"] = typeParams
+	//f.builderCallData.ConfigureSampleReportHandler_types = typeParams
 	return nil
 }
 func (f fakeHndlr) HandleSampleReport(instances []*reportTmpl.Instance) error {
@@ -59,13 +61,15 @@ type AdptBehavior struct {
 
 type builderCallData struct {
 	data map[string]interface{}
+	ConfigureSampleReportHandler_types map[string]*reportTmpl.Type
 }
 
-func newSpyAdapter(b *AdptBehavior) spyAdapter {
-	return spyAdapter{behavior: b, builderCallData: &builderCallData{data: make(map[string]interface{})}}
+func newSpyAdapter(b *AdptBehavior) *spyAdapter {
+	return &spyAdapter{behavior: b, builderCallData: &builderCallData{data: make(map[string]interface{})}}
 }
 
 func (s *spyAdapter) getFakeHndlrBldrInfoFn() adapter.InfoFn {
+	//s.builderCallData = &builderCallData{}
 	return func() adapter.BuilderInfo {
 		return adapter.BuilderInfo{
 			Name:                 s.behavior.name,
