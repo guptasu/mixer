@@ -112,13 +112,12 @@ func getCnfgs(srvcCnfg, attrCnfg string) (dir string) {
 	return tmpDir
 }
 
-
 // return adapterInfoFns + corresponding SkyAdapter object.
 func cnstrAdapterInfos(adptBehaviors []AdptBehavior) ([]adapter.InfoFn, []spyAdapter) {
 	var adapterInfos []adapter.InfoFn = make([]adapter.InfoFn, 0)
 	var spyAdapters []spyAdapter = make([]spyAdapter, 0)
 	for _, b := range adptBehaviors {
-		sa := spyAdapter{behavior: &b, builderCallData: &builderCallData{data: make(map[string]interface{})}}
+		sa := newSpyAdapter(&b)
 		spyAdapters = append(spyAdapters, sa)
 		adapterInfos = append(adapterInfos, sa.getFakeHndlrBldrInfoFn())
 	}

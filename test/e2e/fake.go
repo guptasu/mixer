@@ -61,6 +61,10 @@ type builderCallData struct {
 	data map[string]interface{}
 }
 
+func newSpyAdapter(b *AdptBehavior) spyAdapter {
+	return spyAdapter{behavior: b, builderCallData: &builderCallData{data: make(map[string]interface{})}}
+}
+
 func (s *spyAdapter) getFakeHndlrBldrInfoFn() adapter.InfoFn {
 	return func() adapter.BuilderInfo {
 		return adapter.BuilderInfo{
