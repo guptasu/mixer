@@ -32,7 +32,7 @@ import (
 )
 
 // Controller is responsible for watching configuration using the Store2 API.
-// Controller produces a resolver and installs it in the dispatcher.
+// Controller produces a resnolver and installs it in the dispatcher.
 // Controller consumes potentially inconsistent configuration state from the config store
 // and produces a consistent snapshot.
 // Controller must not panic on configuration problems, it should issues a warning and continue.

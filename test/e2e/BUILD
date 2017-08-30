@@ -8,7 +8,7 @@ go_test(
     size = "small",
     srcs = [
         "e2e_configuration_test.go",
-        "fake.go",
+        "spyadapter.go",
         "util.go",
     ],
     deps = [
@@ -22,6 +22,7 @@ go_test(
         "//pkg/config/descriptor:go_default_library",
         "//pkg/config/store:go_default_library",
         "//pkg/expr:go_default_library",
+        "@com_github_davecgh_go_spew//spew:go_default_library",
         "//pkg/il/evaluator:go_default_library",
         "//pkg/pool:go_default_library",
         "//pkg/runtime:go_default_library",

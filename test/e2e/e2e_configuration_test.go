@@ -23,7 +23,6 @@ import (
 	"istio.io/mixer/pkg/template"
 )
 
-
 const (
 
 	globalCnfg = `
@@ -67,8 +66,8 @@ metadata:
 spec:
   value: "2"
   dimensions:
-    source: source.name
-    target_ip: target.name
+    source: source.name | "mysrc"
+    target_ip: target.name | "mytarget"
 
 ---
 
@@ -109,12 +108,14 @@ func TestReport(t *testing.T) {
 			oprtrCnfg:     reportTestCnfg,
 			adptBehaviors: []AdptBehavior{AdptBehavior{name:"fakeHandler"}},
 			templates:     e2eTmpl.SupportedTmplInfo,
-			attribs:       map[string]interface{}{},
+			attribs:       map[string]interface{}{"target.name": "somesrvcname"},
 			validate: func(t *testing.T, err error, spyAdpts []*spyAdapter) {
-				if spyAdpts[0].builderCallData.ConfigureSampleReportHandler_types == nil {
+				adptr := spyAdpts[0]
+				//cmpAndErr("ConfigureSampleReportHandler input", t, nil, adptr.bldrCallData.ConfigureSampleReportHandler_types)
+				if adptr.bldrCallData.ConfigureSampleReportHandler_types == nil {
 					t.Error("Call ConfigureSampleReportHandler not made on the builder")
 				}
-				if spyAdpts[0].builderCallData.Build_adptCnfg == nil {
+				if adptr.bldrCallData.Build_adptCnfg == nil {
 					t.Error("Call Build not made on the builder")
 				}
 			},

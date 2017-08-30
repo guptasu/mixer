@@ -34,6 +34,9 @@ import (
 	"path"
 	"istio.io/mixer/pkg/template"
 	"istio.io/mixer/pkg/attribute"
+	"reflect"
+	"fmt"
+	"github.com/davecgh/go-spew/spew"
 )
 
 const (
@@ -85,14 +88,12 @@ func getDispatcher(t *testing.T, configStore2URL string, adptInfos []adapter.Inf
 func getAdapterGoRoutinePool(adapterPoolSize int, singleThreadedGoRoutinePool bool) *pool.GoroutinePool {
 	adapterGP := pool.NewGoroutinePool(adapterPoolSize, singleThreadedGoRoutinePool)
 	adapterGP.AddWorkers(adapterPoolSize)
-	defer adapterGP.Close()
 	return adapterGP
 }
 func getGoRoutinePool(apiPoolSize int, singleThreadedGoRoutinePool bool) *pool.GoroutinePool {
 	gp := pool.NewGoroutinePool(apiPoolSize, singleThreadedGoRoutinePool)
 	gp.AddWorkers(apiPoolSize)
 	gp.AddWorkers(apiPoolSize)
-	defer gp.Close()
 	return gp
 }
 
@@ -117,9 +118,9 @@ func cnstrAdapterInfos(adptBehaviors []AdptBehavior) ([]adapter.InfoFn, []*spyAd
 	var adapterInfos []adapter.InfoFn = make([]adapter.InfoFn, 0)
 	var spyAdapters []*spyAdapter = make([]*spyAdapter, 0)
 	for _, b := range adptBehaviors {
-		sa := newSpyAdapter(&b)
+		sa := newSpyAdapter(b)
 		spyAdapters = append(spyAdapters, sa)
-		adapterInfos = append(adapterInfos, sa.getFakeHndlrBldrInfoFn())
+		adapterInfos = append(adapterInfos, sa.getAdptInfoFn())
 	}
 	return adapterInfos, spyAdapters
 }
@@ -131,4 +132,40 @@ func getAttrBag(attribs map[string]interface{}) *attribute.MutableBag {
 		requestBag.Set(k, v)
 	}
 	return requestBag
+}
+
+
+func cmpAndErr(msg string, t *testing.T, expt interface{}, actual interface{}) {
+	a := InterfaceSlice(expt)
+	b := InterfaceSlice(actual)
+	if len(a) != len(b) {
+		t.Errorf(fmt.Sprintf("Not equal -> %s.\nActual :\n%s\n\nExpected :\n%s",msg, spew.Sdump(actual), spew.Sdump(expt)))
+		return
+	}
+
+	for _, x1 := range a {
+		f := false
+		for _, x2 := range b {
+			if reflect.DeepEqual(x1, x2) {
+				f = true
+			}
+		}
+		if !f {
+			t.Errorf(fmt.Sprintf("Not equal -> %s.\nActual :\n%s\n\nExpected :\n%s",msg, spew.Sdump(actual), spew.Sdump(expt)))
+			return
+		}
+	}
+	return
+}
+
+
+func InterfaceSlice(slice interface{}) []interface{} {
+	s := reflect.ValueOf(slice)
+
+	ret := make([]interface{}, s.Len())
+	for i := 0; i < s.Len(); i++ {
+		ret[i] = s.Index(i).Interface()
+	}
+
+	return ret
 }
