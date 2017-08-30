@@ -43,15 +43,19 @@ func (fakeHndlr) Close() error {
 	globalActualHandlerCallInfoToValidate["Close"] = nil
 	return nil
 }
-func GetFakeHndlrBuilderInfo() adapter.BuilderInfo {
-	return adapter.BuilderInfo{
-		Name:                 "fakeHandler",
-		Description:          "",
-		SupportedTemplates:   []string{reportTmpl.TemplateName},
-		CreateHandlerBuilder: func() adapter.HandlerBuilder { return fakeHndlrBldr{} },
-		DefaultConfig:        &types.Empty{},
-		ValidateConfig: func(msg adapter.Config) *adapter.ConfigErrors {
-			return nil
-		},
+
+func getFakeHndlrBldrInfoFn(name string) adapter.InfoFn {
+	return func() adapter.BuilderInfo {
+		return adapter.BuilderInfo{
+			Name:                 name,
+			Description:          "",
+			SupportedTemplates:   []string{reportTmpl.TemplateName},
+			CreateHandlerBuilder: func() adapter.HandlerBuilder { return fakeHndlrBldr{} },
+			DefaultConfig:        &types.Empty{},
+			ValidateConfig: func(msg adapter.Config) *adapter.ConfigErrors {
+				return nil
+			},
+		}
 	}
+
 }

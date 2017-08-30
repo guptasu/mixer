@@ -16,11 +16,12 @@ package e2e
 
 import (
 	"os"
-	"path"
 	"testing"
 	"context"
 	"istio.io/mixer/pkg/attribute"
 	"istio.io/mixer/pkg/adapter"
+	e2eTmpl "istio.io/mixer/test/e2e/template"
+	"istio.io/mixer/pkg/template"
 )
 
 // The adapter implementation fills this data and test can verify what was called.
@@ -30,15 +31,12 @@ var globalActualHandlerCallInfoToValidate map[string]interface{}
 const (
 
 	globalCnfg = `
-subject: namespace:ns
-revision: "2022"
-handlers:
-  - name: fooHandler
-    adapter: fakeHandler
-
-manifests:
-  - name: istio-proxy
-    revision: "1"
+apiVersion: "config.istio.io/v1alpha2"
+kind: attribute-manifest
+metadata:
+  name: istio-proxy
+  namespace: default
+spec:
     attributes:
       source.name:
         value_type: STRING
@@ -54,60 +52,94 @@ manifests:
         value_type: DOUBLE
       attr.int64:
         value_type: INT64
+---
 `
-	srvConfig = `
-subject: namespace:ns
-action_rules:
-- selector: target.name == "*"
-  actions:
-  - handler: fooHandler
-    instances:
-    - fooInstance
+	reportTestCnfg = `
+apiVersion: "config.istio.io/v1alpha2"
+kind: fakeHandler
+metadata:
+  name: fakeHandlerConfig
+  namespace: istio-config-default
 
-instances:
-- name: fooInstance
-  template: "report"
-  params:
-    value: "2"
-    dimensions:
-      source: source.name
-      target_ip: target.name
+---
+
+apiVersion: "config.istio.io/v1alpha2"
+kind: report
+metadata:
+  name: reportInstance
+  namespace: istio-config-default
+spec:
+  value: "2"
+  dimensions:
+    source: source.name
+    target_ip: target.name
+
+---
+
+apiVersion: "config.istio.io/v1alpha2"
+kind: mixer-rule
+metadata:
+  name: rule1
+  namespace: istio-config-default
+spec:
+  selector: target.name == "*"
+  actions:
+  - handler: fakeHandlerConfig.fakeHandler.istio-config-default
+    instances: [ reportInstance.report.istio-config-default ]
+
+---
 `
 )
 
-func executeReport(
-	t *testing.T,
-	declarativeSrvcCnfgFilePath string,
-	declaredGlobalCnfgFilePath string,
-	configStore2URL string,
-	requestBag attribute.Bag,
-	adptInfos []adapter.InfoFn,
-) error {
-	dispatcher := getDispatcher(t, configStore2URL, declaredGlobalCnfgFilePath, declarativeSrvcCnfgFilePath, adptInfos)
-	return dispatcher.Report(context.TODO(), requestBag)
+type adptr struct {
+	name string
+	handler adapter.Handler
+	builder adapter.HandlerBuilder
 }
 
-func TestConfigFlow(t *testing.T) {
-	sc, gsc := getCnfgs(srvConfig, globalCnfg)
-	defer func() {
-		_ = os.Remove(sc.Name())
-		_ = os.Remove(gsc.Name())
-	}() // nolint: gas
+func TestReport(t *testing.T) {
 
-	globalActualHandlerCallInfoToValidate = make(map[string]interface{})
+	tests := []struct {
+		name      string
+		oprtrCnfg string
+		adapters []adapter.InfoFn
+		templates map[string]template.Info
+		validate func(t *testing.T, err error, callInfos map[string]interface{})
+	}{
+		{
+			name:      "Report",
+			oprtrCnfg: reportTestCnfg,
+			adapters: []adapter.InfoFn{getFakeHndlrBldrInfoFn("fakeHandler")},
+			templates: e2eTmpl.SupportedTmplInfo,
+			validate: func(t *testing.T, err error, callInfo map[string]interface{}) {
+				// validate globalActualHandlerCallInfoToValidate
+				if len(callInfo) != 2 {
+					t.Errorf("got call count %d\nwant %d", len(callInfo), 2)
+				}
 
-	requestBag := attribute.GetMutableBag(nil)
-	requestBag.Set(configIdentityAttribute, identityDomainAttribute)
-	adapters := []adapter.InfoFn{GetFakeHndlrBuilderInfo}
-
-	executeReport(t, sc.Name(), gsc.Name(), "fs://"+path.Dir(sc.Name()), requestBag, adapters)
-
-	// validate globalActualHandlerCallInfoToValidate
-	if len(globalActualHandlerCallInfoToValidate) != 2 {
-		t.Errorf("got call count %d\nwant %d", len(globalActualHandlerCallInfoToValidate), 2)
+				if callInfo["ConfigureSampleReport"] == nil || callInfo["Build"] == nil {
+					t.Errorf("got call info as : %v. \nwant calls %s and %s to have been called", callInfo, "ConfigureSample", "Build")
+				}
+			},
+		},
 	}
+	for _, tt := range tests {
+		configDir := getCnfgs(tt.oprtrCnfg, globalCnfg)
+		defer func() {
+			if !t.Failed() {
+				_ = os.RemoveAll(configDir)
+			} else {
+				t.Logf("The configs are located at %s", configDir)
+			}
+		}() // nolint: gas
 
-	if globalActualHandlerCallInfoToValidate["ConfigureSampleReport"] == nil || globalActualHandlerCallInfoToValidate["Build"] == nil {
-		t.Errorf("got call info as : %v. \nwant calls %s and %s to have been called", globalActualHandlerCallInfoToValidate, "ConfigureSample", "Build")
+		globalActualHandlerCallInfoToValidate = make(map[string]interface{})
+
+		requestBag := attribute.GetMutableBag(nil)
+		requestBag.Set(configIdentityAttribute, identityDomainAttribute)
+
+		dispatcher := getDispatcher(t, "fs://"+configDir, tt.adapters, tt.templates)
+		err := dispatcher.Report(context.TODO(), requestBag)
+		tt.validate(t, err, globalActualHandlerCallInfoToValidate)
 	}
 }

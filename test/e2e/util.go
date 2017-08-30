@@ -16,25 +16,23 @@ package e2e
 
 import (
 	"testing"
-	"time"
+	//"time"
 
 	adp "istio.io/mixer/adapter"
-	"istio.io/mixer/adapter/noop"
+	//"istio.io/mixer/adapter/noop"
 	"istio.io/mixer/pkg/adapter"
-	adaptManager "istio.io/mixer/pkg/adapterManager"
-	"istio.io/mixer/pkg/aspect"
+	//adaptManager "istio.io/mixer/pkg/adapterManager"
+	//"istio.io/mixer/pkg/aspect"
 	"istio.io/mixer/pkg/config"
 	"istio.io/mixer/pkg/config/store"
 	"istio.io/mixer/pkg/expr"
 	"istio.io/mixer/pkg/il/evaluator"
 	"istio.io/mixer/pkg/pool"
 	mixerRuntime "istio.io/mixer/pkg/runtime"
-	"istio.io/mixer/pkg/template"
-	e2eTmpl "istio.io/mixer/test/e2e/template"
+	//"istio.io/mixer/pkg/template"
 	"os"
-	"io/ioutil"
 	"path"
-	"bytes"
+	"istio.io/mixer/pkg/template"
 )
 
 const (
@@ -43,12 +41,12 @@ const (
 )
 
 // fail fatal if dispatcher cannot be constructed
-func getDispatcher(t *testing.T, configStore2URL string, declaredGlobalCnfgFilePath string, declarativeSrvcCnfgFilePath string, adptInfos []adapter.InfoFn) mixerRuntime.Dispatcher {
+func getDispatcher(t *testing.T, configStore2URL string, adptInfos []adapter.InfoFn, tmplInfos map[string]template.Info) mixerRuntime.Dispatcher {
 	// TODO replace
 	useIL := false
 	apiPoolSize := 1024
 	adapterPoolSize := 1024
-	loopDelay := time.Second * 5
+	//loopDelay := time.Second * 5
 	singleThreadedGoRoutinePool := false
 	configDefaultNamespace := "istio-config-default"
 	gp := getGoRoutinePool(apiPoolSize, singleThreadedGoRoutinePool)
@@ -74,35 +72,12 @@ func getDispatcher(t *testing.T, configStore2URL string, declaredGlobalCnfgFileP
 	}
 	dispatcher, err = mixerRuntime.New(eval, gp, adapterGP,
 		configIdentityAttribute, configDefaultNamespace,
-		store2, adapterMap, e2eTmpl.SupportedTmplInfo,
+		store2, adapterMap, tmplInfos,
 	)
 	if err != nil {
 		t.Fatalf("Failed to create runtime dispatcher. %v", err)
 	}
-	adapterMgr := adaptManager.NewManager(
-		[]adapter.RegisterFn{
-			noop.Register,
-		},
-		aspect.Inventory(),
-		eval,
-		gp,
-		adapterGP,
-	)
-	store, err := config.NewCompatFSStore(declaredGlobalCnfgFilePath, declarativeSrvcCnfgFilePath)
-	if err != nil {
-		t.Fatalf("NewCompatFSStore failed: %v", err)
-	}
-	configManager := config.NewManager(eval, adapterMgr.AspectValidatorFinder, adapterMgr.BuilderValidatorFinder, adptInfos,
-		adapterMgr.SupportedKinds,
-		template.NewRepository(e2eTmpl.SupportedTmplInfo),
-		store,
-		loopDelay,
-		configIdentityAttribute, identityDomainAttribute)
-	if useIL {
-		configManager.Register(ilEval)
-	}
-	configManager.Register(adapterMgr)
-	configManager.Start()
+
 	return dispatcher
 }
 
@@ -120,19 +95,18 @@ func getGoRoutinePool(apiPoolSize int, singleThreadedGoRoutinePool bool) *pool.G
 	return gp
 }
 
-func getCnfgs(srvcCnfg, attrCnfg string) (declarativeSrvcCnfg *os.File, declaredGlobalCnfg *os.File) {
-	dir2, _ := ioutil.TempDir("e2eStoreDir", "")
-	srvcCnfgFile, _ := os.Create(path.Join(dir2, "srvc.yaml"))
-	globalCnfgFile, _ := os.Create(path.Join(dir2, "global.yaml"))
+func getCnfgs(srvcCnfg, attrCnfg string) (dir string) {
+	tmpDir := path.Join(os.TempDir(), "e2eStoreDir")
+	os.MkdirAll(tmpDir, os.ModePerm)
+
+	srvcCnfgFile, _ := os.Create(path.Join(tmpDir, "srvc.yaml"))
+	globalCnfgFile, _ := os.Create(path.Join(tmpDir, "global.yaml"))
 
 	_, _ = globalCnfgFile.Write([]byte(attrCnfg))
+	_, _ = srvcCnfgFile.Write([]byte(srvcCnfg))
+
 	_ = globalCnfgFile.Close()
-
-	var srvcCnfgBuffer bytes.Buffer
-	srvcCnfgBuffer.WriteString(srvcCnfg)
-
-	_, _ = srvcCnfgFile.Write([]byte(srvcCnfgBuffer.String()))
 	_ = srvcCnfgFile.Close()
 
-	return srvcCnfgFile, globalCnfgFile
+	return tmpDir
 }
