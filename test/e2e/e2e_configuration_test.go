@@ -113,12 +113,12 @@ func TestReport(t *testing.T) {
 			attribs:       map[string]interface{}{},
 			validate: func(t *testing.T, err error, spyAdpts []*spyAdapter) {
 				// validate globalActualHandlerCallInfoToValidate
-				if len(spyAdpts[0].builderCallData.data) != 2 {
-					t.Errorf("got call count %d\nwant %d", len(spyAdpts[0].builderCallData.data), 2)
-				}
 
-				if spyAdpts[0].builderCallData.data["ConfigureSampleReport"] == nil || spyAdpts[0].builderCallData.data["Build"] == nil {
-					t.Errorf("got call info as : %v. \nwant calls %s and %s to have been called", spyAdpts[0].builderCallData.data, "ConfigureSample", "Build")
+				if spyAdpts[0].builderCallData.ConfigureSampleReportHandler_types == nil {
+					t.Error("Call ConfigureSampleReportHandler not made on the builder")
+				}
+				if spyAdpts[0].builderCallData.Build_adptCnfg == nil {
+					t.Error("Call Build not made on the builder")
 				}
 			},
 		},
