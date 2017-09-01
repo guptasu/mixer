@@ -138,7 +138,7 @@ func (h *handlerFactory) build(hndlrBldr adapter.HandlerBuilder, infrdTypesByTmp
 		typs = infrdTypesByTmpl[tmplName]
 		// ti should be there for a valid configuration.
 		ti, _ = h.tmplRepo.GetTemplateInfo(tmplName)
-		if err := ti.ConfigureType(typs, &hndlrBldr); err != nil {
+		if err := ti.SetType(typs, &hndlrBldr); err != nil {
 			return nil, fmt.Errorf("cannot configure handler types %v for mesh function name '%s': %v", typs, tmplName, err)
 		}
 	}

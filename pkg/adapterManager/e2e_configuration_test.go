@@ -49,7 +49,7 @@ func (fakeHndlrBldr) Build(cnfg adapter.Config, _ adapter.Env) (adapter.Handler,
 	fakeHndlrObj := fakeHndlr{}
 	return fakeHndlrObj, nil
 }
-func (fakeHndlrBldr) ConfigureSampleHandler(typeParams map[string]*sample_report.Type) error {
+func (fakeHndlrBldr) SetSampleTypes(typeParams map[string]*sample_report.Type) error {
 	globalActualHandlerCallInfoToValidate["ConfigureSample"] = typeParams
 	return nil
 }
