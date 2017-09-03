@@ -32,9 +32,9 @@ import (
 	"time"
 
 	"istio.io/mixer/adapter/memquota2/config"
+	"istio.io/mixer/pkg/adapter"
 	"istio.io/mixer/pkg/status"
 	"istio.io/mixer/template/quota"
-	"istio.io/mixer/pkg/adapter"
 )
 
 type handler struct {

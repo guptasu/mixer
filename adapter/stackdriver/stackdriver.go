@@ -22,13 +22,14 @@ import (
 
 	monitoring "cloud.google.com/go/monitoring/apiv3"
 	"github.com/golang/protobuf/ptypes"
+	gax "github.com/googleapis/gax-go"
 	xcontext "golang.org/x/net/context"
 	gapiopts "google.golang.org/api/option"
 	labelpb "google.golang.org/genproto/googleapis/api/label"
 	metricpb "google.golang.org/genproto/googleapis/api/metric"
 	"google.golang.org/genproto/googleapis/api/monitoredres"
 	monitoringpb "google.golang.org/genproto/googleapis/monitoring/v3"
-	gax "github.com/googleapis/gax-go"
+
 	descriptor "istio.io/api/mixer/v1/config/descriptor"
 	"istio.io/mixer/adapter/stackdriver/config"
 	"istio.io/mixer/pkg/adapter"

@@ -24,10 +24,10 @@ import (
 	rpc "github.com/googleapis/googleapis/google/rpc"
 
 	"istio.io/mixer/adapter/denier/config"
+	"istio.io/mixer/pkg/adapter"
 	"istio.io/mixer/template/checknothing"
 	"istio.io/mixer/template/listentry"
 	"istio.io/mixer/template/quota"
-	"istio.io/mixer/pkg/adapter"
 )
 
 type handler struct {

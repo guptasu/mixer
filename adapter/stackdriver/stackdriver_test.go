@@ -22,6 +22,7 @@ import (
 	"testing"
 	"time"
 
+	monitoring "cloud.google.com/go/monitoring/apiv3"
 	"github.com/golang/protobuf/ptypes"
 	gapiopts "google.golang.org/api/option"
 	metricpb "google.golang.org/genproto/googleapis/api/metric"
@@ -30,7 +31,6 @@ import (
 
 	descriptor "istio.io/api/mixer/v1/config/descriptor"
 	"istio.io/mixer/adapter/stackdriver/config"
-	monitoring "cloud.google.com/go/monitoring/apiv3"
 	"istio.io/mixer/pkg/adapter/test"
 	metrict "istio.io/mixer/template/metric"
 )
