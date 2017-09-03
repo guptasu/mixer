@@ -162,9 +162,9 @@ func (h *handler) Close() error {
 
 ////////////////// Config //////////////////////////
 
-// GetInfo returns the Info associated with this adapter implementation.
-func GetInfo() pkgHndlr.Info {
-	return pkgHndlr.Info{
+// GetInfo returns the BuilderInfo associated with this adapter implementation.
+func GetInfo() pkgHndlr.BuilderInfo {
+	return pkgHndlr.BuilderInfo{
 		Name:        "memquota",
 		Impl:        "istio.io/mixer/adapter/memquota",
 		Description: "Volatile memory-based quota tracking",

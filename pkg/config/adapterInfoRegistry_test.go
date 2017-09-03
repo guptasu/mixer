@@ -31,8 +31,8 @@ type TestBuilderInfoInventory struct {
 	name string
 }
 
-func createBuilderInfo(name string) handler.Info {
-	return handler.Info{
+func createBuilderInfo(name string) handler.BuilderInfo {
+	return handler.BuilderInfo{
 		Name:                 name,
 		Description:          "mock adapter for testing",
 		CreateHandlerBuilder: func() adapter.HandlerBuilder { return fakeHandlerBuilder{} },
@@ -42,7 +42,7 @@ func createBuilderInfo(name string) handler.Info {
 	}
 }
 
-func (t *TestBuilderInfoInventory) getNewGetBuilderInfoFn() handler.Info {
+func (t *TestBuilderInfoInventory) getNewGetBuilderInfoFn() handler.BuilderInfo {
 	return createBuilderInfo(t.name)
 }
 
@@ -106,12 +106,12 @@ func TestMissingDefaultValue(t *testing.T) {
 
 	defer func() {
 		if r := recover(); r == nil {
-			t.Error("Expected to recover from panic due to missing DefaultValue in Info, " +
+			t.Error("Expected to recover from panic due to missing DefaultValue in BuilderInfo, " +
 				"but recover was nil.")
 		}
 	}()
 
-	_ = newRegistry2([]handler.InfoFn{func() handler.Info { return builderInfo }}, fakeValidateSupportedTmpl)
+	_ = newRegistry2([]handler.InfoFn{func() handler.BuilderInfo { return builderInfo }}, fakeValidateSupportedTmpl)
 
 	t.Error("Should not reach this statement due to panic.")
 }
@@ -123,12 +123,12 @@ func TestMissingValidateConfigFn(t *testing.T) {
 
 	defer func() {
 		if r := recover(); r == nil {
-			t.Error("Expected to recover from panic due to missing ValidateConfig in Info, " +
+			t.Error("Expected to recover from panic due to missing ValidateConfig in BuilderInfo, " +
 				"but recover was nil.")
 		}
 	}()
 
-	_ = newRegistry2([]handler.InfoFn{func() handler.Info { return builderInfo }}, fakeValidateSupportedTmpl)
+	_ = newRegistry2([]handler.InfoFn{func() handler.BuilderInfo { return builderInfo }}, fakeValidateSupportedTmpl)
 
 	t.Error("Should not reach this statement due to panic.")
 }
@@ -164,8 +164,8 @@ func (badHandlerBuilder) Build(adapter.Config, adapter.Env) (adapter.Handler, er
 }
 
 func TestBuilderNotImplementRightTemplateInterface(t *testing.T) {
-	badHandlerBuilderBuilderInfo1 := func() handler.Info {
-		return handler.Info{
+	badHandlerBuilderBuilderInfo1 := func() handler.BuilderInfo {
+		return handler.BuilderInfo{
 			Name:                 "badAdapter1",
 			Description:          "mock adapter for testing",
 			DefaultConfig:        &types.Empty{},
@@ -174,8 +174,8 @@ func TestBuilderNotImplementRightTemplateInterface(t *testing.T) {
 			SupportedTemplates:   []string{sample_report.TemplateName},
 		}
 	}
-	badHandlerBuilderBuilderInfo2 := func() handler.Info {
-		return handler.Info{
+	badHandlerBuilderBuilderInfo2 := func() handler.BuilderInfo {
+		return handler.BuilderInfo{
 			Name:                 "badAdapter1",
 			Description:          "mock adapter for testing",
 			DefaultConfig:        &types.Empty{},

@@ -39,11 +39,11 @@ import (
 // Controller must not panic on configuration problems, it should issues a warning and continue.
 type Controller struct {
 	// Static information
-	adapterInfo            map[string]*handler.Info // maps adapter shortName to Info.
-	templateInfo           map[string]template.Info // maps template name to Info.
-	eval                   expr.Evaluator           // Used to infer types. Used by resolver and dispatcher.
-	identityAttribute      string                   // used by resolver
-	defaultConfigNamespace string                   // used by resolver
+	adapterInfo            map[string]*handler.BuilderInfo // maps adapter shortName to BuilderInfo.
+	templateInfo           map[string]template.Info        // maps template name to BuilderInfo.
+	eval                   expr.Evaluator                  // Used to infer types. Used by resolver and dispatcher.
+	identityAttribute      string                          // used by resolver
+	defaultConfigNamespace string                          // used by resolver
 
 	// configState is the current (potentially inconsistent) view of config.
 	// It receives updates from the underlying config store.
@@ -101,7 +101,7 @@ type VocabularyChangeListener interface {
 
 // factoryCreatorFunc creates a handler factory. It is used for testing.
 type factoryCreatorFunc func(templateInfo map[string]template.Info, expr expr.TypeChecker,
-	df expr.AttributeDescriptorFinder, builderInfo map[string]*handler.Info) HandlerFactory
+	df expr.AttributeDescriptorFinder, builderInfo map[string]*handler.BuilderInfo) HandlerFactory
 
 // applyEventsFn is used for testing
 type applyEventsFn func(events []*store.Event)

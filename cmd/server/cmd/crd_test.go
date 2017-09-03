@@ -30,8 +30,8 @@ import (
 var empty = ``
 
 var exampleAdapters = []handler.InfoFn{
-	func() handler.Info { return handler.Info{Name: "foo-bar"} },
-	func() handler.Info { return handler.Info{Name: "abcd"} },
+	func() handler.BuilderInfo { return handler.BuilderInfo{Name: "foo-bar"} },
+	func() handler.BuilderInfo { return handler.BuilderInfo{Name: "abcd"} },
 }
 var exampleAdaptersCrd = `
 kind: CustomResourceDefinition

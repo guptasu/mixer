@@ -104,9 +104,9 @@ var (
 	_ metric.Handler        = &handler{}
 )
 
-// GetInfo returns the Info associated with this adapter implementation.
-func GetInfo() pkgHndlr.Info {
-	return pkgHndlr.Info{
+// GetInfo returns the BuilderInfo associated with this adapter implementation.
+func GetInfo() pkgHndlr.BuilderInfo {
+	return pkgHndlr.BuilderInfo{
 		Name:        "stackdriver",
 		Impl:        "istio.io/mixer/adapter/stackdriver",
 		Description: "Pushes metrics to Stackdriver.",
@@ -139,7 +139,7 @@ func toOpts(cfg *config.Params) (opts []gapiopts.ClientOption) {
 	return
 }
 
-func (b *builder) ConfigureMetricHandler(metrics map[string]*metric.Type) error {
+func (b *builder) SetMetricTypes(metrics map[string]*metric.Type) error {
 	b.metrics = metrics
 	return nil
 }

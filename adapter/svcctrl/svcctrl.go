@@ -89,8 +89,8 @@ func (h *handler) Close() error {
 ////////////////// Config //////////////////////////
 
 // GetInfo registers Adapter with Mixer.
-func GetInfo() pkgHndlr.Info {
-	return pkgHndlr.Info{
+func GetInfo() pkgHndlr.BuilderInfo {
+	return pkgHndlr.BuilderInfo{
 		Name:        "svcctrl",
 		Impl:        "istio.io/mixer/adapter/svcctrl",
 		Description: "Interface to Google Service Control",
@@ -142,6 +142,6 @@ func (o *obuilder) Build(cfg adapter.Config, env adapter.Env) (adapter.Handler, 
 }
 
 // ConfigureMetricHandler is to be deleted
-func (*obuilder) ConfigureMetricHandler(map[string]*metric.Type) error {
+func (*obuilder) SetMetricTypes(map[string]*metric.Type) error {
 	return nil
 }

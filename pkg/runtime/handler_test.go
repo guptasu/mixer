@@ -156,8 +156,8 @@ func TestBuild_Error(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			bldrInfoFinder := func(name string) (*handler.Info, bool) {
-				return &handler.Info{CreateHandlerBuilder: func() adapter.HandlerBuilder { return tt.hndlrBuilder }}, true
+			bldrInfoFinder := func(name string) (*handler.BuilderInfo, bool) {
+				return &handler.BuilderInfo{CreateHandlerBuilder: func() adapter.HandlerBuilder { return tt.hndlrBuilder }}, true
 			}
 
 			hf := NewHandlerFactory(tt.tmplRepo, nil, nil, bldrInfoFinder)
@@ -273,8 +273,8 @@ func TestBuild_Valid(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			bldrInfoFinder := func(name string) (*handler.Info, bool) {
-				return &handler.Info{CreateHandlerBuilder: func() adapter.HandlerBuilder { return tt.hndlrBuilder }}, true
+			bldrInfoFinder := func(name string) (*handler.BuilderInfo, bool) {
+				return &handler.BuilderInfo{CreateHandlerBuilder: func() adapter.HandlerBuilder { return tt.hndlrBuilder }}, true
 			}
 
 			hf := NewHandlerFactory(tt.tmplRepo, nil, nil, bldrInfoFinder)

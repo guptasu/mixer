@@ -43,7 +43,7 @@ func (f *fakedispatcher) ChangeResolver(rt Resolver) {
 func TestControllerEmpty(t *testing.T) {
 	d := &fakedispatcher{}
 	c := &Controller{
-		adapterInfo:            make(map[string]*handler.Info),
+		adapterInfo:            make(map[string]*handler.BuilderInfo),
 		templateInfo:           make(map[string]template.Info),
 		eval:                   nil,
 		configState:            make(map[store.Key]proto.Message),
@@ -52,7 +52,7 @@ func TestControllerEmpty(t *testing.T) {
 		identityAttribute:      DefaultIdentityAttribute,
 		defaultConfigNamespace: DefaultConfigNamespace,
 		createHandlerFactory: func(templateInfo map[string]template.Info, expr expr.TypeChecker,
-			df expr.AttributeDescriptorFinder, builderInfo map[string]*handler.Info) HandlerFactory {
+			df expr.AttributeDescriptorFinder, builderInfo map[string]*handler.BuilderInfo) HandlerFactory {
 			return &fhbuilder{}
 		},
 	}
@@ -122,7 +122,7 @@ func TestController_workflow(t *testing.T) {
 	mcd := maxCleanupDuration
 	defer func() { maxCleanupDuration = mcd }()
 
-	adapterInfo := map[string]*handler.Info{
+	adapterInfo := map[string]*handler.BuilderInfo{
 		"AA": {
 			Name: "AA",
 		},
@@ -160,7 +160,7 @@ func TestController_workflow(t *testing.T) {
 		identityAttribute:      DefaultIdentityAttribute,
 		defaultConfigNamespace: DefaultConfigNamespace,
 		createHandlerFactory: func(templateInfo map[string]template.Info, expr expr.TypeChecker,
-			df expr.AttributeDescriptorFinder, builderInfo map[string]*handler.Info) HandlerFactory {
+			df expr.AttributeDescriptorFinder, builderInfo map[string]*handler.BuilderInfo) HandlerFactory {
 			return fb
 		},
 	}

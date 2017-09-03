@@ -25,19 +25,19 @@ import (
 )
 
 type adapterInfoRegistry struct {
-	adapterInfosByName map[string]*pkgHndlr.Info
+	adapterInfosByName map[string]*pkgHndlr.BuilderInfo
 }
 
 type handlerBuilderValidator func(hndlrBuilder adapter.HandlerBuilder, t string) (bool, string)
 
 // newRegistry2 returns a new adapterInfoRegistry.
 func newRegistry2(infos []pkgHndlr.InfoFn, hndlrBldrValidator handlerBuilderValidator) *adapterInfoRegistry {
-	r := &adapterInfoRegistry{make(map[string]*pkgHndlr.Info)}
+	r := &adapterInfoRegistry{make(map[string]*pkgHndlr.BuilderInfo)}
 	for idx, info := range infos {
 		glog.V(3).Infof("Registering [%d] %#v", idx, info)
 		adptInfo := info()
 		if a, ok := r.adapterInfosByName[adptInfo.Name]; ok {
-			// panic only if 2 different adapter.Info objects are trying to identify by the
+			// panic only if 2 different adapter.BuilderInfo objects are trying to identify by the
 			// same Name.
 			msg := fmt.Errorf("duplicate registration for '%s' : old = %v new = %v", a.Name, adptInfo, a)
 			glog.Error(msg)
@@ -73,12 +73,12 @@ func newRegistry2(infos []pkgHndlr.InfoFn, hndlrBldrValidator handlerBuilderVali
 
 // AdapterInfoMap returns the known adapter.Infos, indexed by their names.
 func AdapterInfoMap(handlerRegFns []pkgHndlr.InfoFn,
-	hndlrBldrValidator handlerBuilderValidator) map[string]*pkgHndlr.Info {
+	hndlrBldrValidator handlerBuilderValidator) map[string]*pkgHndlr.BuilderInfo {
 	return newRegistry2(handlerRegFns, hndlrBldrValidator).adapterInfosByName
 }
 
-// FindAdapterInfo returns the adapter.Info object with the given name.
-func (r *adapterInfoRegistry) FindAdapterInfo(name string) (b *pkgHndlr.Info, found bool) {
+// FindAdapterInfo returns the adapter.BuilderInfo object with the given name.
+func (r *adapterInfoRegistry) FindAdapterInfo(name string) (b *pkgHndlr.BuilderInfo, found bool) {
 	bi, found := r.adapterInfosByName[name]
 	if !found {
 		return nil, false
@@ -86,7 +86,7 @@ func (r *adapterInfoRegistry) FindAdapterInfo(name string) (b *pkgHndlr.Info, fo
 	return bi, true
 }
 
-func doesBuilderSupportsTemplates(info pkgHndlr.Info, hndlrBldrValidator handlerBuilderValidator) (bool, string) {
+func doesBuilderSupportsTemplates(info pkgHndlr.BuilderInfo, hndlrBldrValidator handlerBuilderValidator) (bool, string) {
 	handlerBuilder := info.CreateHandlerBuilder()
 	resultMsgs := make([]string, 0)
 	for _, t := range info.SupportedTemplates {
@@ -101,8 +101,8 @@ func doesBuilderSupportsTemplates(info pkgHndlr.Info, hndlrBldrValidator handler
 }
 
 // InventoryMap converts adapter inventory to a builder map.
-func InventoryMap(inv []pkgHndlr.InfoFn) map[string]*pkgHndlr.Info {
-	m := make(map[string]*pkgHndlr.Info, len(inv))
+func InventoryMap(inv []pkgHndlr.InfoFn) map[string]*pkgHndlr.BuilderInfo {
+	m := make(map[string]*pkgHndlr.BuilderInfo, len(inv))
 	for _, ai := range inv {
 		bi := ai()
 		m[bi.Name] = &bi

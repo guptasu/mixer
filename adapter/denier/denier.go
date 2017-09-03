@@ -61,9 +61,9 @@ func (*handler) Close() error { return nil }
 
 ////////////////// Bootstrap //////////////////////////
 
-// GetInfo returns the Info associated with this adapter implementation.
-func GetInfo() pkgHndlr.Info {
-	return pkgHndlr.Info{
+// GetInfo returns the BuilderInfo associated with this adapter implementation.
+func GetInfo() pkgHndlr.BuilderInfo {
+	return pkgHndlr.BuilderInfo{
 		Name:        "denier",
 		Impl:        "istio.io/mixer/adapter/denier",
 		Description: "Rejects any check and quota request with a configurable error",
