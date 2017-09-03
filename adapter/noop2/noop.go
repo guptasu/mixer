@@ -25,7 +25,6 @@ import (
 	rpc "github.com/googleapis/googleapis/google/rpc"
 
 	"istio.io/mixer/pkg/adapter"
-	pkgHndlr "istio.io/mixer/pkg/handler"
 	"istio.io/mixer/template/checknothing"
 	"istio.io/mixer/template/listentry"
 	"istio.io/mixer/template/logentry"
@@ -75,8 +74,8 @@ func (*handler) Close() error { return nil }
 ////////////////// Config //////////////////////////
 
 // GetInfo returns the BuilderInfo associated with this adapter implementation.
-func GetInfo() pkgHndlr.BuilderInfo {
-	return pkgHndlr.BuilderInfo{
+func GetInfo() adapter.BuilderInfo {
+	return adapter.BuilderInfo{
 		Name:        "noop",
 		Impl:        "istio.io/mixer/adapter/noop",
 		Description: "Does nothing (useful for testing)",

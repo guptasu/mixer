@@ -12,12 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package handler
+package adapter
 
 import (
 	"github.com/gogo/protobuf/proto"
-
-	"istio.io/mixer/pkg/adapter"
 )
 
 // BuilderInfo describes the Adapter and provides a function to a Handler Builder method.
@@ -53,15 +51,14 @@ type BuilderInfo struct {
 }
 
 // CreateHandlerBuilderFn is a function that creates a HandlerBuilder.
-type CreateHandlerBuilderFn func() adapter.HandlerBuilder
+type CreateHandlerBuilderFn func() HandlerBuilder
 
 // NewBuilderFn is a function that creates a Builder.
-type NewBuilderFn func() adapter.Builder2
-
+type NewBuilderFn func() Builder2
 
 // ValidateConfigFn is a function that determines whether the given handler configuration meets all
 // correctness requirements.
-type ValidateConfigFn func(adapter.Config) *adapter.ConfigErrors
+type ValidateConfigFn func(Config) *ConfigErrors
 
 // InfoFn returns an AdapterInfo object that Mixer will use to create HandlerBuilder
 type InfoFn func() BuilderInfo

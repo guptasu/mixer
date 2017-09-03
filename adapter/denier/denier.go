@@ -25,7 +25,6 @@ import (
 
 	"istio.io/mixer/adapter/denier/config"
 	"istio.io/mixer/pkg/adapter"
-	pkgHndlr "istio.io/mixer/pkg/handler"
 	"istio.io/mixer/template/checknothing"
 	"istio.io/mixer/template/listentry"
 	"istio.io/mixer/template/quota"
@@ -62,8 +61,8 @@ func (*handler) Close() error { return nil }
 ////////////////// Bootstrap //////////////////////////
 
 // GetInfo returns the BuilderInfo associated with this adapter implementation.
-func GetInfo() pkgHndlr.BuilderInfo {
-	return pkgHndlr.BuilderInfo{
+func GetInfo() adapter.BuilderInfo {
+	return adapter.BuilderInfo{
 		Name:        "denier",
 		Impl:        "istio.io/mixer/adapter/denier",
 		Description: "Rejects any check and quota request with a configurable error",

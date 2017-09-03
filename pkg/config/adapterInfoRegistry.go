@@ -21,18 +21,17 @@ import (
 	"github.com/golang/glog"
 
 	"istio.io/mixer/pkg/adapter"
-	pkgHndlr "istio.io/mixer/pkg/handler"
 )
 
 type adapterInfoRegistry struct {
-	adapterInfosByName map[string]*pkgHndlr.BuilderInfo
+	adapterInfosByName map[string]*adapter.BuilderInfo
 }
 
 type handlerBuilderValidator func(hndlrBuilder adapter.HandlerBuilder, t string) (bool, string)
 
 // newRegistry2 returns a new adapterInfoRegistry.
 func newRegistry2(infos []pkgHndlr.InfoFn, hndlrBldrValidator handlerBuilderValidator) *adapterInfoRegistry {
-	r := &adapterInfoRegistry{make(map[string]*pkgHndlr.BuilderInfo)}
+	r := &adapterInfoRegistry{make(map[string]*adapter.BuilderInfo)}
 	for idx, info := range infos {
 		glog.V(3).Infof("Registering [%d] %#v", idx, info)
 		adptInfo := info()
@@ -73,12 +72,12 @@ func newRegistry2(infos []pkgHndlr.InfoFn, hndlrBldrValidator handlerBuilderVali
 
 // AdapterInfoMap returns the known adapter.Infos, indexed by their names.
 func AdapterInfoMap(handlerRegFns []pkgHndlr.InfoFn,
-	hndlrBldrValidator handlerBuilderValidator) map[string]*pkgHndlr.BuilderInfo {
+	hndlrBldrValidator handlerBuilderValidator) map[string]*adapter.BuilderInfo {
 	return newRegistry2(handlerRegFns, hndlrBldrValidator).adapterInfosByName
 }
 
 // FindAdapterInfo returns the adapter.BuilderInfo object with the given name.
-func (r *adapterInfoRegistry) FindAdapterInfo(name string) (b *pkgHndlr.BuilderInfo, found bool) {
+func (r *adapterInfoRegistry) FindAdapterInfo(name string) (b *adapter.BuilderInfo, found bool) {
 	bi, found := r.adapterInfosByName[name]
 	if !found {
 		return nil, false
@@ -86,7 +85,7 @@ func (r *adapterInfoRegistry) FindAdapterInfo(name string) (b *pkgHndlr.BuilderI
 	return bi, true
 }
 
-func doesBuilderSupportsTemplates(info pkgHndlr.BuilderInfo, hndlrBldrValidator handlerBuilderValidator) (bool, string) {
+func doesBuilderSupportsTemplates(info adapter.BuilderInfo, hndlrBldrValidator handlerBuilderValidator) (bool, string) {
 	handlerBuilder := info.CreateHandlerBuilder()
 	resultMsgs := make([]string, 0)
 	for _, t := range info.SupportedTemplates {
@@ -101,8 +100,8 @@ func doesBuilderSupportsTemplates(info pkgHndlr.BuilderInfo, hndlrBldrValidator 
 }
 
 // InventoryMap converts adapter inventory to a builder map.
-func InventoryMap(inv []pkgHndlr.InfoFn) map[string]*pkgHndlr.BuilderInfo {
-	m := make(map[string]*pkgHndlr.BuilderInfo, len(inv))
+func InventoryMap(inv []pkgHndlr.InfoFn) map[string]*adapter.BuilderInfo {
+	m := make(map[string]*adapter.BuilderInfo, len(inv))
 	for _, ai := range inv {
 		bi := ai()
 		m[bi.Name] = &bi

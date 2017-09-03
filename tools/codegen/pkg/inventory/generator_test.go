@@ -40,7 +40,7 @@ package adapter
 
 var empty = header + `
 import (
-	pkgHndlr "istio.io/mixer/pkg/handler"
+	pkgHndlr
 )
 
 // Inventory2 returns the inventory of all available adapters.
@@ -54,7 +54,7 @@ import (
 	kubernetes "istio.io/mixer/adapter/kubernetes"
 	noop "istio.io/mixer/adapter/noop"
 	prometheus "istio.io/mixer/adapter/prometheus"
-	pkgHndlr "istio.io/mixer/pkg/handler"
+	pkgHndlr
 )
 
 // Inventory2 returns the inventory of all available adapters.

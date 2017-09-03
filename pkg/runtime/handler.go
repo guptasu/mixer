@@ -25,13 +25,12 @@ import (
 	"istio.io/mixer/pkg/adapter"
 	pb "istio.io/mixer/pkg/config/proto"
 	"istio.io/mixer/pkg/expr"
-	"istio.io/mixer/pkg/handler"
 	"istio.io/mixer/pkg/template"
 )
 
 type (
 	// BuilderInfoFinder is used to find specific handlers BuilderInfo for configuration.
-	BuilderInfoFinder func(name string) (*handler.BuilderInfo, bool)
+	BuilderInfoFinder func(name string) (*adapter.BuilderInfo, bool)
 
 	// TemplateFinder finds a template by name.
 	TemplateFinder interface {
@@ -67,10 +66,10 @@ func (t *templateFinder) GetTemplateInfo(template string) (template.Info, bool) 
 }
 
 func newHandlerFactory(templateInfo map[string]template.Info, expr expr.TypeChecker,
-	df expr.AttributeDescriptorFinder, builderInfo map[string]*handler.BuilderInfo) HandlerFactory {
+	df expr.AttributeDescriptorFinder, builderInfo map[string]*adapter.BuilderInfo) HandlerFactory {
 	return NewHandlerFactory(&templateFinder{
 		templateInfo: templateInfo,
-	}, expr, df, func(name string) (*handler.BuilderInfo, bool) {
+	}, expr, df, func(name string) (*adapter.BuilderInfo, bool) {
 		i, found := builderInfo[name]
 		return i, found
 	})

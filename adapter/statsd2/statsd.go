@@ -26,7 +26,6 @@ import (
 
 	"istio.io/mixer/adapter/statsd2/config"
 	"istio.io/mixer/pkg/adapter"
-	pkgHndlr "istio.io/mixer/pkg/handler"
 	"istio.io/mixer/pkg/pool"
 	"istio.io/mixer/template/metric"
 )
@@ -110,8 +109,8 @@ func (h *handler) Close() error { return h.client.Close() }
 ////////////////// Config //////////////////////////
 
 // GetInfo returns the BuilderInfo associated with this adapter implementation.
-func GetInfo() pkgHndlr.BuilderInfo {
-	return pkgHndlr.BuilderInfo{
+func GetInfo() adapter.BuilderInfo {
+	return adapter.BuilderInfo{
 		Name:        "statsd",
 		Impl:        "istio.io/mixer/adapter/statsd",
 		Description: "Produces statsd metrics",
