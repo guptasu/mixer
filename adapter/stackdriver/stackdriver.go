@@ -28,7 +28,7 @@ import (
 	metricpb "google.golang.org/genproto/googleapis/api/metric"
 	"google.golang.org/genproto/googleapis/api/monitoredres"
 	monitoringpb "google.golang.org/genproto/googleapis/monitoring/v3"
-	"github.com/googleapis/gax-go"
+	gax "github.com/googleapis/gax-go"
 	descriptor "istio.io/api/mixer/v1/config/descriptor"
 	"istio.io/mixer/adapter/stackdriver/config"
 	"istio.io/mixer/pkg/adapter"

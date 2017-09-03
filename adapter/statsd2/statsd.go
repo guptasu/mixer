@@ -26,6 +26,7 @@ import (
 
 	"istio.io/mixer/adapter/statsd2/config"
 	"istio.io/mixer/pkg/adapter"
+
 	"istio.io/mixer/pkg/pool"
 	"istio.io/mixer/template/metric"
 )

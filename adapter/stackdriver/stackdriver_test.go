@@ -30,7 +30,7 @@ import (
 
 	descriptor "istio.io/api/mixer/v1/config/descriptor"
 	"istio.io/mixer/adapter/stackdriver/config"
-	"cloud.google.com/go/monitoring/apiv3"
+	monitoring "cloud.google.com/go/monitoring/apiv3"
 	"istio.io/mixer/pkg/adapter/test"
 	metrict "istio.io/mixer/template/metric"
 )
