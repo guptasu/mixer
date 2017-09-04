@@ -16,9 +16,9 @@ package cmd
 
 import (
 	"istio.io/mixer/cmd/shared"
+	"istio.io/mixer/pkg/adapter"
 	"istio.io/mixer/pkg/expr"
 	"istio.io/mixer/pkg/template"
-	"istio.io/mixer/pkg/adapter"
 )
 
 var defaultSeverArgs = serverArgs{
