@@ -392,7 +392,7 @@ func setupServer(sa *serverArgs, info map[string]template.Info, adapters []adptr
 	return &ServerContext{GP: gp, AdapterGP: adapterGP, Server: gs}
 }
 
-func runServer(sa *serverArgs, info map[string]template.Info, adapters []handler.InfoFn, printf, fatalf shared.FormatFn) {
+func runServer(sa *serverArgs, info map[string]template.Info, adapters []adptr.InfoFn, printf, fatalf shared.FormatFn) {
 	printf("Mixer started with args: %#v", sa)
 	context := setupServer(sa, info, adapters, printf, fatalf)
 	defer context.GP.Close()
