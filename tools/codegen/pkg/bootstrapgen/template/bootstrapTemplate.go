@@ -64,7 +64,7 @@ var (
 			Variety:   adptTmpl.{{.VarietyName}},
 			BldrInterfaceName:  {{.GoPackageName}}.TemplateName + "." + "HandlerBuilder",
 			HndlrInterfaceName: {{.GoPackageName}}.TemplateName + "." + "Handler",
-			BuilderSupportsTemplate: func(hndlrBuilder adapter.HandlerBuilder) bool {
+			BuilderSupportsTemplate: func(hndlrBuilder adapter.Builder2) bool {
 				_, ok := hndlrBuilder.({{.GoPackageName}}.HandlerBuilder)
 				return ok
 			},
@@ -120,7 +120,7 @@ var (
 				_ = cpb
 				return infrdType, err
 			},
-			SetType: func(types map[string]proto.Message, builder *adapter.HandlerBuilder) error {
+			SetType: func(types map[string]proto.Message, builder *adapter.Builder2) error {
 				// Mixer framework should have ensured the type safety.
 				castedBuilder := (*builder).({{.GoPackageName}}.HandlerBuilder)
 				castedTypes := make(map[string]*{{.GoPackageName}}.Type, len(types))

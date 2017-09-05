@@ -23,7 +23,6 @@ package {{.GoPackageName}}
 import (
   "context"
   "istio.io/mixer/pkg/adapter"
-  "istio.io/mixer/pkg/adapter"
   $$additional_imports$$
 )
 
@@ -51,7 +50,7 @@ type Instance struct {
 // it with adapter-specific configuration as well as all inferred types the adapter is expected
 // to handle.
 type HandlerBuilder interface {
-	adapter.HandlerBuilder
+	adapter.Builder2
 
 	// Set{{.Name}}Types is invoked by Mixer to pass all possible Types for instances that an adapter
 	// may receive at runtime. Each type holds information about the shape of the instances.

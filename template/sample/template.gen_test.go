@@ -46,9 +46,11 @@ import (
 type fakeBadHandler struct{}
 
 func (h fakeBadHandler) Close() error { return nil }
-func (h fakeBadHandler) Build(adapter.Config, adapter.Env) (adapter.Handler, error) {
+func (h fakeBadHandler) Build(context.Context, adapter.Env) (adapter.Handler, error) {
 	return nil, nil
 }
+func (h fakeBadHandler) SetAdapterConfig(config adapter.Config) {}
+func (h fakeBadHandler) Validate() *adapter.ConfigErrors {return nil}
 
 type fakeReportHandler struct {
 	adapter.Handler
@@ -62,13 +64,15 @@ func (h *fakeReportHandler) HandleSample(ctx context.Context, instances []*sampl
 	h.procCallInput = instances
 	return h.retError
 }
-func (h *fakeReportHandler) Build(adapter.Config, adapter.Env) (adapter.Handler, error) {
+func (h *fakeReportHandler) Build(context.Context, adapter.Env) (adapter.Handler, error) {
 	return nil, nil
 }
 func (h *fakeReportHandler) SetSampleTypes(t map[string]*sample_report.Type) error {
 	h.cnfgCallInput = t
 	return nil
 }
+func (h fakeReportHandler) SetAdapterConfig(config adapter.Config) {}
+func (h fakeReportHandler) Validate() *adapter.ConfigErrors {return nil}
 
 type fakeCheckHandler struct {
 	adapter.Handler
@@ -83,13 +87,15 @@ func (h *fakeCheckHandler) HandleSample(ctx context.Context, instance *sample_ch
 	h.procCallInput = instance
 	return h.retResult, h.retError
 }
-func (h *fakeCheckHandler) Build(adapter.Config, adapter.Env) (adapter.Handler, error) {
+func (h *fakeCheckHandler) Build(context.Context, adapter.Env) (adapter.Handler, error) {
 	return nil, nil
 }
 func (h *fakeCheckHandler) SetSampleTypes(t map[string]*sample_check.Type) error {
 	h.cnfgCallInput = t
 	return nil
 }
+func (h fakeCheckHandler) SetAdapterConfig(config adapter.Config) {}
+func (h fakeCheckHandler) Validate() *adapter.ConfigErrors {return nil}
 
 type fakeQuotaHandler struct {
 	adapter.Handler
@@ -104,13 +110,15 @@ func (h *fakeQuotaHandler) HandleQuota(ctx context.Context, instance *sample_quo
 	h.procCallInput = instance
 	return h.retResult, h.retError
 }
-func (h *fakeQuotaHandler) Build(adapter.Config, adapter.Env) (adapter.Handler, error) {
+func (h *fakeQuotaHandler) Build(context.Context, adapter.Env) (adapter.Handler, error) {
 	return nil, nil
 }
 func (h *fakeQuotaHandler) SetQuotaTypes(t map[string]*sample_quota.Type) error {
 	h.cnfgCallInput = t
 	return nil
 }
+func (h fakeQuotaHandler) SetAdapterConfig(config adapter.Config) {}
+func (h fakeQuotaHandler) Validate() *adapter.ConfigErrors {return nil}
 
 type fakeBag struct{}
 
@@ -221,7 +229,7 @@ func TestHandlerSupportsTemplate(t *testing.T) {
 func TestBuilderSupportsTemplate(t *testing.T) {
 	for _, tst := range []struct {
 		tmpl      string
-		hndlrBldr adapter.HandlerBuilder
+		hndlrBldr adapter.Builder2
 		result    bool
 	}{
 		{
@@ -556,7 +564,7 @@ type SetTypeTest struct {
 	name     string
 	tmpl     string
 	types    map[string]proto.Message
-	hdlrBldr adapter.HandlerBuilder
+	hdlrBldr adapter.Builder2
 	want     interface{}
 }
 

@@ -15,6 +15,7 @@
 package config
 
 import (
+	"context"
 	"errors"
 	"testing"
 
@@ -34,10 +35,9 @@ func createBuilderInfo(name string) adapter.BuilderInfo {
 	return adapter.BuilderInfo{
 		Name:                 name,
 		Description:          "mock adapter for testing",
-		CreateHandlerBuilder: func() adapter.HandlerBuilder { return fakeHandlerBuilder{} },
 		SupportedTemplates:   []string{sample_report.TemplateName},
 		DefaultConfig:        &types.Empty{},
-		ValidateConfig:       func(c adapter.Config) *adapter.ConfigErrors { return nil },
+		NewBuilder:           func() adapter.Builder2 { return fakeBuilder2{} },
 	}
 }
 
@@ -45,10 +45,12 @@ func (t *TestBuilderInfoInventory) getNewGetBuilderInfoFn() adapter.BuilderInfo 
 	return createBuilderInfo(t.name)
 }
 
-type fakeHandlerBuilder struct{}
+type fakeBuilder2 struct{}
 
-func (fakeHandlerBuilder) SetSampleTypes(map[string]*sample_report.Type) error { return nil }
-func (fakeHandlerBuilder) Build(adapter.Config, adapter.Env) (adapter.Handler, error) {
+func (fakeBuilder2) SetSampleTypes(map[string]*sample_report.Type) error { return nil }
+func (fakeBuilder2) SetAdapterConfig(config adapter.Config)              { return }
+func (fakeBuilder2) Validate() *adapter.ConfigErrors                     { return nil }
+func (fakeBuilder2) Build(context.Context, adapter.Env) (adapter.Handler, error) {
 	return fakeHandler{}, nil
 }
 
@@ -59,7 +61,7 @@ func (fakeHandler) HandleSample([]*sample_report.Instance) error {
 	return errors.New("not implemented")
 }
 
-func fakeValidateSupportedTmpl(hndlrBuilder adapter.HandlerBuilder, t string) (bool, string) {
+func fakeValidateSupportedTmpl(hndlrBuilder adapter.Builder2, t string) (bool, string) {
 	// always succeed
 	return true, ""
 }
@@ -118,11 +120,11 @@ func TestMissingDefaultValue(t *testing.T) {
 func TestMissingValidateConfigFn(t *testing.T) {
 	builderCreatorInventory := TestBuilderInfoInventory{"foo"}
 	builderInfo := builderCreatorInventory.getNewGetBuilderInfoFn()
-	builderInfo.ValidateConfig = nil
+	builderInfo.NewBuilder = nil
 
 	defer func() {
 		if r := recover(); r == nil {
-			t.Error("Expected to recover from panic due to missing ValidateConfig in BuilderInfo, " +
+			t.Error("Expected to recover from panic due to missing NewBuilder in Info, " +
 				"but recover was nil.")
 		}
 	}()
@@ -150,16 +152,15 @@ func TestHandlerMap(t *testing.T) {
 }
 
 type badHandlerBuilder struct{}
-
-func (badHandlerBuilder) DefaultConfig() adapter.Config                       { return nil }
-func (badHandlerBuilder) ValidateConfig(adapter.Config) *adapter.ConfigErrors { return nil }
-
+func (badHandlerBuilder) Validate() *adapter.ConfigErrors { return nil }
 // This misspelled function cause the Builder to not implement SampleProcessorBuilder
-func (fakeHandlerBuilder) MisspelledXXConfigureSample(map[string]*sample_report.Type) error {
+func (badHandlerBuilder) MisspelledXXSetSample(map[string]*sample_report.Type) error {
 	return nil
 }
-func (badHandlerBuilder) Build(adapter.Config, adapter.Env) (adapter.Handler, error) {
+func (badHandlerBuilder) Build(context.Context, adapter.Env) (adapter.Handler, error) {
 	return fakeHandler{}, nil
+}
+func (badHandlerBuilder) SetAdapterConfig(adapter.Config) {
 }
 
 func TestBuilderNotImplementRightTemplateInterface(t *testing.T) {
@@ -169,7 +170,7 @@ func TestBuilderNotImplementRightTemplateInterface(t *testing.T) {
 			Description:          "mock adapter for testing",
 			DefaultConfig:        &types.Empty{},
 			ValidateConfig:       func(c adapter.Config) *adapter.ConfigErrors { return nil },
-			CreateHandlerBuilder: func() adapter.HandlerBuilder { return badHandlerBuilder{} },
+			NewBuilder:           func() adapter.Builder2 { return badHandlerBuilder{} },
 			SupportedTemplates:   []string{sample_report.TemplateName},
 		}
 	}
@@ -179,7 +180,7 @@ func TestBuilderNotImplementRightTemplateInterface(t *testing.T) {
 			Description:          "mock adapter for testing",
 			DefaultConfig:        &types.Empty{},
 			ValidateConfig:       func(c adapter.Config) *adapter.ConfigErrors { return nil },
-			CreateHandlerBuilder: func() adapter.HandlerBuilder { return badHandlerBuilder{} },
+			NewBuilder: func() adapter.Builder2 { return badHandlerBuilder{} },
 			SupportedTemplates:   []string{sample_report.TemplateName},
 		}
 	}

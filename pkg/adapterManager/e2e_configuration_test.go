@@ -16,6 +16,7 @@ package adapterManager
 
 import (
 	"bytes"
+	"context"
 	"io/ioutil"
 	"os"
 	"testing"
@@ -41,6 +42,7 @@ var globalActualHandlerCallInfoToValidate map[string]interface{}
 type (
 	fakeHndlr     struct{}
 	fakeHndlrBldr struct{}
+	fakeBldr      struct{}
 )
 
 func (fakeHndlrBldr) Build(cnfg adapter.Config, _ adapter.Env) (adapter.Handler, error) {
@@ -48,18 +50,37 @@ func (fakeHndlrBldr) Build(cnfg adapter.Config, _ adapter.Env) (adapter.Handler,
 	fakeHndlrObj := fakeHndlr{}
 	return fakeHndlrObj, nil
 }
+
 func (fakeHndlrBldr) SetSampleTypes(typeParams map[string]*sample_report.Type) error {
 	globalActualHandlerCallInfoToValidate["ConfigureSample"] = typeParams
 	return nil
 }
+
+func (fakeBldr) Build(ctx context.Context, _ adapter.Env) (adapter.Handler, error) {
+	return fakeHndlr{}, nil
+}
+func (fakeBldr) SetAdapterConfig(cnfg adapter.Config) {
+	globalActualHandlerCallInfoToValidate["Build"] = cnfg
+	return
+}
+func (fakeBldr) Validate() *adapter.ConfigErrors {
+	return nil
+}
+func (fakeBldr) SetSampleTypes(typeParams map[string]*sample_report.Type) error {
+	globalActualHandlerCallInfoToValidate["ConfigureSample"] = typeParams
+	return nil
+}
+
 func (fakeHndlr) HandleSample(instances []*sample_report.Instance) error {
 	globalActualHandlerCallInfoToValidate["ReportSample"] = instances
 	return nil
 }
+
 func (fakeHndlr) Close() error {
 	globalActualHandlerCallInfoToValidate["Close"] = nil
 	return nil
 }
+
 func GetFakeHndlrBuilderInfo() adapter.BuilderInfo {
 	return adapter.BuilderInfo{
 		Name:                 "fakeHandler",
@@ -70,6 +91,7 @@ func GetFakeHndlrBuilderInfo() adapter.BuilderInfo {
 		ValidateConfig: func(msg adapter.Config) *adapter.ConfigErrors {
 			return nil
 		},
+		NewBuilder: func() adapter.Builder2 { return fakeBldr{} },
 	}
 }
 

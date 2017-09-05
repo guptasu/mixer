@@ -1,4 +1,5 @@
 // Copyright 2016 Istio Authors
+// Copyright 2016 Istio Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -54,10 +55,10 @@ func TestSupportsTemplate(t *testing.T) {
 		expectedErr  string
 	}{
 		{"ValidTmpl", map[string]Info{"ValidTmpl": {BldrInterfaceName: "ValidTmplBuilder",
-			BuilderSupportsTemplate: func(h adapter.HandlerBuilder) bool { return true }}}, ""},
+			BuilderSupportsTemplate: func(h adapter.Builder2) bool { return true }}}, ""},
 		{"unknown template", nil, "is not one of the allowed supported templates"},
 		{"interface_not_implemented", map[string]Info{"interface_not_implemented": {BldrInterfaceName: "interface_not_implementedBuilder",
-			BuilderSupportsTemplate: func(h adapter.HandlerBuilder) bool { return false }}},
+			BuilderSupportsTemplate: func(h adapter.Builder2) bool { return false }}},
 			"does not implement interface interface_not_implementedBuilder"},
 	} {
 		t.Run(tst.tmplToCheck, func(t *testing.T) {

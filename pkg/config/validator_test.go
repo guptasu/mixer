@@ -985,7 +985,7 @@ func (t fakeTemplateRepo) GetTemplateInfo(template string) (tmpl.Info, bool) {
 	return tmpl.Info{}, false
 }
 
-func (t fakeTemplateRepo) SupportsTemplate(hndlrBuilder adapter.HandlerBuilder, s string) (bool, string) {
+func (t fakeTemplateRepo) SupportsTemplate(hndlrBuilder adapter.Builder2, s string) (bool, string) {
 	// always succeed
 	return true, ""
 }

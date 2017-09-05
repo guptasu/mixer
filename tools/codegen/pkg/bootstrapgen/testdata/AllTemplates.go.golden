@@ -52,7 +52,7 @@ var (
 			Variety:            adptTmpl.TEMPLATE_VARIETY_CHECK,
 			BldrInterfaceName:  istio_mixer_template_list.TemplateName + "." + "HandlerBuilder",
 			HndlrInterfaceName: istio_mixer_template_list.TemplateName + "." + "Handler",
-			BuilderSupportsTemplate: func(hndlrBuilder adapter.HandlerBuilder) bool {
+			BuilderSupportsTemplate: func(hndlrBuilder adapter.Builder2) bool {
 				_, ok := hndlrBuilder.(istio_mixer_template_list.HandlerBuilder)
 				return ok
 			},
@@ -148,7 +148,7 @@ var (
 				_ = cpb
 				return infrdType, err
 			},
-			SetType: func(types map[string]proto.Message, builder *adapter.HandlerBuilder) error {
+			SetType: func(types map[string]proto.Message, builder *adapter.Builder2) error {
 				// Mixer framework should have ensured the type safety.
 				castedBuilder := (*builder).(istio_mixer_template_list.HandlerBuilder)
 				castedTypes := make(map[string]*istio_mixer_template_list.Type, len(types))
@@ -276,7 +276,7 @@ var (
 			Variety:            adptTmpl.TEMPLATE_VARIETY_REPORT,
 			BldrInterfaceName:  istio_mixer_template_quota.TemplateName + "." + "HandlerBuilder",
 			HndlrInterfaceName: istio_mixer_template_quota.TemplateName + "." + "Handler",
-			BuilderSupportsTemplate: func(hndlrBuilder adapter.HandlerBuilder) bool {
+			BuilderSupportsTemplate: func(hndlrBuilder adapter.Builder2) bool {
 				_, ok := hndlrBuilder.(istio_mixer_template_quota.HandlerBuilder)
 				return ok
 			},
@@ -362,7 +362,7 @@ var (
 				_ = cpb
 				return infrdType, err
 			},
-			SetType: func(types map[string]proto.Message, builder *adapter.HandlerBuilder) error {
+			SetType: func(types map[string]proto.Message, builder *adapter.Builder2) error {
 				// Mixer framework should have ensured the type safety.
 				castedBuilder := (*builder).(istio_mixer_template_quota.HandlerBuilder)
 				castedTypes := make(map[string]*istio_mixer_template_quota.Type, len(types))
@@ -485,7 +485,7 @@ var (
 			Variety:            adptTmpl.TEMPLATE_VARIETY_REPORT,
 			BldrInterfaceName:  istio_mixer_template_log.TemplateName + "." + "HandlerBuilder",
 			HndlrInterfaceName: istio_mixer_template_log.TemplateName + "." + "Handler",
-			BuilderSupportsTemplate: func(hndlrBuilder adapter.HandlerBuilder) bool {
+			BuilderSupportsTemplate: func(hndlrBuilder adapter.Builder2) bool {
 				_, ok := hndlrBuilder.(istio_mixer_template_log.HandlerBuilder)
 				return ok
 			},
@@ -591,7 +591,7 @@ var (
 				_ = cpb
 				return infrdType, err
 			},
-			SetType: func(types map[string]proto.Message, builder *adapter.HandlerBuilder) error {
+			SetType: func(types map[string]proto.Message, builder *adapter.Builder2) error {
 				// Mixer framework should have ensured the type safety.
 				castedBuilder := (*builder).(istio_mixer_template_log.HandlerBuilder)
 				castedTypes := make(map[string]*istio_mixer_template_log.Type, len(types))
@@ -734,7 +734,7 @@ var (
 			Variety:            adptTmpl.TEMPLATE_VARIETY_REPORT,
 			BldrInterfaceName:  istio_mixer_template_metric.TemplateName + "." + "HandlerBuilder",
 			HndlrInterfaceName: istio_mixer_template_metric.TemplateName + "." + "Handler",
-			BuilderSupportsTemplate: func(hndlrBuilder adapter.HandlerBuilder) bool {
+			BuilderSupportsTemplate: func(hndlrBuilder adapter.Builder2) bool {
 				_, ok := hndlrBuilder.(istio_mixer_template_metric.HandlerBuilder)
 				return ok
 			},
@@ -820,7 +820,7 @@ var (
 				_ = cpb
 				return infrdType, err
 			},
-			SetType: func(types map[string]proto.Message, builder *adapter.HandlerBuilder) error {
+			SetType: func(types map[string]proto.Message, builder *adapter.Builder2) error {
 				// Mixer framework should have ensured the type safety.
 				castedBuilder := (*builder).(istio_mixer_template_metric.HandlerBuilder)
 				castedTypes := make(map[string]*istio_mixer_template_metric.Type, len(types))

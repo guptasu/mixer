@@ -27,10 +27,10 @@ type adapterInfoRegistry struct {
 	adapterInfosByName map[string]*adapter.BuilderInfo
 }
 
-type handlerBuilderValidator func(hndlrBuilder adapter.HandlerBuilder, t string) (bool, string)
+type builderValidator func(hndlrBuilder adapter.Builder2, t string) (bool, string)
 
 // newRegistry2 returns a new adapterInfoRegistry.
-func newRegistry2(infos []adapter.InfoFn, hndlrBldrValidator handlerBuilderValidator) *adapterInfoRegistry {
+func newRegistry2(infos []adapter.InfoFn, hndlrBldrValidator builderValidator) *adapterInfoRegistry {
 	r := &adapterInfoRegistry{make(map[string]*adapter.BuilderInfo)}
 	for idx, info := range infos {
 		glog.V(3).Infof("Registering [%d] %#v", idx, info)
@@ -42,10 +42,9 @@ func newRegistry2(infos []adapter.InfoFn, hndlrBldrValidator handlerBuilderValid
 			glog.Error(msg)
 			panic(msg)
 		} else {
-			if adptInfo.ValidateConfig == nil {
-				// panic if adapter has not provided the ValidateConfig func.
-				msg := fmt.Errorf("Adapter info %v from adapter %s does not contain value for ValidateConfig"+
-					" function field.", adptInfo, adptInfo.Name)
+			if adptInfo.NewBuilder == nil {
+				// panic if adapter has not provided the NewBuilder func.
+				msg := fmt.Errorf("Adapter info %v from adapter %s has nil NewBuilder.", adptInfo, adptInfo.Name)
 				glog.Error(msg)
 				panic(msg)
 			}
@@ -57,8 +56,8 @@ func newRegistry2(infos []adapter.InfoFn, hndlrBldrValidator handlerBuilderValid
 				panic(msg)
 			}
 			if ok, errMsg := doesBuilderSupportsTemplates(adptInfo, hndlrBldrValidator); !ok {
-				// panic if an Adapter's HandlerBuilder does not implement interfaces that it says it wants to support.
-				msg := fmt.Errorf("HandlerBuilder from adapter %s does not implement the required interfaces"+
+				// panic if an Adapter's Builder does not implement interfaces that it says it wants to support.
+				msg := fmt.Errorf("Builder from adapter %s does not implement the required interfaces"+
 					" for the templates it supports: %s", adptInfo.Name, errMsg)
 				glog.Error(msg)
 				panic(msg)
@@ -72,7 +71,7 @@ func newRegistry2(infos []adapter.InfoFn, hndlrBldrValidator handlerBuilderValid
 
 // AdapterInfoMap returns the known adapter.Infos, indexed by their names.
 func AdapterInfoMap(handlerRegFns []adapter.InfoFn,
-	hndlrBldrValidator handlerBuilderValidator) map[string]*adapter.BuilderInfo {
+	hndlrBldrValidator builderValidator) map[string]*adapter.BuilderInfo {
 	return newRegistry2(handlerRegFns, hndlrBldrValidator).adapterInfosByName
 }
 
@@ -85,11 +84,11 @@ func (r *adapterInfoRegistry) FindAdapterInfo(name string) (b *adapter.BuilderIn
 	return bi, true
 }
 
-func doesBuilderSupportsTemplates(info adapter.BuilderInfo, hndlrBldrValidator handlerBuilderValidator) (bool, string) {
-	handlerBuilder := info.CreateHandlerBuilder()
+func doesBuilderSupportsTemplates(info adapter.BuilderInfo, hndlrBldrValidator builderValidator) (bool, string) {
+	builder := info.NewBuilder()
 	resultMsgs := make([]string, 0)
 	for _, t := range info.SupportedTemplates {
-		if ok, errMsg := hndlrBldrValidator(handlerBuilder, t); !ok {
+		if ok, errMsg := hndlrBldrValidator(builder, t); !ok {
 			resultMsgs = append(resultMsgs, errMsg)
 		}
 	}
