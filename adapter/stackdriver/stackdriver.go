@@ -55,6 +55,7 @@ type (
 	builder struct {
 		createClient createClientFunc
 		metrics      map[string]*metric.Type
+		cnfg         *config.Params
 	}
 
 	info struct {
@@ -99,7 +100,7 @@ var (
 		descriptor.STRING_MAP:    labelpb.LabelDescriptor_STRING,
 	}
 
-	_ metric.HandlerBuilder = &builder{}
+	_ metric.HandlerBuilder = &obuilder{}
 	_ metric.Handler        = &handler{}
 )
 
@@ -112,8 +113,11 @@ func GetInfo() adapter.BuilderInfo {
 		SupportedTemplates: []string{
 			metric.TemplateName,
 		},
-		DefaultConfig:        &config.Params{},
-		CreateHandlerBuilder: func() adapter.HandlerBuilder { return &builder{createClient: createClient} },
+		DefaultConfig: &config.Params{},
+		NewBuilder:    func() adapter.Builder2 { return &builder{createClient: createClient} },
+
+		// to be deleted
+		CreateHandlerBuilder: func() adapter.HandlerBuilder { return &obuilder{&builder{createClient: createClient}} },
 		ValidateConfig:       func(adapter.Config) *adapter.ConfigErrors { return nil },
 	}
 }
@@ -138,14 +142,20 @@ func toOpts(cfg *config.Params) (opts []gapiopts.ClientOption) {
 	return
 }
 
-func (b *builder) SetMetricTypes(metrics map[string]*metric.Type) error {
+func (b *builder) SetMetricTypes(metrics map[string]*metric.Type) {
 	b.metrics = metrics
+}
+
+func (b *builder) SetAdapterConfig(c adapter.Config) {
+	b.cnfg = c.(*config.Params)
+}
+func (b *builder) Validate() *adapter.ConfigErrors {
 	return nil
 }
 
 // NewMetricsAspect provides an implementation for adapter.MetricsBuilder.
-func (b *builder) Build(c adapter.Config, env adapter.Env) (adapter.Handler, error) {
-	cfg := c.(*config.Params)
+func (b *builder) Build(c context.Context, env adapter.Env) (adapter.Handler, error) {
+	cfg := b.cnfg
 	types := make(map[string]info, len(b.metrics))
 	for name, t := range b.metrics {
 		i, found := cfg.MetricInfo[name]
@@ -276,4 +286,19 @@ func toTypedVal(val interface{}, t descriptor.ValueType) *monitoringpb.TypedValu
 func metricType(name string) string {
 	// TODO: figure out what, if anything, we need to do to sanitize these.
 	return customMetricPrefix + name
+}
+
+type obuilder struct {
+	b *builder
+}
+
+func (o *obuilder) SetMetricTypes(metrics map[string]*metric.Type) error {
+	o.b.SetMetricTypes(metrics)
+	return nil
+}
+
+// NewMetricsAspect provides an implementation for adapter.MetricsBuilder.
+func (o *obuilder) Build(config adapter.Config, env adapter.Env) (adapter.Handler, error) {
+	o.b.SetAdapterConfig(config)
+	return o.b.Build(context.Background(), env)
 }
