@@ -355,7 +355,7 @@ func (o *obuilder) Build(cfg adapter.Config, env adapter.Env) (adapter.Handler, 
 }
 
 // ConfigureMetricHandler is to be deleted
-func (o *obuilder) ConfigureMetricHandler(types map[string]*metric.Type) error {
+func (o *obuilder) SetMetricTypes(types map[string]*metric.Type) error {
 	o.b.SetMetricTypes(types)
 	return nil
 }
