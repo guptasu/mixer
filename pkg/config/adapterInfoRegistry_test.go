@@ -70,7 +70,7 @@ func (fakeHandler) HandleSample([]*sample_report.Instance) error {
 	return errors.New("not implemented")
 }
 
-func fakeValidateSupportedTmpl(hndlrBuilder adapter.HandlerBuilder, t string) (bool, string) {
+func fakeValidateSupportedTmpl(hndlrBuilder adapter.Builder2, t string) (bool, string) {
 	// always succeed
 	return true, ""
 }

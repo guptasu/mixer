@@ -56,8 +56,8 @@ var (
 			Variety:            adptTmpl.TEMPLATE_VARIETY_CHECK,
 			BldrInterfaceName:  checknothing.TemplateName + "." + "HandlerBuilder",
 			HndlrInterfaceName: checknothing.TemplateName + "." + "Handler",
-			BuilderSupportsTemplate: func(hndlrBuilder adapter.HandlerBuilder) bool {
-				_, ok := hndlrBuilder.(checknothing.HandlerBuilder)
+			BuilderSupportsTemplate: func(hndlrBuilder adapter.Builder2) bool {
+				_, ok := hndlrBuilder.(checknothing.HandlerBuilder2)
 				return ok
 			},
 			HandlerSupportsTemplate: func(hndlr adapter.Handler) bool {
@@ -72,16 +72,16 @@ var (
 				_ = cpb
 				return infrdType, err
 			},
-			SetType: func(types map[string]proto.Message, builder *adapter.HandlerBuilder) error {
+			SetType: func(types map[string]proto.Message, builder *adapter.Builder2) {
 				// Mixer framework should have ensured the type safety.
-				castedBuilder := (*builder).(checknothing.HandlerBuilder)
+				castedBuilder := (*builder).(checknothing.HandlerBuilder2)
 				castedTypes := make(map[string]*checknothing.Type, len(types))
 				for k, v := range types {
 					// Mixer framework should have ensured the type safety.
 					v1 := v.(*checknothing.Type)
 					castedTypes[k] = v1
 				}
-				return castedBuilder.SetCheckNothingTypes(castedTypes)
+				castedBuilder.SetCheckNothingTypes(castedTypes)
 			},
 
 			ProcessCheck: func(ctx context.Context, instName string, inst proto.Message, attrs attribute.Bag,
@@ -104,8 +104,8 @@ var (
 			Variety:            adptTmpl.TEMPLATE_VARIETY_CHECK,
 			BldrInterfaceName:  listentry.TemplateName + "." + "HandlerBuilder",
 			HndlrInterfaceName: listentry.TemplateName + "." + "Handler",
-			BuilderSupportsTemplate: func(hndlrBuilder adapter.HandlerBuilder) bool {
-				_, ok := hndlrBuilder.(listentry.HandlerBuilder)
+			BuilderSupportsTemplate: func(hndlrBuilder adapter.Builder2) bool {
+				_, ok := hndlrBuilder.(listentry.HandlerBuilder2)
 				return ok
 			},
 			HandlerSupportsTemplate: func(hndlr adapter.Handler) bool {
@@ -130,16 +130,16 @@ var (
 				_ = cpb
 				return infrdType, err
 			},
-			SetType: func(types map[string]proto.Message, builder *adapter.HandlerBuilder) error {
+			SetType: func(types map[string]proto.Message, builder *adapter.Builder2) {
 				// Mixer framework should have ensured the type safety.
-				castedBuilder := (*builder).(listentry.HandlerBuilder)
+				castedBuilder := (*builder).(listentry.HandlerBuilder2)
 				castedTypes := make(map[string]*listentry.Type, len(types))
 				for k, v := range types {
 					// Mixer framework should have ensured the type safety.
 					v1 := v.(*listentry.Type)
 					castedTypes[k] = v1
 				}
-				return castedBuilder.SetListEntryTypes(castedTypes)
+				castedBuilder.SetListEntryTypes(castedTypes)
 			},
 
 			ProcessCheck: func(ctx context.Context, instName string, inst proto.Message, attrs attribute.Bag,
@@ -172,8 +172,8 @@ var (
 			Variety:            adptTmpl.TEMPLATE_VARIETY_REPORT,
 			BldrInterfaceName:  logentry.TemplateName + "." + "HandlerBuilder",
 			HndlrInterfaceName: logentry.TemplateName + "." + "Handler",
-			BuilderSupportsTemplate: func(hndlrBuilder adapter.HandlerBuilder) bool {
-				_, ok := hndlrBuilder.(logentry.HandlerBuilder)
+			BuilderSupportsTemplate: func(hndlrBuilder adapter.Builder2) bool {
+				_, ok := hndlrBuilder.(logentry.HandlerBuilder2)
 				return ok
 			},
 			HandlerSupportsTemplate: func(hndlr adapter.Handler) bool {
@@ -232,16 +232,16 @@ var (
 				_ = cpb
 				return infrdType, err
 			},
-			SetType: func(types map[string]proto.Message, builder *adapter.HandlerBuilder) error {
+			SetType: func(types map[string]proto.Message, builder *adapter.Builder2) {
 				// Mixer framework should have ensured the type safety.
-				castedBuilder := (*builder).(logentry.HandlerBuilder)
+				castedBuilder := (*builder).(logentry.HandlerBuilder2)
 				castedTypes := make(map[string]*logentry.Type, len(types))
 				for k, v := range types {
 					// Mixer framework should have ensured the type safety.
 					v1 := v.(*logentry.Type)
 					castedTypes[k] = v1
 				}
-				return castedBuilder.SetLogEntryTypes(castedTypes)
+				castedBuilder.SetLogEntryTypes(castedTypes)
 			},
 
 			ProcessReport: func(ctx context.Context, insts map[string]proto.Message, attrs attribute.Bag, mapper expr.Evaluator, handler adapter.Handler) error {
@@ -319,8 +319,8 @@ var (
 			Variety:            adptTmpl.TEMPLATE_VARIETY_REPORT,
 			BldrInterfaceName:  metric.TemplateName + "." + "HandlerBuilder",
 			HndlrInterfaceName: metric.TemplateName + "." + "Handler",
-			BuilderSupportsTemplate: func(hndlrBuilder adapter.HandlerBuilder) bool {
-				_, ok := hndlrBuilder.(metric.HandlerBuilder)
+			BuilderSupportsTemplate: func(hndlrBuilder adapter.Builder2) bool {
+				_, ok := hndlrBuilder.(metric.HandlerBuilder2)
 				return ok
 			},
 			HandlerSupportsTemplate: func(hndlr adapter.Handler) bool {
@@ -366,16 +366,16 @@ var (
 				_ = cpb
 				return infrdType, err
 			},
-			SetType: func(types map[string]proto.Message, builder *adapter.HandlerBuilder) error {
+			SetType: func(types map[string]proto.Message, builder *adapter.Builder2) {
 				// Mixer framework should have ensured the type safety.
-				castedBuilder := (*builder).(metric.HandlerBuilder)
+				castedBuilder := (*builder).(metric.HandlerBuilder2)
 				castedTypes := make(map[string]*metric.Type, len(types))
 				for k, v := range types {
 					// Mixer framework should have ensured the type safety.
 					v1 := v.(*metric.Type)
 					castedTypes[k] = v1
 				}
-				return castedBuilder.SetMetricTypes(castedTypes)
+				castedBuilder.SetMetricTypes(castedTypes)
 			},
 
 			ProcessReport: func(ctx context.Context, insts map[string]proto.Message, attrs attribute.Bag, mapper expr.Evaluator, handler adapter.Handler) error {
@@ -443,8 +443,8 @@ var (
 			Variety:            adptTmpl.TEMPLATE_VARIETY_QUOTA,
 			BldrInterfaceName:  quota.TemplateName + "." + "HandlerBuilder",
 			HndlrInterfaceName: quota.TemplateName + "." + "Handler",
-			BuilderSupportsTemplate: func(hndlrBuilder adapter.HandlerBuilder) bool {
-				_, ok := hndlrBuilder.(quota.HandlerBuilder)
+			BuilderSupportsTemplate: func(hndlrBuilder adapter.Builder2) bool {
+				_, ok := hndlrBuilder.(quota.HandlerBuilder2)
 				return ok
 			},
 			HandlerSupportsTemplate: func(hndlr adapter.Handler) bool {
@@ -466,16 +466,16 @@ var (
 				_ = cpb
 				return infrdType, err
 			},
-			SetType: func(types map[string]proto.Message, builder *adapter.HandlerBuilder) error {
+			SetType: func(types map[string]proto.Message, builder *adapter.Builder2) {
 				// Mixer framework should have ensured the type safety.
-				castedBuilder := (*builder).(quota.HandlerBuilder)
+				castedBuilder := (*builder).(quota.HandlerBuilder2)
 				castedTypes := make(map[string]*quota.Type, len(types))
 				for k, v := range types {
 					// Mixer framework should have ensured the type safety.
 					v1 := v.(*quota.Type)
 					castedTypes[k] = v1
 				}
-				return castedBuilder.SetQuotaTypes(castedTypes)
+				castedBuilder.SetQuotaTypes(castedTypes)
 			},
 
 			ProcessQuota: func(ctx context.Context, quotaName string, inst proto.Message, attrs attribute.Bag,
@@ -507,8 +507,8 @@ var (
 			Variety:            adptTmpl.TEMPLATE_VARIETY_REPORT,
 			BldrInterfaceName:  reportnothing.TemplateName + "." + "HandlerBuilder",
 			HndlrInterfaceName: reportnothing.TemplateName + "." + "Handler",
-			BuilderSupportsTemplate: func(hndlrBuilder adapter.HandlerBuilder) bool {
-				_, ok := hndlrBuilder.(reportnothing.HandlerBuilder)
+			BuilderSupportsTemplate: func(hndlrBuilder adapter.Builder2) bool {
+				_, ok := hndlrBuilder.(reportnothing.HandlerBuilder2)
 				return ok
 			},
 			HandlerSupportsTemplate: func(hndlr adapter.Handler) bool {
@@ -523,16 +523,16 @@ var (
 				_ = cpb
 				return infrdType, err
 			},
-			SetType: func(types map[string]proto.Message, builder *adapter.HandlerBuilder) error {
+			SetType: func(types map[string]proto.Message, builder *adapter.Builder2) {
 				// Mixer framework should have ensured the type safety.
-				castedBuilder := (*builder).(reportnothing.HandlerBuilder)
+				castedBuilder := (*builder).(reportnothing.HandlerBuilder2)
 				castedTypes := make(map[string]*reportnothing.Type, len(types))
 				for k, v := range types {
 					// Mixer framework should have ensured the type safety.
 					v1 := v.(*reportnothing.Type)
 					castedTypes[k] = v1
 				}
-				return castedBuilder.SetReportNothingTypes(castedTypes)
+				castedBuilder.SetReportNothingTypes(castedTypes)
 			},
 
 			ProcessReport: func(ctx context.Context, insts map[string]proto.Message, attrs attribute.Bag, mapper expr.Evaluator, handler adapter.Handler) error {

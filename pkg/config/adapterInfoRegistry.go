@@ -27,7 +27,7 @@ type adapterInfoRegistry struct {
 	adapterInfosByName map[string]*adapter.BuilderInfo
 }
 
-type handlerBuilderValidator func(hndlrBuilder adapter.HandlerBuilder, t string) (bool, string)
+type handlerBuilderValidator func(hndlrBuilder adapter.Builder2, t string) (bool, string)
 
 // newRegistry2 returns a new adapterInfoRegistry.
 func newRegistry2(infos []adapter.InfoFn, hndlrBldrValidator handlerBuilderValidator) *adapterInfoRegistry {
@@ -92,7 +92,7 @@ func (r *adapterInfoRegistry) FindAdapterInfo(name string) (b *adapter.BuilderIn
 }
 
 func doesBuilderSupportsTemplates(info adapter.BuilderInfo, hndlrBldrValidator handlerBuilderValidator) (bool, string) {
-	handlerBuilder := info.CreateHandlerBuilder()
+	handlerBuilder := info.NewBuilder()
 	resultMsgs := make([]string, 0)
 	for _, t := range info.SupportedTemplates {
 		if ok, errMsg := hndlrBldrValidator(handlerBuilder, t); !ok {
