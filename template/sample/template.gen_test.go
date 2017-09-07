@@ -224,7 +224,7 @@ func TestHandlerSupportsTemplate(t *testing.T) {
 func TestBuilderSupportsTemplate(t *testing.T) {
 	for _, tst := range []struct {
 		tmpl      string
-		hndlrBldr adapter.Builder2
+		hndlrBldr adapter.HandlerBuilder
 		result    bool
 	}{
 		{
@@ -559,7 +559,7 @@ type SetTypeTest struct {
 	name     string
 	tmpl     string
 	types    map[string]proto.Message
-	hdlrBldr adapter.Builder2
+	hdlrBldr adapter.HandlerBuilder
 	want     interface{}
 }
 

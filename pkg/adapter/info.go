@@ -44,11 +44,8 @@ type BuilderInfo struct {
 	DefaultConfig proto.Message
 }
 
-// CreateHandlerBuilderFn is a function that creates a HandlerBuilder.
-type CreateHandlerBuilderFn func() HandlerBuilder
-
 // NewBuilderFn is a function that creates a Builder.
-type NewBuilderFn func() Builder2
+type NewBuilderFn func() HandlerBuilder
 
 // InfoFn returns an AdapterInfo object that Mixer will use to create HandlerBuilder
 type InfoFn func() BuilderInfo

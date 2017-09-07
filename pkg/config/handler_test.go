@@ -50,7 +50,7 @@ func (t fakeTmplRepo) GetTemplateInfo(template string) (tmpl.Info, bool) {
 	}, t.exists
 }
 
-func (t fakeTmplRepo) SupportsTemplate(hndlrBuilder adapter.Builder2, s string) (bool, string) {
+func (t fakeTmplRepo) SupportsTemplate(hndlrBuilder adapter.HandlerBuilder, s string) (bool, string) {
 	// always succeed
 	return true, ""
 }
@@ -67,7 +67,7 @@ func newFakeTmplRepo2(cnfgTypePanicsForTmpl string, trackInstancesPerCall *insta
 }
 func (t fakeTmplRepo2) GetTemplateInfo(template string) (tmpl.Info, bool) {
 	return tmpl.Info{
-		SetType: func(types map[string]proto.Message, builder *adapter.Builder2) {
+		SetType: func(types map[string]proto.Message, builder *adapter.HandlerBuilder) {
 			instances := make([]string, 0)
 			for instance := range types {
 				instances = append(instances, instance)
@@ -80,7 +80,7 @@ func (t fakeTmplRepo2) GetTemplateInfo(template string) (tmpl.Info, bool) {
 	}, true
 }
 
-func (t fakeTmplRepo2) SupportsTemplate(hndlrBuilder adapter.Builder2, s string) (bool, string) {
+func (t fakeTmplRepo2) SupportsTemplate(hndlrBuilder adapter.HandlerBuilder, s string) (bool, string) {
 	// always succeed
 	return true, ""
 }

@@ -32,14 +32,14 @@ type (
 	// Repository defines all the helper functions to access the generated template specific types and fields.
 	Repository interface {
 		GetTemplateInfo(template string) (Info, bool)
-		SupportsTemplate(hndlrBuilder adapter.Builder2, tmpl string) (bool, string)
+		SupportsTemplate(hndlrBuilder adapter.HandlerBuilder, tmpl string) (bool, string)
 	}
 	// TypeEvalFn evaluates an expression and returns the ValueType for the expression.
 	TypeEvalFn func(string) (pb.ValueType, error)
 	// InferTypeFn does Type inference from the Instance.params proto message.
 	InferTypeFn func(proto.Message, TypeEvalFn) (proto.Message, error)
 	// SetTypeFn dispatches the inferred types to handlers
-	SetTypeFn func(types map[string]proto.Message, builder *adapter.Builder2)
+	SetTypeFn func(types map[string]proto.Message, builder *adapter.HandlerBuilder)
 
 	// ProcessCheckFn instantiates the instance object and dispatches them to the handler.
 	ProcessCheckFn func(ctx context.Context, instName string, instCfg proto.Message, attrs attribute.Bag,
@@ -54,7 +54,7 @@ type (
 		mapper expr.Evaluator, handler adapter.Handler) error
 
 	// BuilderSupportsTemplateFn check if the handlerBuilder supports template.
-	BuilderSupportsTemplateFn func(hndlrBuilder adapter.Builder2) bool
+	BuilderSupportsTemplateFn func(hndlrBuilder adapter.HandlerBuilder) bool
 
 	// HandlerSupportsTemplateFn check if the handler supports template.
 	HandlerSupportsTemplateFn func(hndlr adapter.Handler) bool
@@ -113,7 +113,7 @@ func NewRepository(templateInfos map[string]Info) Repository {
 	return repo{info: templateInfos, tmplToBuilderNames: tmplToBuilderNames, allSupportedTmpls: allSupportedTmpls}
 }
 
-func (t repo) SupportsTemplate(hndlrBuilder adapter.Builder2, tmpl string) (bool, string) {
+func (t repo) SupportsTemplate(hndlrBuilder adapter.HandlerBuilder, tmpl string) (bool, string) {
 	i, ok := t.GetTemplateInfo(tmpl)
 	if !ok {
 		return false, fmt.Sprintf("Supported template %v is not one of the allowed supported templates %v", tmpl, t.allSupportedTmpls)

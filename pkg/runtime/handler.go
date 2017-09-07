@@ -117,7 +117,7 @@ func (h *handlerFactory) Build(handler *pb.Handler, instances []*pb.Instance, en
 	return hndlr, err
 }
 
-func (h *handlerFactory) build(hndlrBldr adapter.Builder2, infrdTypesByTmpl map[string]typeMap,
+func (h *handlerFactory) build(hndlrBldr adapter.HandlerBuilder, infrdTypesByTmpl map[string]typeMap,
 	adapterCnfg interface{}, env adapter.Env) (handler adapter.Handler, err error) {
 	var ti template.Info
 	var typs typeMap

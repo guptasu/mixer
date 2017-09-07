@@ -100,7 +100,7 @@ func GetInfo() adapter.BuilderInfo {
 			ServiceName: "library-example.sandbox.googleapis.com",
 		},
 
-		NewBuilder: func() adapter.Builder2 { return &builder{} },
+		NewBuilder: func() adapter.HandlerBuilder { return &builder{} },
 	}
 }
 

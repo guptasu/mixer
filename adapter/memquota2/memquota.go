@@ -174,7 +174,7 @@ func GetInfo() adapter.BuilderInfo {
 			MinDeduplicationDuration: 1 * time.Second,
 		},
 
-		NewBuilder: func() adapter.Builder2 { return &builder{} },
+		NewBuilder: func() adapter.HandlerBuilder { return &builder{} },
 	}
 }
 

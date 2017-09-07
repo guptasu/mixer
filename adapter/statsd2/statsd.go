@@ -125,7 +125,7 @@ func GetInfo() adapter.BuilderInfo {
 			SamplingRate:  1.0,
 		},
 
-		NewBuilder: func() adapter.Builder2 { return &builder{} },
+		NewBuilder: func() adapter.HandlerBuilder { return &builder{} },
 	}
 }
 

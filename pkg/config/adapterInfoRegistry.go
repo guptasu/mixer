@@ -27,7 +27,7 @@ type adapterInfoRegistry struct {
 	adapterInfosByName map[string]*adapter.BuilderInfo
 }
 
-type handlerBuilderValidator func(hndlrBuilder adapter.Builder2, t string) (bool, string)
+type handlerBuilderValidator func(hndlrBuilder adapter.HandlerBuilder, t string) (bool, string)
 
 // newRegistry2 returns a new adapterInfoRegistry.
 func newRegistry2(infos []adapter.InfoFn, hndlrBldrValidator handlerBuilderValidator) *adapterInfoRegistry {

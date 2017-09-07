@@ -249,7 +249,7 @@ func GetInfo() adapter.BuilderInfo {
 			Blacklist:       false,
 		},
 
-		NewBuilder: func() adapter.Builder2 { return &builder{} },
+		NewBuilder: func() adapter.HandlerBuilder { return &builder{} },
 	}
 }
 

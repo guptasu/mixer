@@ -37,7 +37,7 @@ func createBuilderInfo(name string) adapter.BuilderInfo {
 		Description:        "mock adapter for testing",
 		SupportedTemplates: []string{sample_report.TemplateName},
 		DefaultConfig:      &types.Empty{},
-		NewBuilder:         func() adapter.Builder2 { return fakeHandlerBuilder{} },
+		NewBuilder:         func() adapter.HandlerBuilder { return fakeHandlerBuilder{} },
 	}
 }
 
@@ -68,7 +68,7 @@ func (fakeHandler) HandleSample([]*sample_report.Instance) error {
 	return errors.New("not implemented")
 }
 
-func fakeValidateSupportedTmpl(hndlrBuilder adapter.Builder2, t string) (bool, string) {
+func fakeValidateSupportedTmpl(hndlrBuilder adapter.HandlerBuilder, t string) (bool, string) {
 	// always succeed
 	return true, ""
 }
@@ -164,7 +164,7 @@ func TestBuilderNotImplementRightTemplateInterface(t *testing.T) {
 			Name:               "badAdapter1",
 			Description:        "mock adapter for testing",
 			DefaultConfig:      &types.Empty{},
-			NewBuilder:         func() adapter.Builder2 { return badHandlerBuilder{} },
+			NewBuilder:         func() adapter.HandlerBuilder { return badHandlerBuilder{} },
 			SupportedTemplates: []string{sample_report.TemplateName},
 		}
 	}
@@ -173,7 +173,7 @@ func TestBuilderNotImplementRightTemplateInterface(t *testing.T) {
 			Name:               "badAdapter1",
 			Description:        "mock adapter for testing",
 			DefaultConfig:      &types.Empty{},
-			NewBuilder:         func() adapter.Builder2 { return badHandlerBuilder{} },
+			NewBuilder:         func() adapter.HandlerBuilder { return badHandlerBuilder{} },
 			SupportedTemplates: []string{sample_report.TemplateName},
 		}
 	}

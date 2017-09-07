@@ -89,7 +89,7 @@ func GetInfo() adapter.BuilderInfo {
 		},
 		DefaultConfig: &types.Empty{},
 
-		NewBuilder: func() adapter.Builder2 { return &builder{} },
+		NewBuilder: func() adapter.HandlerBuilder { return &builder{} },
 	}
 }
 

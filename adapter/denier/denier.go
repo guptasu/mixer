@@ -75,7 +75,7 @@ func GetInfo() adapter.BuilderInfo {
 			Status: rpc.Status{Code: int32(rpc.FAILED_PRECONDITION)},
 		},
 
-		NewBuilder: func() adapter.Builder2 { return &builder{} },
+		NewBuilder: func() adapter.HandlerBuilder { return &builder{} },
 	}
 }
 

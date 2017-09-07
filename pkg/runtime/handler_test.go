@@ -44,7 +44,7 @@ func (t fakeTmplRepo) GetTemplateInfo(template string) (tmpl.Info, bool) {
 		InferType: func(proto.Message, tmpl.TypeEvalFn) (proto.Message, error) {
 			return t.typeResult, t.infrErr
 		},
-		SetType: func(types map[string]proto.Message, builder *adapter.Builder2) {
+		SetType: func(types map[string]proto.Message, builder *adapter.HandlerBuilder) {
 			if t.cnfgrPanic != "" {
 				panic(t.cnfgrPanic)
 			}
@@ -55,7 +55,7 @@ func (t fakeTmplRepo) GetTemplateInfo(template string) (tmpl.Info, bool) {
 	}, true
 }
 
-func (t fakeTmplRepo) SupportsTemplate(hndlrBuilder adapter.Builder2, s string) (bool, string) {
+func (t fakeTmplRepo) SupportsTemplate(hndlrBuilder adapter.HandlerBuilder, s string) (bool, string) {
 	// always succeed
 	return true, ""
 }
@@ -99,7 +99,7 @@ func TestBuild_Error(t *testing.T) {
 		hndlrCnfg *pb.Handler
 
 		tmplRepo     tmpl.Repository
-		hndlrBuilder adapter.Builder2
+		hndlrBuilder adapter.HandlerBuilder
 
 		// want      proto.Message
 		wantError string
@@ -157,7 +157,7 @@ func TestBuild_Error(t *testing.T) {
 
 			bldrInfoFinder := func(name string) (*adapter.BuilderInfo, bool) {
 				return &adapter.BuilderInfo{
-					NewBuilder: func() adapter.Builder2 { return tt.hndlrBuilder },
+					NewBuilder: func() adapter.HandlerBuilder { return tt.hndlrBuilder },
 				}, true
 			}
 
@@ -178,7 +178,7 @@ func TestBuild_Valid(t *testing.T) {
 		hndlrCnfg *pb.Handler
 
 		tmplRepo     fakeTmplRepo
-		hndlrBuilder adapter.Builder2
+		hndlrBuilder adapter.HandlerBuilder
 
 		wantCnfgMtdCallInfo map[string]map[string]proto.Message // templateName - > map[instName]InferredType (proto.Message)
 		wantBldMtdCnfgParam proto.Message                       // expected adaper-cnfg passed to the HandlerBuilder in handlerBuilder.Build mtd
@@ -274,7 +274,7 @@ func TestBuild_Valid(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 
 			bldrInfoFinder := func(name string) (*adapter.BuilderInfo, bool) {
-				return &adapter.BuilderInfo{NewBuilder: func() adapter.Builder2 { return tt.hndlrBuilder }}, true
+				return &adapter.BuilderInfo{NewBuilder: func() adapter.HandlerBuilder { return tt.hndlrBuilder }}, true
 			}
 
 			hf := NewHandlerFactory(tt.tmplRepo, nil, nil, bldrInfoFinder)

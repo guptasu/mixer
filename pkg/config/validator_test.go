@@ -673,7 +673,7 @@ func TestConvertHandlerParamsErrors(t *testing.T) {
 			_, ce := convertHandlerParams(
 				&adapter.BuilderInfo{
 					DefaultConfig: tt.defaultCnfg,
-					NewBuilder:    func() adapter.Builder2 { return fakeGoodHndlrBldr{} },
+					NewBuilder:    func() adapter.HandlerBuilder { return fakeGoodHndlrBldr{} },
 				}, "TestConvertHandlerParamsErrors", tt.params, true)
 
 			if !strings.Contains(ce.Error(), tt.errorStr) {
@@ -693,7 +693,7 @@ func TestValidateHandlers(t *testing.T) {
 			map[string]*adapter.BuilderInfo{
 				"fooHandlerAdapter": {
 					DefaultConfig: &types.Empty{},
-					NewBuilder:    func() adapter.Builder2 { return nil },
+					NewBuilder:    func() adapter.HandlerBuilder { return nil },
 				},
 			},
 			nil, 0, "service.name == “*”", false, ConstGlobalConfig,
@@ -710,7 +710,7 @@ func TestValidateHandlers(t *testing.T) {
 			map[string]*adapter.BuilderInfo{
 				"fooHandlerAdapter": {
 					DefaultConfig: &types.Empty{},
-					NewBuilder:    func() adapter.Builder2 { return nil },
+					NewBuilder:    func() adapter.HandlerBuilder { return nil },
 				},
 			},
 			nil, 1, "service.name == “*”", false, duplicateCnstrs,
@@ -759,7 +759,7 @@ handlers:
 			hbi: map[string]*adapter.BuilderInfo{
 				"fooHandlerAdapter": {
 					DefaultConfig:      &types.Empty{},
-					NewBuilder:         func() adapter.Builder2 { return nil },
+					NewBuilder:         func() adapter.HandlerBuilder { return nil },
 					SupportedTemplates: []string{testSupportedTemplate},
 				},
 			},
@@ -854,12 +854,12 @@ func getSetupHandlerFn(err error) SetupHandlerFn {
 }
 
 func TestBuildHandlers(t *testing.T) {
-	var hbgood adapter.Builder2 = fakeGoodHndlrBldr{}
-	var hbgood2 adapter.Builder2 = fakeGoodHndlrBldr{}
-	var hbb adapter.Builder2 = fakeErrRetrningHndlrBldr{}
-	var hbb2 adapter.Builder2 = fakeErrRetrningHndlrBldr{}
-	var hpb adapter.Builder2 = fakePanicHndlrBldr{}
-	var validationErrHndlr adapter.Builder2 = fakeHndlrBldr{validationError: "Validation failed"}
+	var hbgood adapter.HandlerBuilder = fakeGoodHndlrBldr{}
+	var hbgood2 adapter.HandlerBuilder = fakeGoodHndlrBldr{}
+	var hbb adapter.HandlerBuilder = fakeErrRetrningHndlrBldr{}
+	var hbb2 adapter.HandlerBuilder = fakeErrRetrningHndlrBldr{}
+	var hpb adapter.HandlerBuilder = fakePanicHndlrBldr{}
+	var validationErrHndlr adapter.HandlerBuilder = fakeHndlrBldr{validationError: "Validation failed"}
 	const handlerName = "foo"
 	const handlerName2 = "bar"
 	tests := []struct {
@@ -1005,7 +1005,7 @@ func (t fakeTemplateRepo) GetTemplateInfo(template string) (tmpl.Info, bool) {
 	return tmpl.Info{}, false
 }
 
-func (t fakeTemplateRepo) SupportsTemplate(hndlrBuilder adapter.Builder2, s string) (bool, string) {
+func (t fakeTemplateRepo) SupportsTemplate(hndlrBuilder adapter.HandlerBuilder, s string) (bool, string) {
 	// always succeed
 	return true, ""
 }

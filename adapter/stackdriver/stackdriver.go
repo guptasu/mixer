@@ -58,7 +58,7 @@ func GetInfo() adapter.BuilderInfo {
 			logentry.TemplateName,
 		},
 		DefaultConfig: &config.Params{},
-		NewBuilder:    func() adapter.Builder2 { return &builder{m: sdmetric.NewBuilder(), l: log.NewBuilder()} },
+		NewBuilder:    func() adapter.HandlerBuilder { return &builder{m: sdmetric.NewBuilder(), l: log.NewBuilder()} },
 	}
 }
 

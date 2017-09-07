@@ -85,7 +85,7 @@ func GetFakeHndlrBuilderInfo() adapter.BuilderInfo {
 		Description:        "",
 		SupportedTemplates: []string{sample_report.TemplateName},
 		DefaultConfig:      &types.Empty{},
-		NewBuilder:         func() adapter.Builder2 { return fakeHndlrBldr{} },
+		NewBuilder:         func() adapter.HandlerBuilder { return fakeHndlrBldr{} },
 	}
 }
 
