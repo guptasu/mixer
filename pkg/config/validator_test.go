@@ -692,9 +692,8 @@ func TestValidateHandlers(t *testing.T) {
 			nil,
 			map[string]*adapter.BuilderInfo{
 				"fooHandlerAdapter": {
-					DefaultConfig:        &types.Empty{},
-					CreateHandlerBuilder: func() adapter.HandlerBuilder { return nil },
-					NewBuilder:           func() adapter.Builder2 { return nil },
+					DefaultConfig: &types.Empty{},
+					NewBuilder:    func() adapter.Builder2 { return nil },
 				},
 			},
 			nil, 0, "service.name == “*”", false, ConstGlobalConfig,
@@ -710,9 +709,8 @@ func TestValidateHandlers(t *testing.T) {
 			nil,
 			map[string]*adapter.BuilderInfo{
 				"fooHandlerAdapter": {
-					DefaultConfig:        &types.Empty{},
-					CreateHandlerBuilder: func() adapter.HandlerBuilder { return nil },
-					NewBuilder:           func() adapter.Builder2 { return nil },
+					DefaultConfig: &types.Empty{},
+					NewBuilder:    func() adapter.Builder2 { return nil },
 				},
 			},
 			nil, 1, "service.name == “*”", false, duplicateCnstrs,
@@ -760,10 +758,9 @@ handlers:
 		{
 			hbi: map[string]*adapter.BuilderInfo{
 				"fooHandlerAdapter": {
-					DefaultConfig:        &types.Empty{},
-					CreateHandlerBuilder: func() adapter.HandlerBuilder { return nil },
-					NewBuilder:           func() adapter.Builder2 { return nil },
-					SupportedTemplates:   []string{testSupportedTemplate},
+					DefaultConfig:      &types.Empty{},
+					NewBuilder:         func() adapter.Builder2 { return nil },
+					SupportedTemplates: []string{testSupportedTemplate},
 				},
 			},
 			cfg:     globalConfig,

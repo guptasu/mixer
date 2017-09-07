@@ -33,9 +33,6 @@ type BuilderInfo struct {
 	Impl string
 	// Description returns a user-friendly description of the adapter.
 	Description string
-	// CreateHandlerBuilder is a function that creates a HandlerBuilder which implements Builders associated
-	// with the SupportedTemplates.
-	CreateHandlerBuilder CreateHandlerBuilderFn // DEPRECATED
 	// NewBuilder is a function that creates a Builder which implements Builders associated
 	// with the SupportedTemplates.
 	NewBuilder NewBuilderFn
