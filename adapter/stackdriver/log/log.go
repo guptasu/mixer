@@ -42,6 +42,7 @@ type (
 	builder struct {
 		makeClient makeClientFn
 		types      map[string]*logentry.Type
+		cfg        *config.Params
 	}
 
 	info struct {
@@ -62,23 +63,28 @@ type (
 
 var (
 	// compile-time assertion that we implement the interfaces we promise
-	_ logentry.HandlerBuilder = &builder{}
-	_ logentry.Handler        = &handler{}
+	_ logentry.HandlerBuilder2 = &builder{}
+	_ logentry.Handler         = &handler{}
 )
 
 // NewBuilder returns a builder implementing the logentry.HandlerBuilder interface.
-func NewBuilder() logentry.HandlerBuilder {
+func NewBuilder() logentry.HandlerBuilder2 {
 	return &builder{makeClient: logging.NewClient}
 }
 
-func (b *builder) SetLogEntryTypes(types map[string]*logentry.Type) error {
+func (b *builder) SetLogEntryTypes(types map[string]*logentry.Type) {
 	b.types = types
+}
+func (b *builder) SetAdapterConfig(cfg adapter.Config) {
+	b.cfg = cfg.(*config.Params)
+}
+func (b *builder) Validate() *adapter.ConfigErrors {
 	return nil
 }
 
-func (b *builder) Build(c adapter.Config, env adapter.Env) (adapter.Handler, error) {
+func (b *builder) Build(ctx context.Context, env adapter.Env) (adapter.Handler, error) {
 	logger := env.Logger()
-	cfg := c.(*config.Params)
+	cfg := b.cfg
 	client, err := b.makeClient(context.Background(), cfg.ProjectId, helper.ToOpts(cfg)...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create stackdriver logging client: %v", err)

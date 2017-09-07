@@ -15,6 +15,7 @@
 package config
 
 import (
+	"context"
 	"errors"
 	"testing"
 
@@ -34,9 +35,10 @@ func createBuilderInfo(name string) adapter.BuilderInfo {
 	return adapter.BuilderInfo{
 		Name:                 name,
 		Description:          "mock adapter for testing",
-		CreateHandlerBuilder: func() adapter.HandlerBuilder { return fakeHandlerBuilder{} },
+		CreateHandlerBuilder: func() adapter.HandlerBuilder { return fakeHandlerBuilderOld{} },
 		SupportedTemplates:   []string{sample_report.TemplateName},
 		DefaultConfig:        &types.Empty{},
+		NewBuilder:           func() adapter.Builder2 { return fakeHandlerBuilder{} },
 		ValidateConfig:       func(c adapter.Config) *adapter.ConfigErrors { return nil },
 	}
 }
@@ -45,12 +47,21 @@ func (t *TestBuilderInfoInventory) getNewGetBuilderInfoFn() adapter.BuilderInfo 
 	return createBuilderInfo(t.name)
 }
 
-type fakeHandlerBuilder struct{}
+type fakeHandlerBuilderOld struct{}
 
-func (fakeHandlerBuilder) SetSampleTypes(map[string]*sample_report.Type) error { return nil }
-func (fakeHandlerBuilder) Build(adapter.Config, adapter.Env) (adapter.Handler, error) {
+func (fakeHandlerBuilderOld) SetSampleTypes(map[string]*sample_report.Type) error { return nil }
+func (fakeHandlerBuilderOld) Build(adapter.Config, adapter.Env) (adapter.Handler, error) {
 	return fakeHandler{}, nil
 }
+
+type fakeHandlerBuilder struct{}
+
+func (fakeHandlerBuilder) SetSampleTypes(map[string]*sample_report.Type) {}
+func (fakeHandlerBuilder) Build(context.Context, adapter.Env) (adapter.Handler, error) {
+	return fakeHandler{}, nil
+}
+func (fakeHandlerBuilder) SetAdapterConfig(config adapter.Config) {}
+func (fakeHandlerBuilder) Validate() *adapter.ConfigErrors        { return nil }
 
 type fakeHandler struct{}
 
@@ -155,7 +166,7 @@ func (badHandlerBuilder) DefaultConfig() adapter.Config                       { 
 func (badHandlerBuilder) ValidateConfig(adapter.Config) *adapter.ConfigErrors { return nil }
 
 // This misspelled function cause the Builder to not implement SampleProcessorBuilder
-func (fakeHandlerBuilder) MisspelledXXConfigureSample(map[string]*sample_report.Type) error {
+func (fakeHandlerBuilderOld) MisspelledXXConfigureSample(map[string]*sample_report.Type) error {
 	return nil
 }
 func (badHandlerBuilder) Build(adapter.Config, adapter.Env) (adapter.Handler, error) {
