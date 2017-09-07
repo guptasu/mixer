@@ -672,9 +672,8 @@ func TestConvertHandlerParamsErrors(t *testing.T) {
 		t.Run(tt.errorStr, func(t *testing.T) {
 			_, ce := convertHandlerParams(
 				&adapter.BuilderInfo{
-					DefaultConfig:  tt.defaultCnfg,
-					ValidateConfig: func(c adapter.Config) *adapter.ConfigErrors { return nil },
-					NewBuilder:     func() adapter.Builder2 { return fakeGoodHndlrBldr{} },
+					DefaultConfig: tt.defaultCnfg,
+					NewBuilder:    func() adapter.Builder2 { return fakeGoodHndlrBldr{} },
 				}, "TestConvertHandlerParamsErrors", tt.params, true)
 
 			if !strings.Contains(ce.Error(), tt.errorStr) {
@@ -694,7 +693,6 @@ func TestValidateHandlers(t *testing.T) {
 			map[string]*adapter.BuilderInfo{
 				"fooHandlerAdapter": {
 					DefaultConfig:        &types.Empty{},
-					ValidateConfig:       func(c adapter.Config) *adapter.ConfigErrors { return nil },
 					CreateHandlerBuilder: func() adapter.HandlerBuilder { return nil },
 					NewBuilder:           func() adapter.Builder2 { return nil },
 				},
@@ -713,7 +711,6 @@ func TestValidateHandlers(t *testing.T) {
 			map[string]*adapter.BuilderInfo{
 				"fooHandlerAdapter": {
 					DefaultConfig:        &types.Empty{},
-					ValidateConfig:       func(c adapter.Config) *adapter.ConfigErrors { return nil },
 					CreateHandlerBuilder: func() adapter.HandlerBuilder { return nil },
 					NewBuilder:           func() adapter.Builder2 { return nil },
 				},
@@ -764,7 +761,6 @@ handlers:
 			hbi: map[string]*adapter.BuilderInfo{
 				"fooHandlerAdapter": {
 					DefaultConfig:        &types.Empty{},
-					ValidateConfig:       func(c adapter.Config) *adapter.ConfigErrors { return nil },
 					CreateHandlerBuilder: func() adapter.HandlerBuilder { return nil },
 					NewBuilder:           func() adapter.Builder2 { return nil },
 					SupportedTemplates:   []string{testSupportedTemplate},

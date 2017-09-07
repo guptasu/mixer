@@ -40,11 +40,11 @@ type (
 )
 
 var (
-	_ metric.HandlerBuilder = &obuilder{}
-	_ metric.Handler        = &handler{}
+	_ metric.HandlerBuilder2 = &builder{}
+	_ metric.Handler         = &handler{}
 
-	_ logentry.HandlerBuilder = &obuilder{}
-	_ logentry.Handler        = &handler{}
+	_ logentry.HandlerBuilder2 = &builder{}
+	_ logentry.Handler         = &handler{}
 )
 
 // GetInfo returns the BuilderInfo associated with this adapter implementation.
@@ -57,12 +57,8 @@ func GetInfo() adapter.BuilderInfo {
 			metric.TemplateName,
 			logentry.TemplateName,
 		},
-		CreateHandlerBuilder: func() adapter.HandlerBuilder {
-			return &obuilder{&builder{m: sdmetric.NewBuilder(), l: log.NewBuilder()}}
-		},
-		DefaultConfig:  &config.Params{},
-		ValidateConfig: func(msg adapter.Config) *adapter.ConfigErrors { return nil },
-		NewBuilder:     func() adapter.Builder2 { return &builder{m: sdmetric.NewBuilder(), l: log.NewBuilder()} },
+		DefaultConfig: &config.Params{},
+		NewBuilder:    func() adapter.Builder2 { return &builder{m: sdmetric.NewBuilder(), l: log.NewBuilder()} },
 	}
 }
 
@@ -114,24 +110,4 @@ func (h *handler) HandleMetric(ctx context.Context, values []*metric.Instance) e
 
 func (h *handler) HandleLogEntry(ctx context.Context, values []*logentry.Instance) error {
 	return h.l.HandleLogEntry(ctx, values)
-}
-
-type obuilder struct {
-	b *builder
-}
-
-func (o *obuilder) SetMetricTypes(metrics map[string]*metric.Type) error {
-	o.b.SetMetricTypes(metrics)
-	return nil
-}
-
-func (o *obuilder) SetLogEntryTypes(entries map[string]*logentry.Type) error {
-	o.b.SetLogEntryTypes(entries)
-	return nil
-}
-
-// Build creates a stack driver handler object.
-func (o *obuilder) Build(cfg adapter.Config, env adapter.Env) (adapter.Handler, error) {
-	o.b.SetAdapterConfig(cfg)
-	return o.b.Build(context.Background(), env)
 }

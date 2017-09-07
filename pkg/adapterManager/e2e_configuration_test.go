@@ -87,9 +87,6 @@ func GetFakeHndlrBuilderInfo() adapter.BuilderInfo {
 		CreateHandlerBuilder: func() adapter.HandlerBuilder { return fakeHndlrBldrOld{} },
 		DefaultConfig:        &types.Empty{},
 		NewBuilder:           func() adapter.Builder2 { return fakeHndlrBldr{} },
-		ValidateConfig: func(msg adapter.Config) *adapter.ConfigErrors {
-			return nil
-		},
 	}
 }
 
