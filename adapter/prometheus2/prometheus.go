@@ -61,8 +61,8 @@ type (
 var (
 	charReplacer = strings.NewReplacer("/", "_", ".", "_", " ", "_", "-", "")
 
-	_ metric.HandlerBuilder2 = &builder{}
-	_ metric.Handler         = &handler{}
+	_ metric.HandlerBuilder = &builder{}
+	_ metric.Handler        = &handler{}
 )
 
 // GetInfo returns the BuilderInfo associated with this adapter.

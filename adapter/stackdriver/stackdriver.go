@@ -29,8 +29,8 @@ import (
 
 type (
 	builder struct {
-		m metric.HandlerBuilder2
-		l logentry.HandlerBuilder2
+		m metric.HandlerBuilder
+		l logentry.HandlerBuilder
 	}
 
 	handler struct {
@@ -40,11 +40,11 @@ type (
 )
 
 var (
-	_ metric.HandlerBuilder2 = &builder{}
-	_ metric.Handler         = &handler{}
+	_ metric.HandlerBuilder = &builder{}
+	_ metric.Handler        = &handler{}
 
-	_ logentry.HandlerBuilder2 = &builder{}
-	_ logentry.Handler         = &handler{}
+	_ logentry.HandlerBuilder = &builder{}
+	_ logentry.Handler        = &handler{}
 )
 
 // GetInfo returns the BuilderInfo associated with this adapter implementation.

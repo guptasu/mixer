@@ -57,7 +57,7 @@ var (
 			BldrInterfaceName:  checknothing.TemplateName + "." + "HandlerBuilder",
 			HndlrInterfaceName: checknothing.TemplateName + "." + "Handler",
 			BuilderSupportsTemplate: func(hndlrBuilder adapter.Builder2) bool {
-				_, ok := hndlrBuilder.(checknothing.HandlerBuilder2)
+				_, ok := hndlrBuilder.(checknothing.HandlerBuilder)
 				return ok
 			},
 			HandlerSupportsTemplate: func(hndlr adapter.Handler) bool {
@@ -74,7 +74,7 @@ var (
 			},
 			SetType: func(types map[string]proto.Message, builder *adapter.Builder2) {
 				// Mixer framework should have ensured the type safety.
-				castedBuilder := (*builder).(checknothing.HandlerBuilder2)
+				castedBuilder := (*builder).(checknothing.HandlerBuilder)
 				castedTypes := make(map[string]*checknothing.Type, len(types))
 				for k, v := range types {
 					// Mixer framework should have ensured the type safety.
@@ -105,7 +105,7 @@ var (
 			BldrInterfaceName:  listentry.TemplateName + "." + "HandlerBuilder",
 			HndlrInterfaceName: listentry.TemplateName + "." + "Handler",
 			BuilderSupportsTemplate: func(hndlrBuilder adapter.Builder2) bool {
-				_, ok := hndlrBuilder.(listentry.HandlerBuilder2)
+				_, ok := hndlrBuilder.(listentry.HandlerBuilder)
 				return ok
 			},
 			HandlerSupportsTemplate: func(hndlr adapter.Handler) bool {
@@ -132,7 +132,7 @@ var (
 			},
 			SetType: func(types map[string]proto.Message, builder *adapter.Builder2) {
 				// Mixer framework should have ensured the type safety.
-				castedBuilder := (*builder).(listentry.HandlerBuilder2)
+				castedBuilder := (*builder).(listentry.HandlerBuilder)
 				castedTypes := make(map[string]*listentry.Type, len(types))
 				for k, v := range types {
 					// Mixer framework should have ensured the type safety.
@@ -173,7 +173,7 @@ var (
 			BldrInterfaceName:  logentry.TemplateName + "." + "HandlerBuilder",
 			HndlrInterfaceName: logentry.TemplateName + "." + "Handler",
 			BuilderSupportsTemplate: func(hndlrBuilder adapter.Builder2) bool {
-				_, ok := hndlrBuilder.(logentry.HandlerBuilder2)
+				_, ok := hndlrBuilder.(logentry.HandlerBuilder)
 				return ok
 			},
 			HandlerSupportsTemplate: func(hndlr adapter.Handler) bool {
@@ -234,7 +234,7 @@ var (
 			},
 			SetType: func(types map[string]proto.Message, builder *adapter.Builder2) {
 				// Mixer framework should have ensured the type safety.
-				castedBuilder := (*builder).(logentry.HandlerBuilder2)
+				castedBuilder := (*builder).(logentry.HandlerBuilder)
 				castedTypes := make(map[string]*logentry.Type, len(types))
 				for k, v := range types {
 					// Mixer framework should have ensured the type safety.
@@ -320,7 +320,7 @@ var (
 			BldrInterfaceName:  metric.TemplateName + "." + "HandlerBuilder",
 			HndlrInterfaceName: metric.TemplateName + "." + "Handler",
 			BuilderSupportsTemplate: func(hndlrBuilder adapter.Builder2) bool {
-				_, ok := hndlrBuilder.(metric.HandlerBuilder2)
+				_, ok := hndlrBuilder.(metric.HandlerBuilder)
 				return ok
 			},
 			HandlerSupportsTemplate: func(hndlr adapter.Handler) bool {
@@ -368,7 +368,7 @@ var (
 			},
 			SetType: func(types map[string]proto.Message, builder *adapter.Builder2) {
 				// Mixer framework should have ensured the type safety.
-				castedBuilder := (*builder).(metric.HandlerBuilder2)
+				castedBuilder := (*builder).(metric.HandlerBuilder)
 				castedTypes := make(map[string]*metric.Type, len(types))
 				for k, v := range types {
 					// Mixer framework should have ensured the type safety.
@@ -444,7 +444,7 @@ var (
 			BldrInterfaceName:  quota.TemplateName + "." + "HandlerBuilder",
 			HndlrInterfaceName: quota.TemplateName + "." + "Handler",
 			BuilderSupportsTemplate: func(hndlrBuilder adapter.Builder2) bool {
-				_, ok := hndlrBuilder.(quota.HandlerBuilder2)
+				_, ok := hndlrBuilder.(quota.HandlerBuilder)
 				return ok
 			},
 			HandlerSupportsTemplate: func(hndlr adapter.Handler) bool {
@@ -468,7 +468,7 @@ var (
 			},
 			SetType: func(types map[string]proto.Message, builder *adapter.Builder2) {
 				// Mixer framework should have ensured the type safety.
-				castedBuilder := (*builder).(quota.HandlerBuilder2)
+				castedBuilder := (*builder).(quota.HandlerBuilder)
 				castedTypes := make(map[string]*quota.Type, len(types))
 				for k, v := range types {
 					// Mixer framework should have ensured the type safety.
@@ -508,7 +508,7 @@ var (
 			BldrInterfaceName:  reportnothing.TemplateName + "." + "HandlerBuilder",
 			HndlrInterfaceName: reportnothing.TemplateName + "." + "Handler",
 			BuilderSupportsTemplate: func(hndlrBuilder adapter.Builder2) bool {
-				_, ok := hndlrBuilder.(reportnothing.HandlerBuilder2)
+				_, ok := hndlrBuilder.(reportnothing.HandlerBuilder)
 				return ok
 			},
 			HandlerSupportsTemplate: func(hndlr adapter.Handler) bool {
@@ -525,7 +525,7 @@ var (
 			},
 			SetType: func(types map[string]proto.Message, builder *adapter.Builder2) {
 				// Mixer framework should have ensured the type safety.
-				castedBuilder := (*builder).(reportnothing.HandlerBuilder2)
+				castedBuilder := (*builder).(reportnothing.HandlerBuilder)
 				castedTypes := make(map[string]*reportnothing.Type, len(types))
 				for k, v := range types {
 					// Mixer framework should have ensured the type safety.

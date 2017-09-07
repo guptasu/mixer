@@ -63,12 +63,12 @@ type (
 
 var (
 	// compile-time assertion that we implement the interfaces we promise
-	_ logentry.HandlerBuilder2 = &builder{}
-	_ logentry.Handler         = &handler{}
+	_ logentry.HandlerBuilder = &builder{}
+	_ logentry.Handler        = &handler{}
 )
 
 // NewBuilder returns a builder implementing the logentry.HandlerBuilder interface.
-func NewBuilder() logentry.HandlerBuilder2 {
+func NewBuilder() logentry.HandlerBuilder {
 	return &builder{makeClient: logging.NewClient}
 }
 

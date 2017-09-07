@@ -100,12 +100,12 @@ var (
 		descriptor.STRING_MAP:    labelpb.LabelDescriptor_STRING,
 	}
 
-	_ metric.HandlerBuilder2 = &builder{}
-	_ metric.Handler         = &handler{}
+	_ metric.HandlerBuilder = &builder{}
+	_ metric.Handler        = &handler{}
 )
 
 // NewBuilder returns a builder implementing the metric.HandlerBuilder interface.
-func NewBuilder() metric.HandlerBuilder2 {
+func NewBuilder() metric.HandlerBuilder {
 	return &builder{createClient: createClient}
 }
 

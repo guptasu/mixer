@@ -65,7 +65,7 @@ var (
 			BldrInterfaceName:  {{.GoPackageName}}.TemplateName + "." + "HandlerBuilder",
 			HndlrInterfaceName: {{.GoPackageName}}.TemplateName + "." + "Handler",
 			BuilderSupportsTemplate: func(hndlrBuilder adapter.Builder2) bool {
-				_, ok := hndlrBuilder.({{.GoPackageName}}.HandlerBuilder2)
+				_, ok := hndlrBuilder.({{.GoPackageName}}.HandlerBuilder)
 				return ok
 			},
 			HandlerSupportsTemplate: func(hndlr adapter.Handler) bool {
@@ -122,7 +122,7 @@ var (
 			},
 			SetType: func(types map[string]proto.Message, builder *adapter.Builder2) {
 				// Mixer framework should have ensured the type safety.
-				castedBuilder := (*builder).({{.GoPackageName}}.HandlerBuilder2)
+				castedBuilder := (*builder).({{.GoPackageName}}.HandlerBuilder)
 				castedTypes := make(map[string]*{{.GoPackageName}}.Type, len(types))
 				for k, v := range types {
 					// Mixer framework should have ensured the type safety.

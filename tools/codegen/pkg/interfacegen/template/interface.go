@@ -44,20 +44,6 @@ type Instance struct {
   {{end}}
 }
 
-// HandlerBuilder2 must be implemented by adapters if they want to
-// process data associated with the {{.Name}} template.
-//
-// Mixer uses this interface to call into the adapter at configuration time to configure
-// it with adapter-specific configuration as well as all inferred types the adapter is expected
-// to handle.
-type HandlerBuilder2 interface {
-	adapter.Builder2
-
-	// Set{{.Name}}Types is invoked by Mixer to pass all possible Types for instances that an adapter
-	// may receive at runtime. Each type holds information about the shape of the instances.
-	Set{{.Name}}Types(map[string]*Type /*Instance name -> Type*/)
-}
-
 // HandlerBuilder must be implemented by adapters if they want to
 // process data associated with the {{.Name}} template.
 //
@@ -65,11 +51,11 @@ type HandlerBuilder2 interface {
 // it with adapter-specific configuration as well as all inferred types the adapter is expected
 // to handle.
 type HandlerBuilder interface {
-	adapter.HandlerBuilder
+	adapter.Builder2
 
 	// Set{{.Name}}Types is invoked by Mixer to pass all possible Types for instances that an adapter
 	// may receive at runtime. Each type holds information about the shape of the instances.
-	Set{{.Name}}Types(map[string]*Type /*Instance name -> Type*/) error
+	Set{{.Name}}Types(map[string]*Type /*Instance name -> Type*/)
 }
 
 // Handler must be implemented by adapter code if it wants to
