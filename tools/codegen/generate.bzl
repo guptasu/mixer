@@ -3,8 +3,8 @@ load("@org_pubref_rules_protobuf//gogo:rules.bzl", "gogoslick_proto_library", "g
 load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 MIXER_DEPS = [
-    "//pkg/adapter:go_default_library",
-    "//pkg/adapter/template:go_default_library",
+    "@com_github_istio_mixer//pkg/adapter:go_default_library",
+    "@com_github_istio_mixer//pkg/adapter/template:go_default_library",
     "@com_github_istio_api//:mixer/v1/config/descriptor",  # keep
 ]
 MIXER_INPUTS = [
@@ -18,7 +18,7 @@ MIXER_IMPORT_MAP = {
 # TODO: develop better approach to import management.
 # including the "../.." is an ugly workaround for differing exec ctx for bazel rules
 # depending on whether or not we are building within mixer proper or in a third-party repo
-# that depends on mixer proper. 
+# that depends on mixer proper.
 MIXER_IMPORTS = [ "external/com_github_istio_api", "../../external/com_github_istio_api", "external/com_github_istio_mixer" ]
 
 # TODO: fill in with complete set of GOGO DEPS and IMPORT MAPPING
@@ -35,11 +35,11 @@ GOGO_IMPORT_MAP = {
 # TODO: develop better approach to import management.
 # including the "../.." is an ugly workaround for differing exec ctx for bazel rules
 # depending on whether or not we are building within mixer proper or in a third-party repo
-# that depends on mixer proper. 
+# that depends on mixer proper.
 PROTO_IMPORTS = [ "external/com_github_google_protobuf/src", "../../external/com_github_google_protobuf/src" ]
 PROTO_INPUTS = [ "@com_github_google_protobuf//:well_known_protos" ]
 
-def _gen_template_and_handler(name, importmap = {}):   
+def _gen_template_and_handler(name, importmap = {}):
    m = ""
    for k, v in importmap.items():
       m += " -m %s:%s" % (k, v)
@@ -52,9 +52,9 @@ def _gen_template_and_handler(name, importmap = {}):
        "name": name + "_handler",
        "srcs": [ src_desc ],
        "outs": [ gen_handler, gen_tmpl ],
-       "tools": [ "//tools/codegen/cmd/mixgenproc" ],
+       "tools": [ "@com_github_istio_mixer//tools/codegen/cmd/mixgenproc" ],
        "message": "Generating handler code from descriptor",
-       "cmd": "$(location //tools/codegen/cmd/mixgenproc) " 
+       "cmd": "$(location @com_github_istio_mixer//tools/codegen/cmd/mixgenproc) "
             + "$(location %s) -o=$(location %s) -t=$(location %s) %s" % (src_desc, gen_handler, gen_tmpl, m)
    }
 
