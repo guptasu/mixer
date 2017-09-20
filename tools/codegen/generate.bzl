@@ -22,7 +22,7 @@ MIXER_IMPORT_MAP = {
 MIXER_IMPORTS = [
 "external/com_github_istio_api",
 #"../external/com_github_istio_api",
-#"../../external/com_github_istio_api",
+"../../external/com_github_istio_api",
 #"external/com_github_istio_mixer",
 #"../external/com_github_istio_mixer",
 #"../../external/com_github_istio_mixer",
