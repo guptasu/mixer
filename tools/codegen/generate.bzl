@@ -21,11 +21,11 @@ MIXER_IMPORT_MAP = {
 # that depends on mixer proper.
 MIXER_IMPORTS = [
 "external/com_github_istio_api",
-"../external/com_github_istio_api",
-"../../external/com_github_istio_api",
-"external/com_github_istio_mixer",
-"../external/com_github_istio_mixer",
-"../../external/com_github_istio_mixer",
+#"../external/com_github_istio_api",
+#"../../external/com_github_istio_api",
+#"external/com_github_istio_mixer",
+#"../external/com_github_istio_mixer",
+#"../../external/com_github_istio_mixer",
 ]
 
 # TODO: fill in with complete set of GOGO DEPS and IMPORT MAPPING
