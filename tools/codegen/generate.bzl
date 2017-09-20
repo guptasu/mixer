@@ -3,13 +3,13 @@ load("@org_pubref_rules_protobuf//gogo:rules.bzl", "gogoslick_proto_library", "g
 load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 MIXER_DEPS = [
-    "@com_github_istio_mixer//pkg/adapter:go_default_library",
-    "@com_github_istio_api//:mixer/v1/template",
-    "@com_github_istio_api//:mixer/v1/config/descriptor",  # keep
+    "//external:adapter",
+    "//external:adapterTmpl",
+    "//external:mixerDesc",
 ]
 MIXER_INPUTS = [
-    "@com_github_istio_api//:mixer/v1/template_protos",
-    "@com_github_istio_api//:mixer/v1/config/descriptor_protos",  # keep
+    "//external:adapterTmplProtos",
+    "//external:mixerDescProtos",  # keep
 ]
 MIXER_IMPORT_MAP = {
     "mixer/v1/config/descriptor/value_type.proto": "istio.io/api/mixer/v1/config/descriptor",
@@ -21,11 +21,8 @@ MIXER_IMPORT_MAP = {
 # that depends on mixer proper.
 MIXER_IMPORTS = [
 "external/com_github_istio_api",
-#"../external/com_github_istio_api",
 "../../external/com_github_istio_api",
-#"external/com_github_istio_mixer",
-#"../external/com_github_istio_mixer",
-#"../../external/com_github_istio_mixer",
+#"../external/com_github_istio_api",
 ]
 
 # TODO: fill in with complete set of GOGO DEPS and IMPORT MAPPING
@@ -59,9 +56,9 @@ def _gen_template_and_handler(name, importmap = {}):
        "name": name + "_handler",
        "srcs": [ src_desc ],
        "outs": [ gen_handler, gen_tmpl ],
-       "tools": [ "@com_github_istio_mixer//tools/codegen/cmd/mixgenproc" ],
+       "tools": [ "//external:mixgenproc" ],
        "message": "Generating handler code from descriptor",
-       "cmd": "$(location @com_github_istio_mixer//tools/codegen/cmd/mixgenproc) "
+       "cmd": "$(location //external:mixgenproc) "
             + "$(location %s) -o=$(location %s) -t=$(location %s) %s" % (src_desc, gen_handler, gen_tmpl, m)
    }
 
@@ -138,7 +135,7 @@ def _mixer_supported_template_gen(name, packages, out):
 
 DEPS_FOR_ALL_TMPLS = [
     "//pkg/adapter:go_default_library",
-    "@com_github_istio_api//:mixer/v1/template",
+    "//external:adapterTmpl",
     "//pkg/attribute:go_default_library",
     "//pkg/expr:go_default_library",
     "//pkg/template:go_default_library",
