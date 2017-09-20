@@ -114,14 +114,17 @@ bind(
     name = "mixgenproc",
     actual = "//tools/codegen/cmd/mixgenproc:mixgenproc",
 )
+
 bind(
     name = "adapter",
     actual = "//pkg/adapter:go_default_library",
 )
+
 bind(
     name = "adapterTmpl",
-    actual = "//pkg/adapter/template:go_default_library",
+    actual = "@com_github_istio_api//:mixer/v1/template",
 )
+
 go_x_tools_imports_repositories()
 
 go_googleapis_repositories()
