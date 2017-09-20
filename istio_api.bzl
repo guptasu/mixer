@@ -114,7 +114,7 @@ gogoslick_proto_library(
     inputs = [
         "@com_github_google_protobuf//:well_known_protos",
     ],
-    protos = ["mixer/v1/template/TemplateExtensions.proto"],
+    protos = ["mixer/v1/template/extensions.proto"],
     verbose = 0,
     with_grpc = False,
     deps = [
@@ -127,7 +127,7 @@ gogoslick_proto_library(
 
 filegroup(
     name = "mixer/v1/template_protos",
-    srcs = ["mixer/v1/template/TemplateExtensions.proto"],
+    srcs = ["mixer/v1/template/extensions.proto"],
     visibility = ["//visibility:public"],
 )
 

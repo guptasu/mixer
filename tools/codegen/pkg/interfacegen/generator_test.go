@@ -31,7 +31,7 @@ type logFn func(string, ...interface{})
 func TestGenerator_Generate(t *testing.T) {
 	importmap := map[string]string{
 		"mixer/v1/config/descriptor/value_type.proto": "istio.io/api/mixer/v1/config/descriptor",
-		"mixer/v1/template/TemplateExtensions.proto":  "istio.io/api/mixer/v1/template",
+		"mixer/v1/template/extensions.proto":          "istio.io/api/mixer/v1/template",
 		"gogoproto/gogo.proto":                        "github.com/gogo/protobuf/gogoproto",
 		"google/protobuf/duration.proto":              "github.com/gogo/protobuf/types",
 	}
