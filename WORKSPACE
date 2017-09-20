@@ -110,36 +110,6 @@ load("//:istio_api.bzl", "go_istio_api_repositories")
 #   path = "/Users/guptasu/go/src/github.com/guptasu/report",
 #)
 
-bind(
-    name = "mixgenproc",
-    actual = "//tools/codegen/cmd/mixgenproc:mixgenproc",
-)
-
-bind(
-    name = "adapter",
-    actual = "//pkg/adapter:go_default_library",
-)
-
-bind(
-    name = "adapterTmpl",
-    actual = "@com_github_istio_api//:mixer/v1/template",
-)
-
-bind(
-    name = "adapterTmplProtos",
-    actual = "@com_github_istio_api//:mixer/v1/template_protos",
-)
-
-bind(
-    name = "mixerDesc",
-    actual = "@com_github_istio_api//:mixer/v1/config/descriptor",
-)
-
-bind(
-    name = "mixerDescProtos",
-    actual = "@com_github_istio_api//:mixer/v1/config/descriptor_protos",
-)
-
 go_x_tools_imports_repositories()
 
 go_googleapis_repositories()
