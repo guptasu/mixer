@@ -3,17 +3,19 @@ load("@org_pubref_rules_protobuf//gogo:rules.bzl", "gogoslick_proto_library", "g
 load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 MIXER_DEPS = [
-    "@com_github_istio_mixer//pkg/adapter:go_default_library",
-    "@com_github_istio_mixer//pkg/adapter/template:go_default_library",
+    "//external:adapter",
+    #"//external:adapterTmpl",
     "@com_github_istio_api//:mixer/v1/config/descriptor",  # keep
+    "@com_github_istio_api//:mixer/v1/template",  # keep
 ]
 MIXER_INPUTS = [
-    "@com_github_istio_mixer//pkg/adapter/template:protos",
+    "@com_github_istio_api//:mixer/v1/template_protos",
     "@com_github_istio_api//:mixer/v1/config/descriptor_protos",  # keep
 ]
 MIXER_IMPORT_MAP = {
     "mixer/v1/config/descriptor/value_type.proto": "istio.io/api/mixer/v1/config/descriptor",
     "pkg/adapter/template/TemplateExtensions.proto": "istio.io/mixer/pkg/adapter/template",
+    "mixer/v1/template/TemplateExtensions.proto": "istio.io/api/mixer/v1/template",
 }
 # TODO: develop better approach to import management.
 # including the "../.." is an ugly workaround for differing exec ctx for bazel rules
@@ -23,9 +25,10 @@ MIXER_IMPORTS = [
 "external/com_github_istio_api",
 "../../external/com_github_istio_api",
 "../external/com_github_istio_api",
+#"../../external/com_github_istio_mixer",
 "external/com_github_istio_mixer",
 #"../external/com_github_istio_mixer" ,
-#"../../external/com_github_istio_mixer"
+
 ]
 
 # TODO: fill in with complete set of GOGO DEPS and IMPORT MAPPING
@@ -59,9 +62,9 @@ def _gen_template_and_handler(name, importmap = {}):
        "name": name + "_handler",
        "srcs": [ src_desc ],
        "outs": [ gen_handler, gen_tmpl ],
-       "tools": [ "@com_github_istio_mixer//tools/codegen/cmd/mixgenproc" ],
+       "tools": [ "//external:mixgenproc" ],
        "message": "Generating handler code from descriptor",
-       "cmd": "$(location @com_github_istio_mixer//tools/codegen/cmd/mixgenproc) "
+       "cmd": "$(location //external:mixgenproc) "
             + "$(location %s) -o=$(location %s) -t=$(location %s) %s" % (src_desc, gen_handler, gen_tmpl, m)
    }
 
@@ -74,7 +77,7 @@ def mixer_proto_library(
     imports = [],
     inputs = [],
     deps = [],
-    verbose = 0,
+    verbose = 6,
     proto_compile_args = {},
     mixer_gen_args = {},
     gogoslick_args = {},

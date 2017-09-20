@@ -110,11 +110,23 @@ load("//:istio_api.bzl", "go_istio_api_repositories")
 #   path = "/Users/guptasu/go/src/github.com/guptasu/report",
 #)
 
+bind(
+    name = "mixgenproc",
+    actual = "//tools/codegen/cmd/mixgenproc:mixgenproc",
+)
+bind(
+    name = "adapter",
+    actual = "//pkg/adapter:go_default_library",
+)
+bind(
+    name = "adapterTmpl",
+    actual = "//pkg/adapter/template:go_default_library",
+)
 go_x_tools_imports_repositories()
 
 go_googleapis_repositories()
 
-go_istio_api_repositories(False)
+go_istio_api_repositories(True)
 
 new_http_archive(
     name = "docker_ubuntu",

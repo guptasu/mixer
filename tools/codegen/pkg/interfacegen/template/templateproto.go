@@ -21,7 +21,7 @@ syntax = "proto3";
 
 package {{.PackageName}};
 
-import "pkg/adapter/template/TemplateExtensions.proto";
+import "mixer/v1/template/TemplateExtensions.proto";
 $$additional_imports$$
 
 option (istio.mixer.v1.config.template.template_variety) = {{.VarietyName}};

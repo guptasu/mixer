@@ -3,7 +3,7 @@ syntax = "proto3";
 package istio.mixer.adapter.quota;
 
 import "mixer/v1/config/descriptor/value_type.proto";
-import "pkg/adapter/template/TemplateExtensions.proto";
+import "mixer/v1/template/TemplateExtensions.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/timestamp.proto";
 
