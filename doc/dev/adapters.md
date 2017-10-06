@@ -18,7 +18,7 @@ This document is or developers looking to build an [adapter](https://istio.io/do
 * [Testing](#testing)
 * [Do's and dont's](#dos-and-donts)
 * [Built-in templates](#built-in-templates)
-* [Walkthrough][#walkthrough-of-adapter-implementation-30-minutes]
+* [Walkthrough](#walkthrough-of-adapter-implementation-30-minutes)
 
 # Background
 
