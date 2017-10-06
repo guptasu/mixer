@@ -726,7 +726,7 @@ Add go_test to the BUILD file adapter/mysampleadapter/BUILD.
 
 Copy the following content into the existing BUILD file. The text in bold shows the newly added content.
 
-```
+<pre>
 package(default_visibility = ["//visibility:public"])
 
 load("@io_bazel_rules_go//go:def.bzl", "go_library")
@@ -745,7 +745,8 @@ go_library(
     ],
 )
 
-**load("@io_bazel_rules_go//go:def.bzl", "go_test")
+<b>
+load("@io_bazel_rules_go//go:def.bzl", "go_test")
 go_test(
     name = "go_default_test",
     size = "small",
@@ -762,8 +763,9 @@ go_test(
         "@com_github_istio_api//:mixer/v1",  # keep
         "@org_golang_x_net//context:go_default_library",
     ],
-)**
-```
+)
+</b>
+</pre>
 
 
 Build the mixer code and run bazel_to_go.py script to use go tools for testing.
