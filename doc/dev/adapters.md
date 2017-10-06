@@ -1,14 +1,12 @@
 Istio Mixer: Adapter Developer's Guide
 
-This document is for developers looking to build an *[adapte*r](https://istio.io/docs/concepts/policy-and-control/mixer.html#adapters) for Istio's Mixer. Adapters integrate Mixer with different infrastructure backends that deliver core functionality, such as logging, monitoring, quotas, ACL checking, and more. This guide explains the adapter model and adapter lifecycle, and also walks through the step-by-step instructions for creating a simple adapter.
+This document is or developers looking to build an *[adapte*r](https://istio.io/docs/concepts/policy-and-control/mixer.html#adapters) for Istio's Mixer. Adapters integrate Mixer with different infrastructure backends that deliver core functionality, such as logging, monitoring, quotas, ACL checking, and more. This guide explains the adapter model and adapter lifecycle, and also walks through the step-by-step instructions for creating a simple adapter.
 
 **Prerequisite**: This developer guide assumes the reader has:
 
 * Basic understanding of the [Mixer Framework](https://istio.io/docs/concepts/policy-and-control/mixer.html) as an attribute processing engine.
 
 * High level understanding of [operator configuration model](https://istio.io/docs/concepts/policy-and-control/mixer-config.html).
-
-[[TOC]]
 
 # Background
 
@@ -44,7 +42,7 @@ As we saw in the previous section, a build of Mixer supports a set of *templates
 
 The following diagram shows the various components of a template.
 
-![template generated artifacts](./img/mixer%20template%20generated%20artifacts.svg)
+![template generated artifacts](./img/template%20generated%20artifacts.svg)
 
 We'll look at each of these in more detail below.
 
@@ -90,78 +88,101 @@ These examples show three templates, one for each of the possible template_varie
 
 ### REPORT variety template
 
-<table>
-  <tr>
-    <td>Template.proto</td>
-  </tr>
-  <tr>
-    <td>syntax = "proto3";
+**Template.proto**
+
+**==============**
+
+**```**
+
+syntax = "proto3";
 
 package metric;
 
 import "mixer/v1/config/descriptor/value_type.proto";
+
 import "pkg/adapter/template/TemplateExtensions.proto";
 
 option (istio.mixer.v1.config.template.template_variety) = TEMPLATE_VARIETY_REPORT;
 
 // Metric represents a single piece of data to report.
+
 message Template {
+
    // The value being reported.
+
    istio.mixer.v1.config.descriptor.ValueType value = 1;
 
    // The unique identity of the particular metric to report.
+
    map<string, istio.mixer.v1.config.descriptor.ValueType> dimensions = 2;
-}</td>
-  </tr>
-</table>
 
+}
 
-<table>
-  <tr>
-    <td>Auto-generated Go code used by adapter implementation</td>
-  </tr>
-  <tr>
-    <td>package metric
+```
+
+Auto-generated Go code used by adapter implementation
+
+===================
+
+```
+
+package metric
 
 import (
+
   "context"
+
   "istio.io/mixer/pkg/adapter"
+
 )
 
 const TemplateName = "metric"
 
 type Instance struct {
+
   Name string
+
   Value interface{}
+
   Dimensions map[string]interface{}
+
 }
 
 type Type struct {
+
   Value      istio_mixer_v1_config_descriptor.ValueType
+
   Dimensions map[string]istio_mixer_v1_config_descriptor.ValueType
+
 }
 
 type Handler interface {
+
   adapter.Handler
+
   HandleMetric(context.Context, []*Instance) error
+
 }
 
 type HandlerBuilder interface {
-  adapter.HandlerBuilder
-  SetMetricTypes(map[string]*Type /*Instance name -> Type*/)
-}</td>
-  </tr>
-</table>
 
+  adapter.HandlerBuilder
+
+  SetMetricTypes(map[string]*Type /*Instance name -> Type*/)
+
+}
+
+```
 
 ### CHECK  variety template
 
-<table>
-  <tr>
-    <td>Template.proto</td>
-  </tr>
-  <tr>
-    <td>syntax = "proto3";
+Template.proto
+
+==============
+
+```
+
+syntax = "proto3";
 
 package listentry;
 
@@ -170,122 +191,158 @@ import "pkg/adapter/template/TemplateExtensions.proto";
 option (istio.mixer.v1.config.template.template_variety) = TEMPLATE_VARIETY_CHECK;
 
 // ListEntry is used to verify the presence/absence of a string
+
 // within a list.
+
 message Template {
+
     // Specifies the entry to verify in the list.
+
     string value = 1;
-}</td>
-  </tr>
-</table>
 
+}
 
-<table>
-  <tr>
-    <td>Auto-generated Go code used by adapter implementation</td>
-  </tr>
-  <tr>
-    <td>package listentry
+```
+
+Auto-generated Go code used by adapter implementation
+
+==================
+
+```
+
+package listentry
 
 import (
+
 	"context"
 
 	"istio.io/mixer/pkg/adapter"
+
 )
 
 const TemplateName = "listentry"
 
 type Instance struct {
+
 	// Name of the instance as specified in configuration.
+
 	Name string
 
 	// Specifies the entry to verify in the list.
+
 	Value string
+
 }
 
 type Type struct {
+
 }
 
 type HandlerBuilder interface {
+
 	adapter.HandlerBuilder
+
 	SetListEntryTypes(map[string]*Type /*Instance name -> Type*/)
+
 }
 
 type Handler interface {
-	adapter.Handler
-	HandleListEntry(context.Context, *Instance) (adapter.CheckResult, error)
-}</td>
-  </tr>
-</table>
 
+	adapter.Handler
+
+	HandleListEntry(context.Context, *Instance) (adapter.CheckResult, error)
+
+### }
+
+```
 
 ### QUOTA variety template
 
-<table>
-  <tr>
-    <td>Template.proto</td>
-  </tr>
-  <tr>
-    <td>syntax = "proto3";
+Template.proto
+
+=============
+
+```
+
+syntax = "proto3";
 
 package metric;
 
 import "mixer/v1/config/descriptor/value_type.proto";
+
 import "pkg/adapter/template/TemplateExtensions.proto";
 
 option (istio.mixer.v1.config.template.template_variety) = TEMPLATE_VARIETY_REPORT;
 
 // Metric represents a single piece of data to report.
+
 message Template {
+
    // The value being reported.
+
    istio.mixer.v1.config.descriptor.ValueType value = 1;
 
    // The unique identity of the particular metric to report.
+
    map<string, istio.mixer.v1.config.descriptor.ValueType> dimensions = 2;
-}</td>
-  </tr>
-</table>
 
+}
 
-<table>
-  <tr>
-    <td>Auto-generated Go code used by adapter implementation</td>
-  </tr>
-  <tr>
-    <td>package quota
+```
+
+Auto-generated Go code used by adapter implementation
+
+================
+
+```
+
+package quota
 
 import (
+
 	"context"
 
 	"istio.io/mixer/pkg/adapter"
+
 )
 
 const TemplateName = "quota"
 
 type Instance struct {
+
 	// Name of the instance as specified in configuration.
+
 	Name string
 
 	// The unique identity of the particular quota to manipulate.
+
 	Dimensions map[string]interface{}
+
 }
 
 type Type struct {
+
 	Dimensions map[string]istio_mixer_v1_config_descriptor.ValueType
+
 }
 
 type HandlerBuilder interface {
+
 	adapter.HandlerBuilder
+
 	SetQuotaTypes(map[string]*Type /*Instance name -> Type*/)
+
 }
 
 type Handler interface {
-	adapter.Handler
-	HandleQuota(context.Context, *Instance, adapter.QuotaArgs) (adapter.QuotaResult, error)
-}
-</td>
-  </tr>
-</table>
 
+	adapter.Handler
+
+	HandleQuota(context.Context, *Instance, adapter.QuotaArgs) (adapter.QuotaResult, error)
+
+}
+
+```
 
  In the next section we'll look in more detail about adapter lifecycle.* * *
 
@@ -322,10 +379,11 @@ This is when Mixer is booted and adapters are initialized. Every adapter must im
 
 adapter.Info (Details in [info.go](https://github.com/istio/mixer/blob/master/pkg/adapter/info.go)) contains the following information:
 
-<table>
-  <tr>
-    <td>type Info struct {
+### ```
+
+type Info struct {
 	// Name returns the official name of the adapter, it must be RFC 1035 compatible DNS
+
 // label.
 	// Regex: "^[a-z]([-a-z0-9]*[a-z0-9])?$"
 	// Name is used in Istio configuration, therefore it should be descriptive but short.
@@ -339,6 +397,7 @@ adapter.Info (Details in [info.go](https://github.com/istio/mixer/blob/master/pk
 	// Description returns a user-friendly description of the adapter.
 	Description string
 	// NewBuilder is a function that creates a Builder which implements Builders
+
 // associated with the SupportedTemplates.
 	NewBuilder NewBuilderFn
 	// SupportedTemplates expresses all the templates the Adapter wants to serve.
@@ -346,12 +405,12 @@ adapter.Info (Details in [info.go](https://github.com/istio/mixer/blob/master/pk
 	// DefaultConfig is a default configuration struct for this
 	// adapter. This will be used by the configuration system to establish
 	// the shape of the block of configuration state passed to the HandlerBuilder.Build
+
 method.
 	DefaultConfig proto.Message
-}</td>
-  </tr>
-</table>
+}
 
+```
 
 ### Configuration-time
 
@@ -403,170 +462,240 @@ The following sample adapters just illustrate the basic skeleton of the adapter 
 
 * Sample no-op adapter that supports the above [sample 'metric' Template](#heading=h.ee6dn8otn4o0)
 
-<table>
-  <tr>
-    <td>type (
+```
+
+type (
+
   builder struct{}
+
   handler struct{}
+
 )
 
 // ensure our types implement the requisite interfaces
+
 var _ metric.HandlerBuilder = builder{}
+
 var _ metric.Handler = handler{}
 
 ///////////////// Configuration Methods ///////////////
 
 func (builder) Build(Context.Context, adapter.Env) (adapter.Handler, error) {
+
   return handler{}, nil
+
 }
+
 func (builder) SetAdapterConfig(adapter.Config)                      {}
 func (builder) Validate() (*adapter.ConfigErrors)                 { return }
 
 func (builder) SetMetricTypes(map[string]*metric.Type){
+
   ...
+
 }
 
 ////////////////// Runtime Methods //////////////////////////
 
 func (handler) HandleMetric(context.Context, []*metric.Instance) error {
+
   return nil
+
 }
 
 func (handler) Close() error { return nil }
 
 ////////////////// Bootstrap //////////////////////////
+
 // GetInfo returns the Info for this adapter.
 
 func GetInfo() adapter.BuilderInfo {
-  return adapter.BuilderInfo{
-     Name:        "istio.io/mixer/adapter/noop1",
-     Description: "Does nothing",
-     SupportedTemplates: []string{
-        metric.TemplateName,
-     },
-     NewBuilder: func() adapter.HandlerBuilder { return builder{} },
-     DefaultConfig:        &types.Empty{},
-  }
-}
-</td>
-  </tr>
-</table>
 
+  return adapter.BuilderInfo{
+
+     Name:        "istio.io/mixer/adapter/noop1",
+
+     Description: "Does nothing",
+
+     SupportedTemplates: []string{
+
+        metric.TemplateName,
+
+     },
+
+     NewBuilder: func() adapter.HandlerBuilder { return builder{} },
+
+     DefaultConfig:        &types.Empty{},
+
+  }
+
+}
+
+```
 
 * Sample no-op adapter that supports the above [sample 'listentry' Template](#heading=h.qgv3mdgv1nfj).
 
-<table>
-  <tr>
-    <td>type (
+```
+
+type (
+
   builder struct{}
+
   handler struct{}
+
 )
 
-// ensure our types implement the requisite interfaces
+*// ensure our types implement the requisite interfaces*
+
 var _ listentry.HandlerBuilder = builder{}
+
 var _ listentry.Handler = handler{}
 
-///////////////// Configuration Methods ///////////////
+*///////////////// Configuration Methods ///////////////*
 
 func (builder) Build(Context.Context, adapter.Env) (adapter.Handler, error) {
+
   return handler{}, nil
+
 }
+
 func (builder) SetAdapterConfig(adapter.Config)                      {}
 func (builder) Validate() (*adapter.ConfigErrors)                 { return }
 
 func (builder) SetListEntryTypes(map[string]*listentry.Type){
+
   ...
+
 }
 
-
-////////////////// Runtime Methods //////////////////////////
+*////////////////// Runtime Methods //////////////////////////*
 
 var checkResult = adapter.CheckResult{
-  Status:        rpc.Status{Code: int32(rpc.OK)},
-  ValidDuration: 1000000000 * time.Second,
+
+  Status:        rpc.Status{Code: int32(rpc.*OK*)},
+
+  ValidDuration: 1000000000 * time.*Second*,
+
   ValidUseCount: 1000000000,
+
 }
 
 func (handler) HandleListEntry(context.Context, *listentry.Instance) (adapter.CheckResult, error) {
+
   return checkResult, nil
+
 }
 
 func (handler) Close() error { return nil }
 
-////////////////// Bootstrap //////////////////////////
+*////////////////// Bootstrap //////////////////////////*
 
-// GetInfo returns the Info associated with this adapter implementation.
-func GetInfo() adapter.BuilderInfo {
+*// GetInfo returns the Info associated with this adapter implementation.*
+
+func *GetInfo*() adapter.BuilderInfo {
+
   return adapter.BuilderInfo{
-     Name:        "istio.io/mixer/adapter/noop2",
-     Description: "Does nothing",
-     SupportedTemplates: []string{
-        listentry.TemplateName,
-     },
-     NewBuilder: func() adapter.HandlerBuilder { return builder{} },
-     DefaultConfig:        &types.Empty{},
-  }
-}
-</td>
-  </tr>
-</table>
 
+     Name:        "istio.io/mixer/adapter/noop2",
+
+     Description: "Does nothing",
+
+     SupportedTemplates: []string{
+
+        listentry.*TemplateName*,
+
+     },
+
+     NewBuilder: func() adapter.HandlerBuilder { return builder{} },
+
+     DefaultConfig:        &types.Empty{},
+
+  }
+
+}
+
+```
 
 * Sample of a no-op adapter that supports the above [sample 'quota' Template](#heading=h.67r0dd5r6jgw).
 
-<table>
-  <tr>
-    <td>type (
+```
+
+type (
+
   builder struct{}
+
   handler struct{}
+
 )
 
-// ensure our types implement the requisite interfaces
+*// ensure our types implement the requisite interfaces*
+
 var _ quota.HandlerBuilder = builder{}
+
 var _ quota.Handler = handler{}
 
-///////////////// Configuration Methods ///////////////
+*///////////////// Configuration Methods ///////////////*
 
 func (builder) Build(Context.Context, adapter.Env) (adapter.Handler, error) {
+
   return handler{}, nil
+
 }
+
 func (builder) SetAdapterConfig(adapter.Config)                      {}
 func (builder) Validate() (*adapter.ConfigErrors)                 { return }
 
 func (builder) SetQuotaTypes(map[string]*quota.Type){
+
   ...
+
 }
 
-////////////////// Runtime Methods //////////////////////////
+*////////////////// Runtime Methods //////////////////////////*
 
 func (handler) HandleQuota(ctx context.Context, _ *quota.Instance, args adapter.QuotaRequestArgs) (adapter.QuotaResult2, error) {
+
   return adapter.QuotaResult2{
-        ValidDuration: 1000000000 * time.Second,
+
+        ValidDuration: 1000000000 * time.*Second*,
+
         Amount:        args.QuotaAmount,
+
      },
+
      nil
+
 }
 
 func (handler) Close() error { return nil }
 
-////////////////// Bootstrap //////////////////////////
+*////////////////// Bootstrap //////////////////////////*
 
-// GetInfo returns the Info associated with this adapter implementation.
-func GetInfo() adapter.BuilderInfo {
+*// GetInfo returns the Info associated with this adapter implementation.*
+
+func *GetInfo*() adapter.BuilderInfo {
+
   return adapter.BuilderInfo{
-     Name:        "istio.io/mixer/adapter/noop2",
-     Description: "Does nothing",
-     SupportedTemplates: []string{
-        quota.TemplateName,
-     },
-     NewBuilder: func() adapter.HandlerBuilder { return builder{} },
-     DefaultConfig:        &types.Empty{},
-  }
-}
-</td>
-  </tr>
-</table>
 
+     Name:        "istio.io/mixer/adapter/noop2",
+
+     Description: "Does nothing",
+
+     SupportedTemplates: []string{
+
+        quota.*TemplateName*,
+
+     },
+
+     NewBuilder: func() adapter.HandlerBuilder { return builder{} },
+
+     DefaultConfig:        &types.Empty{},
+
+  }
+
+}
+
+```
 
 The above section provided a complete example of a simple adapter. In the next sections we'll look in more detail about how to build mixer with custom adapters that are are not shipped with the default Mixer build, and step-by-step guide to build a simple adapter.
 
@@ -621,4 +750,3 @@ Using the above templates, the Mixer team has implemented a set of adapters that
 # Walkthrough of Adapter implementation (30 minutes)
 
 Please refer to [Adapter Development Walkthrough](https://docs.google.com/document/d/1ZjGtmf27AQLxq7Au5lpI_P-YDdjDaqTpU2tNLdK3IMI/edit#)
-
