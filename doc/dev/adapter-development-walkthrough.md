@@ -1,18 +1,17 @@
-Istio Mixer: Adapter Development Walkthrough
+# Istio Mixer: Adapter Development Walkthrough
 
-This section walks through step-by-step instructions to implement, test and plug a simple adapter into Mixer. For complete details on Adapter life cycle, please refer to the [Adapter Developer Reference Guide](https://docs.google.com/document/d/1rKPt2Z2acy4pRwcvScPa-Na-EnU-6poGR-Rj_fZtaIc/edit#heading=h.elkqevty9pjy).
+This section walks through step-by-step instructions to implement, test and plug a simple adapter into Mixer. For complete details on Adapter life cycle, please refer to the [Adapter Developer Reference Guide](./adapters.md).
 
-**Note: **To complete this walkthrough, it is optional to read the Adapter Developer Reference Guide. However, to create a real production quality adapter, it is highly recommended you read the reference guide to better understand Adapter lifecycle and various interfaces and objects that Mixer uses to interact with Adapters.
+**Note**: To complete this walkthrough, it is optional to read the Adapter Developer Reference Guide. However, to create a real production quality adapter, it is highly recommended you read the reference guide to better understand Adapter lifecycle and various interfaces and objects that Mixer uses to interact with Adapters.
 
 In this walkthrough you're going to create a simple Adapter that:
 
-* Supports the 'metric' [Template](https://docs.google.com/document/d/1rKPt2Z2acy4pRwcvScPa-Na-EnU-6poGR-Rj_fZtaIc/edit#heading=h.d4lamhz9y0fw) which ships with built-in Mixer framework.
+* Supports the [`metric Template`](../../template/metric/template.proto) which ships with built-in Mixer framework.
 
 * For every request, prints to a file the data it received from Mixer during request time.
 
 **It should approximately take ~30 min to finish this task**
 
-For simplicity, the adapter implementation in this walkthrough is done inside istio/mixer/adapter/mysampleadapter directory. However, adapters can even be implemented outside the mixer repo. You can find out more about this in [plugging the adapter with Mixer](https://docs.google.com/document/d/1rKPt2Z2acy4pRwcvScPa-Na-EnU-6poGR-Rj_fZtaIc/edit#heading=h.enwekb8t755e).
 
 [[TOC]]
 
@@ -26,7 +25,7 @@ git clone https://github.com/istio/mixer
 
 Install bazel (version 0.5.2 or higher) from [https://bazel.build/](https://bazel.build/) and add it to your PATH
 
-Set the MIXER_REPO variable to the path where the mixer repository is on the local machine. Example '`export MIXER_REPO=$GOPATH/src/istio.io/mixer'`
+Set the MIXER_REPO variable to the path where the mixer repository is on the local machine. Example `export MIXER_REPO=$GOPATH/src/istio.io/mixer`
 
 Successfully build Mixer repo.
 
@@ -46,7 +45,6 @@ Create file mysampleadapter.go
 
 ```
 touch mysampleadapter.go
-
 ```
 
 Copy the following content into the file mysampleadapter.go. It defines the adapter's `builder` and `handler` types along with the interfaces required to support the 'metric' Template. This code so far does not add any functionality of printing details in a file. It is done in later steps.
@@ -155,9 +153,7 @@ bazel build ...
 The build output on the terminal look like
 
 *INFO: Found 1 target...*
-
 *Target //adapter/*mysampleadapter*:go_default_library up-to-date:*
-
 *bazel-bin/adapter/*mysampleadapter*/~lib~/istio.io/mixer/adapter/*mysampleadapter*.a*
 
 Now we have the basic skeleton of adapter with empty implementation for interfaces for 'metric' Templates. Later steps adds the core code for this adapter.
@@ -242,9 +238,7 @@ bazel build ...
 The build output on the terminal look like
 
 *INFO: Found 1 target...*
-
 *Target //adapter/*mysampleadapter*:go_default_library up-to-date:*
-
 *bazel-bin/adapter/*mysampleadapter*/~lib~/istio.io/mixer/adapter/*mysampleadapter*.a*
 
 # Step 3: Link adapter config with adapter code.
@@ -365,9 +359,7 @@ bazel build ...
 The build output on the terminal look like
 
 *INFO: Found 1 target...*
-
 *Target //adapter/*mysampleadapter*:go_default_library up-to-date:*
-
 *bazel-bin/adapter/*mysampleadapter*/~lib~/istio.io/mixer/adapter/*mysampleadapter*.a*
 
 # Step 4: Write business logic into your adapter.
@@ -482,9 +474,7 @@ bazel build ...
 The build output on the terminal look like
 
 *INFO: Found 1 target...*
-
 *Target //adapter/*mysampleadapter*:go_default_library up-to-date:*
-
 *bazel-bin/adapter/*mysampleadapter*/~lib~/istio.io/mixer/adapter/*mysampleadapter*.a*
 
 This concludes the implementation part of the adapter code. Next steps show how  plug an adapter into a build of Mixer and to verify your code's behaviour.
@@ -597,11 +587,8 @@ cd $MIXER_REPO && bazel build ... && bazel-bin/cmd/server/mixs server --configSt
 The terminal will have the following output and will be blocked waiting to serve requests
 
 *...*
-
 *Starting self-monitoring on port 9093*
-
 *Istio Mixer: version: 0.2.2-28-gc5112ac1 (build: 2017-09-23-c5112ac1, status: Modified)*
-
 *Starting gRPC server on port 9091*
 
 Now let's call 'report' using mixer client. This step should cause the mixer server to call your sample adapter with instance objects constructed using the operator configuration.
@@ -630,13 +617,10 @@ tail $MIXER_REPO/out.txt
 
 You should see something like:
 
-*`HandleMetric invoke for *:`
-
-*`		Instance Name  :'requestcount.metric.istio-config-default*'`
-
-*`		Instance Value : {requestcount.metric.istio-config-default 1 map[response_code:200 service:unknown source:unknown target:unknown version:unknown method:unknown] UNSPECIFIED map[]}*,`
-
-*`		Type           : {INT64 map[response_code:INT64 service:STRING source:STRING target:STRING version:STRING method:STRING] map[]}* `
+*HandleMetric invoke for *
+*		Instance Name  : requestcount.metric.istio-config-default*
+*		Instance Value : {requestcount.metric.istio-config-default 1 map[response_code:200 service:unknown source:unknown target:unknown version:unknown method:unknown] UNSPECIFIED map[]}*,
+*		Type           : {INT64 map[response_code:INT64 service:STRING source:STRING target:STRING version:STRING method:STRING] map[]}*
 
 You can even try passing other attributes to mixer server and inspect your out.txt file to see how the data passed to the adapter changes. For example
 
@@ -648,7 +632,7 @@ bazel-bin/cmd/client/mixc report -s="destination.service=svc.cluster.local,targe
 
 # Step 8: Write test and validate your adapter (optional).
 
-The above steps 7 (start mixer server and validate ..) were mainly to test your adapter code. You can achieve the same thing by writing a simple test that uses the Mixer's 'testenv' package to start a inproc Mixer and make calls to it via mixer client. For complete reference details on how to test Adapter code check out [Test an adapter](https://docs.google.com/document/d/1rKPt2Z2acy4pRwcvScPa-Na-EnU-6poGR-Rj_fZtaIc/edit#heading=h.b3vwz3p51clz)
+The above steps 7 (start mixer server and validate ..) were mainly to test your adapter code. You can achieve the same thing by writing a simple test that uses the Mixer's 'testenv' package to start a inproc Mixer and make calls to it via mixer client. For complete reference details on how to test Adapter code check out [Test an adapter](./adapters.md#testing)
 
 Add a test file for your adapter code
 
@@ -780,12 +764,11 @@ Inspect the out.text file that your adapter would have printed inside its own di
 tail $MIXER_REPO/adapter/mysampleadapter/out.txt
 ```
 
-
 # Step 9: Cleanup
 
 Delete the adapter/mysampleadapter` `directory and undo the edits made inside the adapter/BUILD file.
 
 # Step 10: Next
 
-Next step is to integrate your adapter into a build of Mixer. Details on how to build a Mixer with a custom adapters are explained in the [how to build a mixer section](https://docs.google.com/document/d/1rKPt2Z2acy4pRwcvScPa-Na-EnU-6poGR-Rj_fZtaIc/edit#heading=h.enwekb8t755e)**.**
+Next step is to build your own adapter and integrate with  Mixer. Refer to [Developer's guide](./adapters.md) for necessary details.
 
