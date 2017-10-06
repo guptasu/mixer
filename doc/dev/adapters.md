@@ -90,8 +90,6 @@ These examples show three templates, one for each of the possible template_varie
 
 **Template.proto**
 
-**==============**
-
 **```**
 
 syntax = "proto3";
@@ -121,8 +119,6 @@ message Template {
 ```
 
 Auto-generated Go code used by adapter implementation
-
-===================
 
 ```
 
@@ -178,8 +174,6 @@ type HandlerBuilder interface {
 
 Template.proto
 
-==============
-
 ```
 
 syntax = "proto3";
@@ -205,8 +199,6 @@ message Template {
 ```
 
 Auto-generated Go code used by adapter implementation
-
-==================
 
 ```
 
@@ -260,8 +252,6 @@ type Handler interface {
 
 Template.proto
 
-=============
-
 ```
 
 syntax = "proto3";
@@ -291,8 +281,6 @@ message Template {
 ```
 
 Auto-generated Go code used by adapter implementation
-
-================
 
 ```
 
