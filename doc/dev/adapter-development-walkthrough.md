@@ -251,7 +251,7 @@ The build output on the terminal look like
 
 Reference the config build target from the adapter's BUILD file. To do this edit the existing adapter/mysampleadapter/BUILD file. Final adapter/mysampleadapter/BUILD file looks like below with bold text showing the new added text.
 
-```
+<pre>
 package(default_visibility = ["//visibility:public"])
 
 load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
@@ -261,7 +261,7 @@ go_library(
     srcs = ["mysampleadapter.go"],
     visibility = ["//visibility:public"],
     deps = [
-        "//adapter/mysampleadapter/config:go_default_library",
+        <b>"//adapter/mysampleadapter/config:go_default_library",</b>
         "//pkg/adapter:go_default_library",
         "//template/metric:go_default_library",
         "@com_github_gogo_protobuf//types:go_default_library",
@@ -269,31 +269,31 @@ go_library(
         "@com_github_googleapis_googleapis//:google/rpc",
     ],
 )
-```
+</pre>
 
 
 Modify the adapter code (`mysampleadapter.go`) to use the adapter specific configuration (defined in `mysampleadapter/config/config.proto`) to instantiate the file to write to. Also update up the `GetInfo` function to allow operators to pass the adapter specific config and for the adapter to validate the operator provided config. Copy the following code and the bold text shows the new added code.
 
-```
+<pre>
 package mysampleadapter
 
 import (
-       // "github.com/gogo/protobuf/types"
+    // "github.com/gogo/protobuf/types"
 	"context"
-	"os"
-	"path/filepath"
+	<b>"os"</b>
+	<b>"path/filepath"</b>
 
-	"istio.io/mixer/adapter/mysampleadapter/config"
+	</b>"istio.io/mixer/adapter/mysampleadapter/config"</b>
 	"istio.io/mixer/pkg/adapter"
-       "istio.io/mixer/template/metric"
+    "istio.io/mixer/template/metric"
 )
 
 type (
 	builder struct {
-		adpCfg *config.Params
+		<b>adpCfg *config.Params</b>
 	}
 	handler struct {
-		f *os.File
+		<b>f *os.File</b>
 	}
 )
 
@@ -305,24 +305,23 @@ var _ metric.Handler = &handler{}
 
 // adapter.HandlerBuilder#Build
 func (b *builder) Build(ctx context.Context, env adapter.Env) (adapter.Handler, error) {
-
-	file, err := os.Create(b.adpCfg.FilePath)
-	return &handler{f: file}, err
+	<b>file, err := os.Create(b.adpCfg.FilePath)
+	return &handler{f: file}, err</b>
 
 }
 
 // adapter.HandlerBuilder#SetAdapterConfig
 func (b *builder) SetAdapterConfig(cfg adapter.Config) {
-	b.adpCfg = cfg.(*config.Params)
+	<b>b.adpCfg = cfg.(*config.Params)</b>
 }
 
 // adapter.HandlerBuilder#Validate
 func (b *builder) Validate() (ce *adapter.ConfigErrors) {
-	// Check if the path is valid
+	<b>// Check if the path is valid
 	if _, err := filepath.Abs(b.adpCfg.FilePath); err != nil {
 		ce = ce.Append("file_path", err)
 	}
-	return
+	return</b>
 }
 
 // metric.HandlerBuilder#SetMetricTypes
@@ -337,7 +336,7 @@ func (h *handler) HandleMetric(ctx context.Context, insts []*metric.Instance) er
 
 // adapter.Handler#Close
 func (h *handler) Close() error {
-	return h.f.Close()
+	<b>return h.f.Close()</b>
 }
 
 ////////////////// Bootstrap //////////////////////////
@@ -350,10 +349,10 @@ func GetInfo() adapter.Info {
 			metric.TemplateName,
 		},
 		NewBuilder:    func() adapter.HandlerBuilder { return &builder{} },
-		DefaultConfig: &config.Params{},
+		<b>DefaultConfig: &config.Params{},</b>
 	}
 }
-```
+</pre>
 
 
 Just to ensure everything is good, let's build the code
@@ -382,7 +381,7 @@ import (
 	"context"
 
 	// "github.com/gogo/protobuf/types"
-	"fmt"
+	<b>"fmt"</b>
 	"os"
 	"path/filepath"
 	config "istio.io/mixer/adapter/mysampleadapter/config"
@@ -393,12 +392,12 @@ import (
 type (
 	builder struct {
 		adpCfg      *config.Params
-		metricTypes map[string]*metric.Type
+		<b>metricTypes map[string]*metric.Type</b>
 	}
 	handler struct {
 		f           *os.File
-		metricTypes map[string]*metric.Type
-		env         adapter.Env
+		<b>metricTypes map[string]*metric.Type
+		env         adapter.Env</b>
 	}
 )
 
@@ -413,7 +412,7 @@ func (b *builder) Build(ctx context.Context, env adapter.Env) (adapter.Handler, 
 	var err error
 	var file *os.File
 	file, err = os.Create(b.adpCfg.FilePath)
-	return &handler{f: file, metricTypes: b.metricTypes, env: env}, err
+	<b>return &handler{f: file, metricTypes: b.metricTypes, env: env}, err</b>
 
 }
 
@@ -433,7 +432,7 @@ func (b *builder) Validate() (ce *adapter.ConfigErrors) {
 
 // metric.HandlerBuilder#SetMetricTypes
 func (b *builder) SetMetricTypes(types map[string]*metric.Type) {
-	b.metricTypes = types
+	<b>b.metricTypes = types</b>
 }
 
 ////////////////// Request-time Methods //////////////////////////
