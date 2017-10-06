@@ -1,4 +1,4 @@
-**Passing template specific types and adapter config to <pre>****builder</pre>**
+**Passing template specific types and adapter config to <pre>****builder****</pre>**
 
 After builder object instantiation, Mixer configures the builder object by invoking various Template specific HandlerBuilder interface methods (example SetMetricTypes, SetQuotaTypes for 'metric' and 'quota' named Templates.) and passing a map of string-to-Type struct. The string key and the value Type represents the name of the instance as configured by the operator and the shape of the Instance object the adapter would receive during request time.
 
@@ -36,55 +36,76 @@ The following sample adapters just illustrate the basic skeleton of the adapter 
 
 * Sample no-op adapter that supports the above [sample 'metric' Template](https://docs.google.com/document/d/1rKPt2Z2acy4pRwcvScPa-Na-EnU-6poGR-Rj_fZtaIc/edit#heading=h.ee6dn8otn4o0)
 
-<table>
-  <tr>
-    <td><pre>type (
+```
+
+type (
+
   builder struct{}
+
   handler struct{}
+
 )
 
 // ensure our types implement the requisite interfaces
+
 var _ metric.HandlerBuilder = builder{}
+
 var _ metric.Handler = handler{}
 
 ///////////////// Configuration Methods ///////////////
 
 func (builder) Build(Context.Context, adapter.Env) (adapter.Handler, error) {
+
   return handler{}, nil
+
 }
+
 func (builder) SetAdapterConfig(adapter.Config)                      {}
 func (builder) Validate() (*adapter.ConfigErrors)                 { return }
 
 func (builder) SetMetricTypes(map[string]*metric.Type){
+
   ...
+
 }
 
 ////////////////// Runtime Methods //////////////////////////
 
 func (handler) HandleMetric(context.Context, []*metric.Instance) error {
+
   return nil
+
 }
 
 func (handler) Close() error { return nil }
 
 ////////////////// Bootstrap //////////////////////////
+
 // GetInfo returns the Info for this adapter.
 
 func GetInfo() adapter.BuilderInfo {
-  return adapter.BuilderInfo{
-     Name:        "istio.io/mixer/adapter/noop1",
-     Description: "Does nothing",
-     SupportedTemplates: []string{
-        metric.TemplateName,
-     },
-     NewBuilder: func() adapter.HandlerBuilder { return builder{} },
-     DefaultConfig:        &types.Empty{},
-  }
-}
-</pre></td>
-  </tr>
-</table>
 
+  return adapter.BuilderInfo{
+
+     Name:        "istio.io/mixer/adapter/noop1",
+
+     Description: "Does nothing",
+
+     SupportedTemplates: []string{
+
+        metric.TemplateName,
+
+     },
+
+     NewBuilder: func() adapter.HandlerBuilder { return builder{} },
+
+     DefaultConfig:        &types.Empty{},
+
+  }
+
+}
+
+```
 
 * Sample no-op adapter that supports the above [sample 'listentry' Template](https://docs.google.com/document/d/1rKPt2Z2acy4pRwcvScPa-Na-EnU-6poGR-Rj_fZtaIc/edit#heading=h.qgv3mdgv1nfj).
 
