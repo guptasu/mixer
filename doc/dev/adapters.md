@@ -10,15 +10,15 @@ This document is or developers looking to build an [adapter](https://istio.io/do
 
 # Table of contents
 * [Background](#Background)
-* [Template overview](#Template overview)
-* [Adapter life cycle](#Adapter life cycle)
-* [Example](#Example)
-* [Summary diagrams](#Summary diagrams)
-* [Plug adapter into Mixer](#Plug adapter into Mixer)
-* [Testing](#Testing)
-* [Do's and dont's](#Do's and dont's)
-* [Built-in templates](#Built-in templates)
-* [Walkthrough][#Walkthrough of adapter implementation (30 minutes)]
+* [Template overview](#template-overview)
+* [Adapter life cycle](#adapter-life-cycle)
+* [Example](#example)
+* [Summary diagrams](#summary-diagrams)
+* [Plug adapter into Mixer](#plug-adapter-into-Mixer)
+* [Testing](#testing)
+* [Do's and dont's](#dos-and-donts)
+* [Built-in templates](#built-in-templates)
+* [Walkthrough][#walkthrough-of-adapter-implementation-30-minutes]
 
 # Background
 
