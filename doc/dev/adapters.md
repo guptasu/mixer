@@ -647,7 +647,7 @@ start, when operator configuration is loaded/changed and when request is receive
 
 ![flow: operator config change](./img/operator%20config%20change.svg)
 
-![flow: incoming api](./img/request%20time%20.svg)
+![flow: incoming api](./img/request%20time.svg)
 
 # Plug adapter into Mixer
 
