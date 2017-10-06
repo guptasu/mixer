@@ -4,6 +4,8 @@ This will eventually turn into a developer's guide for
 creating Mixer adapters. For now, it's just a set of
 notes and reminders:
 
+![test](https://github.com/guptasu/mixer/blob/ADG/doc/dev/img/template_adapter_perator_config_relationship.svg)
+
 - Adapters must use env.Logger for logging during
 execution. This logger understands about which adapter
 is running and routes the data to the place where the
