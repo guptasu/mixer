@@ -1,4 +1,4 @@
-**Passing template specific types and adapter config to ****builder**
+**Passing template specific types and adapter config to <pre>****builder</pre>**
 
 After builder object instantiation, Mixer configures the builder object by invoking various Template specific HandlerBuilder interface methods (example SetMetricTypes, SetQuotaTypes for 'metric' and 'quota' named Templates.) and passing a map of string-to-Type struct. The string key and the value Type represents the name of the instance as configured by the operator and the shape of the Instance object the adapter would receive during request time.
 
@@ -38,7 +38,7 @@ The following sample adapters just illustrate the basic skeleton of the adapter 
 
 <table>
   <tr>
-    <td>type (
+    <td><pre>type (
   builder struct{}
   handler struct{}
 )
@@ -81,7 +81,7 @@ func GetInfo() adapter.BuilderInfo {
      DefaultConfig:        &types.Empty{},
   }
 }
-</td>
+</pre></td>
   </tr>
 </table>
 
@@ -90,7 +90,8 @@ func GetInfo() adapter.BuilderInfo {
 
 <table>
   <tr>
-    <td>type (
+    <td><pre>
+type (
   builder struct{}
   handler struct{}
 )
@@ -140,7 +141,7 @@ func GetInfo() adapter.BuilderInfo {
      DefaultConfig:        &types.Empty{},
   }
 }
-</td>
+</pre></td>
   </tr>
 </table>
 
@@ -149,7 +150,8 @@ func GetInfo() adapter.BuilderInfo {
 
 <table>
   <tr>
-    <td>type (
+    <td><pre>
+type (
   builder struct{}
   handler struct{}
 )
@@ -196,7 +198,7 @@ func GetInfo() adapter.BuilderInfo {
      DefaultConfig:        &types.Empty{},
   }
 }
-</td>
+</pre></td>
   </tr>
 </table>
 
