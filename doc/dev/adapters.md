@@ -1,4 +1,4 @@
-<header>Istio Mixer: Adapter Developer's Guide</header>
+# Istio Mixer: Adapter Developer's Guide
 
 This document is or developers looking to build an [adapter](https://istio.io/docs/concepts/policy-and-control/mixer.html#adapters) for Istio's Mixer. Adapters integrate Mixer with different infrastructure backends that deliver core functionality, such as logging, monitoring, quotas, ACL checking, and more. This guide explains the adapter model and adapter lifecycle, and also walks through the step-by-step instructions for creating a simple adapter.
 
@@ -7,6 +7,18 @@ This document is or developers looking to build an [adapter](https://istio.io/do
 * Basic understanding of the [Mixer Framework](https://istio.io/docs/concepts/policy-and-control/mixer.html) as an attribute processing engine.
 
 * High level understanding of [operator configuration model](https://istio.io/docs/concepts/policy-and-control/mixer-config.html).
+
+# Table of contents
+* [Background](#Background)
+* [Template overview](#Template overview)
+* [Adapter life cycle](#Adapter life cycle)
+* [Example](#Example)
+* [Summary diagrams](#Summary diagrams)
+* [Plug adapter into Mixer](#Plug adapter into Mixer)
+* [Testing](#Testing)
+* [Do's and dont's](#Do's and dont's)
+* [Built-in templates](#Built-in templates)
+* [Walkthrough][#Walkthrough of adapter implementation (30 minutes)]
 
 # Background
 
@@ -570,7 +582,7 @@ We provide a simple adapter test framework. The framework instantiates a in-proc
 
 * Adapters must use env.ScheduleWork or env.ScheduleDaemon in order to dispatch goroutines. This ensures all adapter goroutines are prevented from crashing Mixer as a whole by catching any panics they produce.
 
-# Built-in Templates
+# Built-in templates
 
 Mixer ships with a set of built-in templates that are ready to use by adapters:
 
@@ -588,7 +600,7 @@ Mixer ships with a set of built-in templates that are ready to use by adapters:
 
 Using the above templates, the Mixer team has implemented a set of adapters that ships as part of the default Mixer binary. They are located at [istio/mixer/adapter](https://github.com/istio/mixer/tree/master/adapter). They are good examples for reference when implementing new adapters.
 
-# Walkthrough of Adapter implementation (30 minutes)
+# Walkthrough of adapter implementation (30 minutes)
 
 Please refer to [Adapter Development Walkthrough](https://docs.google.com/document/d/1ZjGtmf27AQLxq7Au5lpI_P-YDdjDaqTpU2tNLdK3IMI/edit#)
 
