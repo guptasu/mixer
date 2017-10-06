@@ -659,9 +659,8 @@ touch $MIXER_REPO/adapter/mysampleadapter/mysampleadapter_test.go
 
 Add the following content to that file
 
-<table>
-  <tr>
-    <td>package mysampleadapter
+```
+package mysampleadapter
 
 import (
 	"io"
@@ -719,18 +718,16 @@ func closeHelper(c io.Closer) {
 	if err != nil {
 		log.Fatal(err)
 	}
-}</td>
-  </tr>
-</table>
+}
 
+```
 
 Add go_test to the BUILD file adapter/mysampleadapter/BUILD.
 
 Copy the following content into the existing BUILD file. The text in bold shows the newly added content.
 
-<table>
-  <tr>
-    <td>package(default_visibility = ["//visibility:public"])
+```
+package(default_visibility = ["//visibility:public"])
 
 load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
@@ -748,7 +745,7 @@ go_library(
     ],
 )
 
-load("@io_bazel_rules_go//go:def.bzl", "go_test")
+**load("@io_bazel_rules_go//go:def.bzl", "go_test")
 go_test(
     name = "go_default_test",
     size = "small",
@@ -765,27 +762,22 @@ go_test(
         "@com_github_istio_api//:mixer/v1",  # keep
         "@org_golang_x_net//context:go_default_library",
     ],
-)</td>
-  </tr>
-</table>
+)**
+```
 
 
 Build the mixer code and run bazel_to_go.py script to use go tools for testing.
 
-<table>
-  <tr>
-    <td>cd $MIXER_REPO && bazel build ... && ./bin/bazel_to_go.py && go test adapter/mysampleadapter/*.go</td>
-  </tr>
-</table>
+```
+cd $MIXER_REPO && bazel build ... && ./bin/bazel_to_go.py && go test adapter/mysampleadapter/*.go
+```
 
 
 Inspect the out.text file that your adapter would have printed inside its own directory.
 
-<table>
-  <tr>
-    <td>tail $MIXER_REPO/adapter/mysampleadapter/out.txt</td>
-  </tr>
-</table>
+```
+tail $MIXER_REPO/adapter/mysampleadapter/out.txt
+```
 
 
 # Step 9: Cleanup
