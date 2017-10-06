@@ -20,12 +20,11 @@ For simplicity, the adapter implementation in this walkthrough is done inside is
 
 Download a local copy of Mixer repo
 
-<table>
-  <tr>
-    <td>git clone https://github.com/istio/mixer</td>
-  </tr>
-</table>
+```
 
+`git clone https://github.com/istio/mixer`
+
+```
 
 Install bazel (version 0.5.2 or higher) from [https://bazel.build/](https://bazel.build/) and add it to your PATH
 
@@ -33,151 +32,191 @@ Set the MIXER_REPO variable to the path where the mixer repository is on the loc
 
 Successfully build Mixer repo.
 
-<table>
-  <tr>
-    <td>pushd $MIXER_REPO && bazel build ...</td>
-  </tr>
-</table>
+```
 
+`pushd $MIXER_REPO && bazel build ...`
+
+`````
 
 # Step 1: Write basic adapter skeleton code
 
 Create `mysampleadapter` dir and navigate to it.
 
-<table>
-  <tr>
-    <td>cd $MIXER_REPO/adapter && mkdir mysampleadapter && cd mysampleadapter</td>
-  </tr>
-</table>
+`````
 
+`cd $MIXER_REPO/adapter && mkdir mysampleadapter && cd mysampleadapter`
+
+`````
 
 Create file mysampleadapter.go
 
-<table>
-  <tr>
-    <td>touch mysampleadapter.go</td>
-  </tr>
-</table>
+`````
 
+`touch mysampleadapter.go`
+
+`````
 
 Copy the following content into the file mysampleadapter.go. It defines the adapter's `builder` and `handler` types along with the interfaces required to support the 'metric' Template. This code so far does not add any functionality of printing details in a file. It is done in later steps.
 
-<table>
-  <tr>
-    <td>package mysampleadapter
+`````
 
-import (
-  "context"
+`package mysampleadapter`
 
-  "github.com/gogo/protobuf/types"
-  "istio.io/mixer/pkg/adapter"
-  "istio.io/mixer/template/metric"
-)
+`import (`
 
-type (
-  builder struct {
-  }
-  handler struct {
-  }
-)
+`  "context"`
 
-// ensure types implement the requisite interfaces
-var _ metric.HandlerBuilder = &builder{}
-var _ metric.Handler = &handler{}
+`  "github.com/gogo/protobuf/types"`
 
-///////////////// Configuration-time Methods ///////////////
+`  "istio.io/mixer/pkg/adapter"`
 
-// adapter.HandlerBuilder#Build
-func (b *builder) Build(ctx context.Context, env adapter.Env) (adapter.Handler, error) {
-  return &handler{}, nil
-}
+`  "istio.io/mixer/template/metric"`
 
-// adapter.HandlerBuilder#SetAdapterConfig
-func (b *builder) SetAdapterConfig(cfg adapter.Config) {
-}
+`)`
 
-// adapter.HandlerBuilder#Validate
-func (b *builder) Validate() (ce *adapter.ConfigErrors) { return nil }
+`type (`
 
-// metric.HandlerBuilder#SetMetricTypes
-func (b *builder) SetMetricTypes(types map[string]*metric.Type) {
-}
+`  builder struct {`
 
-////////////////// Request-time Methods //////////////////////////
-// metric.Handler#HandleMetric
-func (h *handler) HandleMetric(ctx context.Context, insts []*metric.Instance) error {
-  return nil
-}
+`  }`
 
-// adapter.Handler#Close
-func (h *handler) Close() error { return nil }
+`  handler struct {`
 
-////////////////// Bootstrap //////////////////////////
-// GetInfo returns the adapter.Info specific to this adapter.
-func GetInfo() adapter.Info {
-  return adapter.Info{
-     Name:        "mysampleadapter",
-     Description: "Logs the metric calls into a file",
-     SupportedTemplates: []string{
-        metric.TemplateName,
-     },
-     NewBuilder:    func() adapter.HandlerBuilder { return &builder{} },
-     DefaultConfig: &types.Empty{},
-  }
-}</td>
-  </tr>
-</table>
+`  }`
 
+`)`
+
+*`// ensure types implement the requisite interface*s`
+
+`var _ metric.HandlerBuilder = &builder{}`
+
+`var _ metric.Handler = &handler{}`
+
+*`///////////////// Configuration-time Methods //////////////*/`
+
+*`// adapter.HandlerBuilder#Buil*d`
+
+`func (b *builder) Build(ctx context.Context, env adapter.Env) (adapter.Handler, error) {`
+
+`  return &handler{}, nil`
+
+`}`
+
+*`// adapter.HandlerBuilder#SetAdapterConfi*g`
+
+`func (b *builder) SetAdapterConfig(cfg adapter.Config) {`
+
+`}`
+
+*`// adapter.HandlerBuilder#Validat*e`
+
+`func (b *builder) Validate() (ce *adapter.ConfigErrors) { return nil }`
+
+*`// metric.HandlerBuilder#SetMetricType*s`
+
+`func (b *builder) SetMetricTypes(``types`` map[string]*metric.Type) {`
+
+`}`
+
+*`////////////////// Request-time Methods /////////////////////////*/`
+
+*`// metric.Handler#HandleMetri*c`
+
+`func (h *handler) HandleMetric(ctx context.Context, insts []*metric.Instance) error {`
+
+`  return nil`
+
+`}`
+
+*`// adapter.Handler#Clos*e`
+
+`func (h *handler) Close() error { return nil }`
+
+*`////////////////// Bootstrap /////////////////////////*/`
+
+*`// GetInfo returns the adapter.Info specific to this adapter*.`
+
+`func GetInfo() adapter.Info {`
+
+`  return adapter.Info{`
+
+`     Name:        "mysampleadapter",`
+
+`     Description: "Logs the metric calls into a file",`
+
+`     SupportedTemplates: []string{`
+
+`        metric.`*`TemplateNam*e``,`
+
+`     },`
+
+`     NewBuilder:    func() adapter.HandlerBuilder { return &builder{} },`
+
+`     DefaultConfig: &types.Empty{},`
+
+`  }`
+
+`}`
+
+`````
 
 Now, write write corresponding BUILD file
 
-<table>
-  <tr>
-    <td>touch BUILD</td>
-  </tr>
-</table>
+`````
 
+`touch BUILD`
+
+`````
 
 Copy the following content into the BUILD file.
 
-<table>
-  <tr>
-    <td>package(default_visibility = ["//visibility:public"])
+`````
 
-load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+`package(default_visibility = ["//visibility:public"])`
 
-go_library(
-    name = "go_default_library",
-    srcs = ["mysampleadapter.go"],
-    visibility = ["//visibility:public"],
-    deps = [
-        "//pkg/adapter:go_default_library",
-        "//template/metric:go_default_library",
-        "@com_github_gogo_protobuf//types:go_default_library",
-        "@com_github_golang_protobuf//proto:go_default_library",
-        "@com_github_googleapis_googleapis//:google/rpc",
-    ],
-)</td>
-  </tr>
-</table>
+`load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")`
 
+`go_library(`
+
+`    name = "go_default_library",`
+
+`    srcs = ["mysampleadapter.go"],`
+
+`    visibility = ["//visibility:public"],`
+
+`    deps = [`
+
+`        "//pkg/adapter:go_default_library",`
+
+`        "//template/metric:go_default_library",`
+
+`        "@com_github_gogo_protobuf//types:go_default_library",`
+
+`        "@com_github_golang_protobuf//proto:go_default_library",`
+
+`        "@com_github_googleapis_googleapis//:google/rpc",`
+
+`    ],`
+
+`)`
+
+`````
 
 Just to ensure everything is good, let's build the code
 
-<table>
-  <tr>
-    <td>bazel build ...</td>
-  </tr>
-</table>
+`````
 
+`bazel build ...`
+
+`````
 
 The build output on the terminal look like
 
-*`INFO: Found 1 target..*.`
+*INFO: Found 1 target...*
 
-*`Target //adapter*/``mysampleadapter`*`:go_default_library up-to-date*:`
+*Target //adapter/*mysampleadapter*:go_default_library up-to-date:*
 
-*`bazel-bin/adapter*/``mysampleadapter`*`/~lib~/istio.io/mixer/adapter*/``mysampleadapter`*`.*a`
+*bazel-bin/adapter/*mysampleadapter*/~lib~/istio.io/mixer/adapter/*mysampleadapter*.a*
 
 Now we have the basic skeleton of adapter with empty implementation for interfaces for 'metric' Templates. Later steps adds the core code for this adapter.
 
@@ -187,346 +226,489 @@ Since this Adapter just prints the data it receives from Mixer into a file, the 
 
 Create the config proto file under 'config' dir
 
-<table>
-  <tr>
-    <td>mkdir config && touch config/config.proto</td>
-  </tr>
-</table>
+`````
 
+`mkdir config && touch config/config.proto`
+
+`````
 
 Copy the following content in the `config/config.proto`.
 
-<table>
-  <tr>
-    <td>syntax = "proto3";
+`````
 
-package adapter.mysampleadapter.config;
+`syntax = "proto3";`
 
-import "google/protobuf/duration.proto";
-import "gogoproto/gogo.proto";
+`package adapter.mysampleadapter.config;`
 
-option go_package="config";
+`import "google/protobuf/duration.proto";`
 
-message Params {
-    // Path of the file to save the information about runtime requests.
-    string file_path = 1;
-}</td>
-  </tr>
-</table>
+`import "gogoproto/gogo.proto";`
 
+`option go_package="config";`
+
+`message Params {`
+
+`    // Path of the file to save the information about runtime requests.`
+
+`    string file_path = 1;`
+
+`}`
+
+`````
 
 Create a BUILD file in the config dir
 
-<table>
-  <tr>
-    <td>touch config/BUILD</td>
-  </tr>
-</table>
+`````
 
+`touch config/BUILD`
+
+`````
 
 Copy the following content into the config/BUILD file.
 
-<table>
-  <tr>
-    <td>package(default_visibility = ["//visibility:public"])
+`````
 
-load("@org_pubref_rules_protobuf//gogo:rules.bzl", "gogoslick_proto_library")
+`package(default_visibility = ["//visibility:public"])`
 
-gogoslick_proto_library(
-    name = "go_default_library",
-    importmap = {
-        "gogoproto/gogo.proto": "github.com/gogo/protobuf/gogoproto",
-        "google/protobuf/duration.proto": "github.com/gogo/protobuf/types",
-    },
-    imports = [
-        "external/com_github_gogo_protobuf",
-        "external/com_github_google_protobuf/src",
-    ],
-    inputs = [
-        "@com_github_gogo_protobuf//gogoproto:go_default_library_protos",
-        "@com_github_google_protobuf//:well_known_protos",
-    ],
-    protos = [
-        "config.proto",
-    ],
-    visibility = ["//adapter/mysampleadapter:__pkg__"],
-    deps = [
-        "@com_github_gogo_protobuf//gogoproto:go_default_library",
-        "@com_github_gogo_protobuf//types:go_default_library",
-    ],
-)</td>
-  </tr>
-</table>
+`load("@org_pubref_rules_protobuf//gogo:rules.bzl", "gogoslick_proto_library")`
 
+`gogoslick_proto_library(`
+
+`    name = "go_default_library",`
+
+`    importmap = {`
+
+`        "gogoproto/gogo.proto": "github.com/gogo/protobuf/gogoproto",`
+
+`        "google/protobuf/duration.proto": "github.com/gogo/protobuf/types",`
+
+`    },`
+
+`    imports = [`
+
+`        "external/com_github_gogo_protobuf",`
+
+`        "external/com_github_google_protobuf/src",`
+
+`    ],`
+
+`    inputs = [`
+
+`        "@com_github_gogo_protobuf//gogoproto:go_default_library_protos",`
+
+`        "@com_github_google_protobuf//:well_known_protos",`
+
+`    ],`
+
+`    protos = [`
+
+`        "config.proto",`
+
+`    ],`
+
+`    visibility = ["//adapter/mysampleadapter:__pkg__"],`
+
+`    deps = [`
+
+`        "@com_github_gogo_protobuf//gogoproto:go_default_library",`
+
+`        "@com_github_gogo_protobuf//types:go_default_library",`
+
+`    ],`
+
+`)`
+
+`````
 
 Just to ensure everything is good, let's build the code
 
-<table>
-  <tr>
-    <td>bazel build ...</td>
-  </tr>
-</table>
+`````
 
+`bazel build ...`
+
+`````
 
 The build output on the terminal look like
 
-*`INFO: Found 1 target..*.`
+*INFO: Found 1 target...*
 
-*`Target //adapter*/``mysampleadapter`*`:go_default_library up-to-date*:`
+*Target //adapter/*mysampleadapter*:go_default_library up-to-date:*
 
-*`bazel-bin/adapter*/``mysampleadapter`*`/~lib~/istio.io/mixer/adapter*/``mysampleadapter`*`.*a`
+*bazel-bin/adapter/*mysampleadapter*/~lib~/istio.io/mixer/adapter/*mysampleadapter*.a*
 
 # Step 3: Link adapter config with adapter code.
 
 Reference the config build target from the adapter's BUILD file. To do this edit the existing adapter/mysampleadapter/BUILD file. Final adapter/mysampleadapter/BUILD file looks like below with bold text showing the new added text.
 
-<table>
-  <tr>
-    <td>package(default_visibility = ["//visibility:public"])
+`````
 
-load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+`package(default_visibility = ["//visibility:public"])`
 
-go_library(
-    name = "go_default_library",
-    srcs = ["mysampleadapter.go"],
-    visibility = ["//visibility:public"],
-    deps = [
-        "//adapter/mysampleadapter/config:go_default_library",
-        "//pkg/adapter:go_default_library",
-        "//template/metric:go_default_library",
-        "@com_github_gogo_protobuf//types:go_default_library",
-        "@com_github_golang_protobuf//proto:go_default_library",
-        "@com_github_googleapis_googleapis//:google/rpc",
-    ],
-)</td>
-  </tr>
-</table>
+`load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")`
 
+`go_library(`
+
+`    name = "go_default_library",`
+
+`    srcs = ["mysampleadapter.go"],`
+
+`    visibility = ["//visibility:public"],`
+
+`    deps = [`
+
+**`        "//adapter/mysampleadapter/config:go_default_library"**,`
+
+`        "//pkg/adapter:go_default_library",`
+
+`        "//template/metric:go_default_library",`
+
+`        "@com_github_gogo_protobuf//types:go_default_library",`
+
+`        "@com_github_golang_protobuf//proto:go_default_library",`
+
+`        "@com_github_googleapis_googleapis//:google/rpc",`
+
+`    ],`
+
+`)`
+
+`````
 
 Modify the adapter code (`mysampleadapter.go`) to use the adapter specific configuration (defined in `mysampleadapter/config/config.proto`) to instantiate the file to write to. Also update up the `GetInfo` function to allow operators to pass the adapter specific config and for the adapter to validate the operator provided config. Copy the following code and the bold text shows the new added code.
 
-<table>
-  <tr>
-    <td>package mysampleadapter
+`````
 
-import (
-       // "github.com/gogo/protobuf/types"
-	"context"
-	"os"
-	"path/filepath"
+`package mysampleadapter`
 
-	"istio.io/mixer/adapter/mysampleadapter/config"
-	"istio.io/mixer/pkg/adapter"
-       "istio.io/mixer/template/metric"
-)
+`import (`
 
-type (
-	builder struct {
-		adpCfg *config.Params
-	}
-	handler struct {
-		f *os.File
-	}
-)
+`       // "github.com/gogo/protobuf/types"`
 
-// ensure types implement the requisite interfaces
-var _ metric.HandlerBuilder = &builder{}
-var _ metric.Handler = &handler{}
+`	"context"`
 
-///////////////// Configuration-time Methods ///////////////
+**`	"os**"`
 
-// adapter.HandlerBuilder#Build
-func (b *builder) Build(ctx context.Context, env adapter.Env) (adapter.Handler, error) {
+**`	"path/filepath**"`
 
-	file, err := os.Create(b.adpCfg.FilePath)
-	return &handler{f: file}, err
+**`**	`**`"istio.io/mixer/adapter/mysampleadapter/config**"`
 
-}
+`	"istio.io/mixer/pkg/adapter"`
 
-// adapter.HandlerBuilder#SetAdapterConfig
-func (b *builder) SetAdapterConfig(cfg adapter.Config) {
-	b.adpCfg = cfg.(*config.Params)
-}
+`       "istio.io/mixer/template/metric"`
 
-// adapter.HandlerBuilder#Validate
-func (b *builder) Validate() (ce *adapter.ConfigErrors) {
-	// Check if the path is valid
-	if _, err := filepath.Abs(b.adpCfg.FilePath); err != nil {
-		ce = ce.Append("file_path", err)
-	}
-	return
-}
+`)`
 
-// metric.HandlerBuilder#SetMetricTypes
-func (b *builder) SetMetricTypes(types map[string]*metric.Type) {
-}
+`type (`
 
-////////////////// Request-time Methods //////////////////////////
-// metric.Handler#HandleMetric
-func (h *handler) HandleMetric(ctx context.Context, insts []*metric.Instance) error {
-	return nil
-}
+`	builder struct {`
 
-// adapter.Handler#Close
-func (h *handler) Close() error {
-	return h.f.Close()
-}
+**`		adpCfg *config.Param**s`
 
-////////////////// Bootstrap //////////////////////////
-// GetInfo returns the adapter.Info specific to this adapter.
-func GetInfo() adapter.Info {
-	return adapter.Info{
-		Name:        "mysampleadapter",
-		Description: "Logs the metric calls into a file",
-		SupportedTemplates: []string{
-			metric.TemplateName,
-		},
-		NewBuilder:    func() adapter.HandlerBuilder { return &builder{} },
-		DefaultConfig: &config.Params{},
-	}
-}</td>
-  </tr>
-</table>
+`	}`
 
+`	handler struct {`
+
+**`		f *os.Fil**e`
+
+`	}`
+
+`)`
+
+`// ensure types implement the requisite interfaces`
+
+`var _ metric.HandlerBuilder = &builder{}`
+
+`var _ metric.Handler = &handler{}`
+
+`///////////////// Configuration-time Methods ///////////////`
+
+`// adapter.HandlerBuilder#Build`
+
+`func (b *builder) Build(ctx context.Context, env adapter.Env) (adapter.Handler, error) {`
+
+**`	file, err := os.Create(b.adpCfg.FilePath**)`
+
+**`	return &handler{f: file}, er**r`
+
+`}`
+
+`// adapter.HandlerBuilder#SetAdapterConfig`
+
+`func (b *builder) SetAdapterConfig(cfg adapter.Config) {`
+
+**`	b.adpCfg = cfg.(*config.Params**)`
+
+`}`
+
+`// adapter.HandlerBuilder#Validate`
+
+`func (b *builder) Validate() (ce *adapter.ConfigErrors) {`
+
+**`	// Check if the path is vali**d`
+
+**`	if _, err := filepath.Abs(b.adpCfg.FilePath); err != nil **{`
+
+**`		ce = ce.Append("file_path", err**)`
+
+**`	**}`
+
+**`	retur**n`
+
+`}`
+
+`// metric.HandlerBuilder#SetMetricTypes`
+
+`func (b *builder) SetMetricTypes(types map[string]*metric.Type) {`
+
+`}`
+
+`////////////////// Request-time Methods //////////////////////////`
+
+`// metric.Handler#HandleMetric`
+
+`func (h *handler) HandleMetric(ctx context.Context, insts []*metric.Instance) error {`
+
+`	return nil`
+
+`}`
+
+`// adapter.Handler#Close`
+
+`func (h *handler) Close() error {`
+
+**`	return h.f.Close(**)`
+
+`}`
+
+`////////////////// Bootstrap //////////////////////////`
+
+`// GetInfo returns the adapter.Info specific to this adapter.`
+
+`func GetInfo() adapter.Info {`
+
+`	return adapter.Info{`
+
+`		Name:        "mysampleadapter",`
+
+`		Description: "Logs the metric calls into a file",`
+
+`		SupportedTemplates: []string{`
+
+`			metric.TemplateName,`
+
+`		},`
+
+`		NewBuilder:    func() adapter.HandlerBuilder { return &builder{} },`
+
+**`		DefaultConfig: &config.Params{}**,`
+
+`	}`
+
+`}`
+
+`````
 
 Just to ensure everything is good, let's build the code
 
-<table>
-  <tr>
-    <td>bazel build ...</td>
-  </tr>
-</table>
+`````
 
+`bazel build ...`
+
+`````
 
 The build output on the terminal look like
 
-*`INFO: Found 1 target..*.`
+*INFO: Found 1 target...*
 
-*`Target //adapter*/``mysampleadapter`*`:go_default_library up-to-date*:`
+*Target //adapter/*mysampleadapter*:go_default_library up-to-date:*
 
-*`bazel-bin/adapter*/``mysampleadapter`*`/~lib~/istio.io/mixer/adapter*/``mysampleadapter`*`.*a`
+*bazel-bin/adapter/*mysampleadapter*/~lib~/istio.io/mixer/adapter/*mysampleadapter*.a*
 
 # Step 4: Write business logic into your adapter.
 
 Print Instance and associated Type information in the file configured via adapter config. This requires storing the metric type information during configure-time and using it during request-time. To add this functionality into 'mysampleadapter.go'`, `copy the following code and the bold text shows the newly added code.
 
-<table>
-  <tr>
-    <td>package mysampleadapter
+`````
 
-import (
-	"context"
+`package mysampleadapter`
 
-	// "github.com/gogo/protobuf/types"
-	"fmt"
-	"os"
-	"path/filepath"
-	config "istio.io/mixer/adapter/mysampleadapter/config"
-	"istio.io/mixer/pkg/adapter"
-	"istio.io/mixer/template/metric"
-)
+`import (`
 
-type (
-	builder struct {
-		adpCfg      *config.Params
-		metricTypes map[string]*metric.Type
-	}
-	handler struct {
-		f           *os.File
-		metricTypes map[string]*metric.Type
-		env         adapter.Env
-	}
-)
+`	"context"`
 
-// ensure types implement the requisite interfaces
-var _ metric.HandlerBuilder = &builder{}
-var _ metric.Handler = &handler{}
+`	// "github.com/gogo/protobuf/types"`
 
-///////////////// Configuration-time Methods ///////////////
+**`	"fmt**"`
 
-// adapter.HandlerBuilder#Build
-func (b *builder) Build(ctx context.Context, env adapter.Env) (adapter.Handler, error) {
-	var err error
-	var file *os.File
-	file, err = os.Create(b.adpCfg.FilePath)
-	return &handler{f: file, metricTypes: b.metricTypes, env: env}, err
+`	"os"`
 
-}
+`	"path/filepath"`
 
-// adapter.HandlerBuilder#SetAdapterConfig
-func (b *builder) SetAdapterConfig(cfg adapter.Config) {
-	b.adpCfg = cfg.(*config.Params)
-}
+`	config "istio.io/mixer/adapter/mysampleadapter/config"`
 
-// adapter.HandlerBuilder#Validate
-func (b *builder) Validate() (ce *adapter.ConfigErrors) {
-	// Check if the path is valid
-	if _, err := filepath.Abs(b.adpCfg.FilePath); err != nil {
-		ce = ce.Append("file_path", err)
-	}
-	return
-}
+`	"istio.io/mixer/pkg/adapter"`
 
-// metric.HandlerBuilder#SetMetricTypes
-func (b *builder) SetMetricTypes(types map[string]*metric.Type) {
-	b.metricTypes = types
-}
+`	"istio.io/mixer/template/metric"`
 
-////////////////// Request-time Methods //////////////////////////
-// metric.Handler#HandleMetric
-func (h *handler) HandleMetric(ctx context.Context, insts []*metric.Instance) error {
-	for _, inst := range insts {
-		if _, ok := h.metricTypes[inst.Name]; !ok {
-			h.env.Logger().Errorf("Cannot find Type for instance %s", inst.Name)
-			continue
-		}
-		h.f.WriteString(fmt.Sprintf(`HandleMetric invoke for :
-		Instance Name  :'%s'
-		Instance Value : %v,
-		Type           : %v`, inst.Name, *inst, *h.metricTypes[inst.Name]))
-	}
-	return nil
-}
+`)`
 
-// adapter.Handler#Close
-func (h *handler) Close() error {
-	return h.f.Close()
-}
+`type (`
 
-////////////////// Bootstrap //////////////////////////
-// GetInfo returns the adapter.Info specific to this adapter.
-func GetInfo() adapter.Info {
-	return adapter.Info{
-		Name:        "mysampleadapter",
-		Description: "Logs the metric calls into a file",
-		SupportedTemplates: []string{
-			metric.TemplateName,
-		},
-		NewBuilder:    func() adapter.HandlerBuilder { return &builder{} },
-		DefaultConfig: &config.Params{},
-	}
-}
-</td>
-  </tr>
-</table>
+`	builder struct {`
 
+`		adpCfg      *config.Params`
+
+**`		metricTypes map[string]*metric.Typ**e`
+
+`	}`
+
+`	handler struct {`
+
+`		f           *os.File`
+
+**`		metricTypes map[string]*metric.Typ**e`
+
+**`		env         adapter.En**v`
+
+`	}`
+
+`)`
+
+`// ensure types implement the requisite interfaces`
+
+`var _ metric.HandlerBuilder = &builder{}`
+
+`var _ metric.Handler = &handler{}`
+
+`///////////////// Configuration-time Methods ///////////////`
+
+`// adapter.HandlerBuilder#Build`
+
+`func (b *builder) Build(ctx context.Context, env adapter.Env) (adapter.Handler, error) {`
+
+`	var err error`
+
+`	var file *os.File`
+
+`	file, err = os.Create(b.adpCfg.FilePath)`
+
+**`	return &handler{f: file, metricTypes: b.metricTypes, env: env}, er**r`
+
+`}`
+
+`// adapter.HandlerBuilder#SetAdapterConfig`
+
+`func (b *builder) SetAdapterConfig(cfg adapter.Config) {`
+
+`	b.adpCfg = cfg.(*config.Params)`
+
+`}`
+
+`// adapter.HandlerBuilder#Validate`
+
+`func (b *builder) Validate() (ce *adapter.ConfigErrors) {`
+
+`	// Check if the path is valid`
+
+`	if _, err := filepath.Abs(b.adpCfg.FilePath); err != nil {`
+
+`		ce = ce.Append("file_path", err)`
+
+`	}`
+
+`	return`
+
+`}`
+
+`// metric.HandlerBuilder#SetMetricTypes`
+
+`func (b *builder) SetMetricTypes(types map[string]*metric.Type) {`
+
+**`	b.metricTypes = type**s`
+
+`}`
+
+`////////////////// Request-time Methods //////////////////////////`
+
+`// metric.Handler#HandleMetric`
+
+`func (h *handler) HandleMetric(ctx context.Context, insts []*metric.Instance) error {`
+
+**`	for _, inst := range insts **{`
+
+**`		if _, ok := h.metricTypes[inst.Name]; !ok **{`
+
+**`			h.env.Logger().Errorf("Cannot find Type for instance %s", inst.Name**)`
+
+**`			continu**e`
+
+**`		**}`
+
+**`		h.f.WriteString(fmt.Sprintf(`HandleMetric invoke for **:`
+
+**`		Instance Name  :'%s**'`
+
+**`		Instance Value : %v**,`
+
+**`		Type           : %v`, inst.Name, *inst, *h.metricTypes[inst.Name])**)`
+
+**`	**}`
+
+**`	return ni**l`
+
+`}`
+
+`// adapter.Handler#Close`
+
+`func (h *handler) Close() error {`
+
+`	return h.f.Close()`
+
+`}`
+
+`////////////////// Bootstrap //////////////////////////`
+
+`// GetInfo returns the adapter.Info specific to this adapter.`
+
+`func GetInfo() adapter.Info {`
+
+`	return adapter.Info{`
+
+`		Name:        "mysampleadapter",`
+
+`		Description: "Logs the metric calls into a file",`
+
+`		SupportedTemplates: []string{`
+
+`			metric.TemplateName,`
+
+`		},`
+
+`		NewBuilder:    func() adapter.HandlerBuilder { return &builder{} },`
+
+`		DefaultConfig: &config.Params{},`
+
+`	}`
+
+`}`
+
+`````
 
 Just to ensure everything is good, let's build the code
 
-<table>
-  <tr>
-    <td>bazel build ...</td>
-  </tr>
-</table>
+`````
 
+`bazel build ...`
+
+`````
 
 The build output on the terminal look like
 
-*`INFO: Found 1 target..*.`
+*INFO: Found 1 target...*
 
-*`Target //adapter*/``mysampleadapter`*`:go_default_library up-to-date*:`
+*Target //adapter/*mysampleadapter*:go_default_library up-to-date:*
 
-*`bazel-bin/adapter*/``mysampleadapter`*`/~lib~/istio.io/mixer/adapter*/``mysampleadapter`*`.*a`
+*bazel-bin/adapter/*mysampleadapter*/~lib~/istio.io/mixer/adapter/*mysampleadapter*.a*
 
 This concludes the implementation part of the adapter code. Next steps show how  plug an adapter into a build of Mixer and to verify your code's behaviour.
 
@@ -536,28 +718,41 @@ Update the //adapter/BUILD file to add the new 'mysampleadapter' into the Mixers
 
 Add the following two lines
 
-<table>
-  <tr>
-    <td>inventory_library(
-   name = "inventory_lib",
-   packages = {
-       # list of all adapters
-       # "friendlyName" : "go_import_path"
-       "svcctrl": "istio.io/mixer/adapter/svcctrl",
-       ...
-       "mysampleadapter": "istio.io/mixer/adapter/mysampleadapter",
-   },
-   deps = [
-       # list of all go_default_library rule for adapters.
-       "//adapter/svcctrl:go_default_library",
-       ...
-       "//adapter/mysampleadapter:go_default_library",
-   ],
-)
-</td>
-  </tr>
-</table>
+`````
 
+`inventory_library(`
+
+`   name = "inventory_lib",`
+
+`   packages = {`
+
+`       # list of all adapters`
+
+`       # "friendlyName" : "go_import_path"`
+
+`       "svcctrl": "istio.io/mixer/adapter/svcctrl",`
+
+`       ...`
+
+**`       "mysampleadapter": "istio.io/mixer/adapter/mysampleadapter"**,`
+
+`   },`
+
+`   deps = [`
+
+`       # list of all go_default_library rule for adapters.`
+
+`       "//adapter/svcctrl:go_default_library",`
+
+`       ...`
+
+**`       "//adapter/mysampleadapter:go_default_library"**,`
+
+`   ],`
+
+`)`
+
+`````
 
 Now your Adapter is plugged into Mixer and ready to receive data from Mixer.
 
@@ -567,88 +762,115 @@ To see if your Adapter works, we will need a sample operator configuration. So, 
 
 Create a directory to put sample operator config
 
-<table>
-  <tr>
-    <td>mkdir sampleoperatorconfig</td>
-  </tr>
-</table>
+`````
 
+`mkdir sampleoperatorconfig`
+
+`````
 
 Copy the sample attributes vocabulary config
 
-<table>
-  <tr>
-    <td>cp $MIXER_REPO/testdata/config/attributes.yaml sampleoperatorconfig</td>
-  </tr>
-</table>
+`````
 
+`cp $MIXER_REPO/testdata/config/attributes.yaml sampleoperatorconfig`
+
+`````
 
 Create sample operator config file
 
-<table>
-  <tr>
-    <td>touch sampleoperatorconfig/config.yaml</td>
-  </tr>
-</table>
+`````
 
+`touch sampleoperatorconfig/config.yaml`
+
+`````
 
 Add the following content to the file `sampleoperatorconfig/config.yaml.`
 
-<table>
-  <tr>
-    <td># instance configuration for template 'metric'
-apiVersion: "config.istio.io/v1alpha2"
-kind: metric
-metadata:
- name: requestcount
- namespace: istio-config-default
-spec:
- value: "1"
- dimensions:
-   source: source.labels["app"] | "unknown"
-   target: target.service | "unknown"
-   service: target.labels["app"] | "unknown"
-   method: request.path | "unknown"
-   version: target.labels["version"] | "unknown"
-   response_code: response.code | 200
- monitored_resource_type: '"UNSPECIFIED"'
----
-# handler configuration for Adapter 'metric'
-apiVersion: "config.istio.io/v1alpha2"
-kind: mysampleadapter
-metadata:
- name: hndlrTest
- namespace: istio-config-default
-spec:
- file_path: "out.txt"
----
-# rule to dispatch to your handler
-apiVersion: "config.istio.io/v1alpha2"
-kind: rule
-metadata:
- name: mysamplerule
- namespace: istio-config-default
-spec:
- match: "true"
- actions:
- - handler: hndlrTest.mysampleadapter
-   instances:
-   - requestcount.metric
-</td>
-  </tr>
-</table>
+`````
 
+`# instance configuration for template 'metric'`
+
+`apiVersion: "config.istio.io/v1alpha2"`
+
+`kind: metric`
+
+`metadata:`
+
+` name: requestcount`
+
+` namespace: istio-config-default`
+
+`spec:`
+
+` value: "1"`
+
+` dimensions:`
+
+`   source: source.labels["app"] | "unknown"`
+
+`   target: target.service | "unknown"`
+
+`   service: target.labels["app"] | "unknown"`
+
+`   method: request.path | "unknown"`
+
+`   version: target.labels["version"] | "unknown"`
+
+`   response_code: response.code | 200`
+
+` monitored_resource_type: '"UNSPECIFIED"'`
+
+`# handler configuration for Adapter 'metric'`
+
+`apiVersion: "config.istio.io/v1alpha2"`
+
+`kind: mysampleadapter`
+
+`metadata:`
+
+` name: hndlrTest`
+
+` namespace: istio-config-default`
+
+`spec:`
+
+` file_path: "out.txt"`
+
+`# rule to dispatch to your handler`
+
+`apiVersion: "config.istio.io/v1alpha2"`
+
+`kind: rule`
+
+`metadata:`
+
+` name: mysamplerule`
+
+` namespace: istio-config-default`
+
+`spec:`
+
+` match: "true"`
+
+` actions:`
+
+` - handler: hndlrTest.mysampleadapter`
+
+`   instances:`
+
+`   - requestcount.metric`
+
+`````
 
 # Step 7: Start Mixer and validate the adapter.
 
 Start the mixer pointing it to the sample operator configuration
 
-<table>
-  <tr>
-    <td>cd $MIXER_REPO && bazel build ... && bazel-bin/cmd/server/mixs server --configStore2URL=fs://$MIXER_REPO/adapter/mysampleadapter/sampleoperatorconfig --configStoreURL=fs://$MIXER_REPO</td>
-  </tr>
-</table>
+```
 
+`cd $MIXER_REPO && bazel build ... && bazel-bin/cmd/server/mixs server --configStore2URL=fs://$MIXER_REPO/adapter/mysampleadapter/sampleoperatorconfig --configStoreURL=fs://$MIXER_REPO`
+
+`````
 
 The terminal will have the following output and will be blocked waiting to serve requests
 
@@ -662,34 +884,31 @@ The terminal will have the following output and will be blocked waiting to serve
 
 Now let's call 'report' using mixer client. This step should cause the mixer server to call your sample adapter with instance objects constructed using the operator configuration.
 
-Start a new terminal window and set the MIXER_REPO variable to the path where the mixer repository is on the local machine. Example '`export MIXER_REPO=$GOPATH/src/istio.io/mixer'`
+Start a new terminal window and set the MIXER_REPO variable to the path where the mixer repository is on the local machine. Example ``export MIXER_REPO=$GOPATH/src/istio.io/mixer``
 
 On the new window call the following
 
-<table>
-  <tr>
-    <td>cd $MIXER_REPO && bazel build ...</td>
-  </tr>
-</table>
+```
 
+`cd $MIXER_REPO && bazel build ...`
+
+`````
 
 Invoke report
 
-<table>
-  <tr>
-    <td>bazel-bin/cmd/client/mixc report -s="destination.service=svc.cluster.local"</td>
-  </tr>
-</table>
+```
 
+`bazel-bin/cmd/client/mixc report -s="destination.service=svc.cluster.local"`
+
+```
 
 Inspect the out.text file that your adapter would have printed. If you have followed the above steps, then the out.txt should be in your dir `$MIXER_REPO`
 
-<table>
-  <tr>
-    <td>tail $MIXER_REPO/out.txt</td>
-  </tr>
-</table>
+```
 
+`tail $MIXER_REPO/out.txt`
+
+`````
 
 You should see something like:
 
