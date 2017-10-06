@@ -13,7 +13,19 @@ In this walkthrough you're going to create a simple Adapter that:
 **It should approximately take ~30 min to finish this task**
 
 
-[[TOC]]
+# Table of contents
+* [Before you start](#before-you-start)
+* [Step 1: Write basic adapter skeleton code](#step-2-write-adapter-configuration)
+* [Step 2: Write adapter configuration](#step-2-write-adapter-configuration)
+* [Step 3: Link adapter config with adapter code](#step-3-link-adapter-config-with-adapter-code)
+* [Step 4: Write business logic into your adapter](#step-4-write-business-logic-into-your-adapter)
+* [Step 5: Plug adapter into the Mixer](#step-5-plug-adapter-into-the-mixer)
+* [Step 6: Write sample operator config](#step-6-write-sample-operator-config)
+* [Step 7: Start Mixer and validate the adapter](#step-7-start-mixer-and-validate-the-adapter)
+* [Step 8: Write test and validate your adapter (optional)](#step-8-write-test-and-validate-your-adapter-optional)
+* [Step 9: Cleanup](#step-9-cleanup)
+* [Step 10: Next](#step-10-next)
+
 
 # Before you start
 
@@ -487,7 +499,7 @@ The build output on the terminal look like
 
 This concludes the implementation part of the adapter code. Next steps show how  plug an adapter into a build of Mixer and to verify your code's behaviour.
 
-# Step 5: Plug adapter into the Mixer
+# Step 5: Plug adapter into the Mixer.
 
 Update the //adapter/BUILD file to add the new 'mysampleadapter' into the Mixers Adapter inventory.
 
@@ -641,7 +653,7 @@ You can even try passing other attributes to mixer server and inspect your out.t
 bazel-bin/cmd/client/mixc report -s="destination.service=svc.cluster.local,target.service=mySrvc" -i="response.code=400" --stringmap_attributes="target.labels=app:dummyapp"
 ```
 
-**If you have reached this far, congratulate yourself !!**. You have successfully created a Mixer Adapter. **You can close (cltr + c) on your terminal that was running mixer server to shut it down.
+**If you have reached this far, congratulate yourself !!**. You have successfully created a Mixer Adapter. You can close (cltr + c) on your terminal that was running mixer server to shut it down.
 
 # Step 8: Write test and validate your adapter (optional).
 
