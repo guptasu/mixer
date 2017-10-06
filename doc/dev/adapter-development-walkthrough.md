@@ -153,7 +153,9 @@ bazel build ...
 The build output on the terminal look like
 
 *INFO: Found 1 target...*
+
 *Target //adapter/*mysampleadapter*:go_default_library up-to-date:*
+
 *bazel-bin/adapter/*mysampleadapter*/~lib~/istio.io/mixer/adapter/*mysampleadapter*.a*
 
 Now we have the basic skeleton of adapter with empty implementation for interfaces for 'metric' Templates. Later steps adds the core code for this adapter.
@@ -238,7 +240,9 @@ bazel build ...
 The build output on the terminal look like
 
 *INFO: Found 1 target...*
+
 *Target //adapter/*mysampleadapter*:go_default_library up-to-date:*
+
 *bazel-bin/adapter/*mysampleadapter*/~lib~/istio.io/mixer/adapter/*mysampleadapter*.a*
 
 # Step 3: Link adapter config with adapter code.
@@ -359,7 +363,9 @@ bazel build ...
 The build output on the terminal look like
 
 *INFO: Found 1 target...*
+
 *Target //adapter/*mysampleadapter*:go_default_library up-to-date:*
+
 *bazel-bin/adapter/*mysampleadapter*/~lib~/istio.io/mixer/adapter/*mysampleadapter*.a*
 
 # Step 4: Write business logic into your adapter.
@@ -474,7 +480,9 @@ bazel build ...
 The build output on the terminal look like
 
 *INFO: Found 1 target...*
+
 *Target //adapter/*mysampleadapter*:go_default_library up-to-date:*
+
 *bazel-bin/adapter/*mysampleadapter*/~lib~/istio.io/mixer/adapter/*mysampleadapter*.a*
 
 This concludes the implementation part of the adapter code. Next steps show how  plug an adapter into a build of Mixer and to verify your code's behaviour.
@@ -587,8 +595,11 @@ cd $MIXER_REPO && bazel build ... && bazel-bin/cmd/server/mixs server --configSt
 The terminal will have the following output and will be blocked waiting to serve requests
 
 *...*
+
 *Starting self-monitoring on port 9093*
+
 *Istio Mixer: version: 0.2.2-28-gc5112ac1 (build: 2017-09-23-c5112ac1, status: Modified)*
+
 *Starting gRPC server on port 9091*
 
 Now let's call 'report' using mixer client. This step should cause the mixer server to call your sample adapter with instance objects constructed using the operator configuration.
@@ -617,10 +628,12 @@ tail $MIXER_REPO/out.txt
 
 You should see something like:
 
-*HandleMetric invoke for *
-*		Instance Name  : requestcount.metric.istio-config-default*
-*		Instance Value : {requestcount.metric.istio-config-default 1 map[response_code:200 service:unknown source:unknown target:unknown version:unknown method:unknown] UNSPECIFIED map[]}*,
-*		Type           : {INT64 map[response_code:INT64 service:STRING source:STRING target:STRING version:STRING method:STRING] map[]}*
+<pre>
+HandleMetric invoke for
+       Instance Name  : requestcount.metric.istio-config-default
+       Instance Value : {requestcount.metric.istio-config-default 1 map[response_code:200 service:unknown source:unknown target:unknown version:unknown method:unknown] UNSPECIFIED map[]}
+       Type           : {INT64 map[response_code:INT64 service:STRING source:STRING target:STRING version:STRING method:STRING] map[]}
+</pre>
 
 You can even try passing other attributes to mixer server and inspect your out.txt file to see how the data passed to the adapter changes. For example
 
@@ -628,7 +641,7 @@ You can even try passing other attributes to mixer server and inspect your out.t
 bazel-bin/cmd/client/mixc report -s="destination.service=svc.cluster.local,target.service=mySrvc" -i="response.code=400" --stringmap_attributes="target.labels=app:dummyapp"
 ```
 
-**If you have reached this far, congratulate yourself !!. You have successfully created a Mixer Adapter. **You can close (cltr + c) on your terminal that was running mixer server to shut it down.
+**If you have reached this far, congratulate yourself !!**. You have successfully created a Mixer Adapter. **You can close (cltr + c) on your terminal that was running mixer server to shut it down.
 
 # Step 8: Write test and validate your adapter (optional).
 
