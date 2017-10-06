@@ -48,13 +48,13 @@ We'll look at each of these in more detail below.
 
 ## Template proto file
 
-Templates are defined using a proto file with a message named 'Template'. Template is a simple proto message with no associated code. All of the Go artifacts used by adapters are code generated from the template protos.
+Templates are defined using a proto file with a message named `Template`. ` Template` is a simple proto message with no associated code. All of the Go artifacts used by adapters are code generated from the template protos.
 
 Every template also has two additional properties associated with it:
 
-* **Name: **Every template has a unique name. Adapter code uses the name of the template to register with Mixer that it wants to consume Instance objects associated with a particular template. The template name is also used within operator config to provide template-specific fields to attribute mapping, which is used to create Instance objects.
+* **Name: **Every template has a unique name. Adapter code uses the name of the template to register with Mixer that it wants to consume `Instance` objects associated with a particular template. The template name is also used within operator config to provide template-specific fields to attribute mapping, which is used to create `Instance` objects.
 
-* **Template_variety: **Every template has a specific template_variety which can be either Check, Report or Quota. The template and its variety determine the signatures of the methods the adapter must implement for consuming the associated instances. The template_variety also determines under which of the core Mixer behaviors, check report or quota, the instances for the templates should be created and dispatched to adapters.
+* **Template_variety: **Every template has a specific `template_variety` which can be either Check, Report or Quota. The template and its variety determine the signatures of the methods the adapter must implement for consuming the associated instances. The `template_variety` also determines under which of the core Mixer behaviors, check report or quota, the `instances` for the templates should be created and dispatched to adapters.
 
 ## Generated Go code
 
