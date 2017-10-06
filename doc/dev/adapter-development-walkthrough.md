@@ -15,7 +15,7 @@ In this walkthrough you're going to create a simple Adapter that:
 
 # Table of contents
 * [Before you start](#before-you-start)
-* [Step 1: Write basic adapter skeleton code](#step-2-write-adapter-configuration)
+* [Step 1: Write basic adapter skeleton code](#step-1-write-basic-adapter-skeleton-code)
 * [Step 2: Write adapter configuration](#step-2-write-adapter-configuration)
 * [Step 3: Link adapter config with adapter code](#step-3-link-adapter-config-with-adapter-code)
 * [Step 4: Write business logic into your adapter](#step-4-write-business-logic-into-your-adapter)
