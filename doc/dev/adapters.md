@@ -1,4 +1,4 @@
-# Istio Mixer: Adapter Developer's Guide
+<header>Istio Mixer: Adapter Developer's Guide</header>
 
 This document is or developers looking to build an [adapter](https://istio.io/docs/concepts/policy-and-control/mixer.html#adapters) for Istio's Mixer. Adapters integrate Mixer with different infrastructure backends that deliver core functionality, such as logging, monitoring, quotas, ACL checking, and more. This guide explains the adapter model and adapter lifecycle, and also walks through the step-by-step instructions for creating a simple adapter.
 
