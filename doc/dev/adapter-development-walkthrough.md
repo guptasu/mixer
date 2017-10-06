@@ -125,7 +125,7 @@ touch BUILD
 
 Copy the following content into the BUILD file.
 
-```
+<pre>
 package(default_visibility = ["//visibility:public"])
 
 load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
@@ -142,7 +142,7 @@ go_library(
         "@com_github_googleapis_googleapis//:google/rpc",
     ],
 )
-```
+</pre>
 
 
 Just to ensure everything is good, let's build the code
@@ -375,7 +375,7 @@ The build output on the terminal look like
 
 Print Instance and associated Type information in the file configured via adapter config. This requires storing the metric type information during configure-time and using it during request-time. To add this functionality into 'mysampleadapter.go'`, `copy the following code and the bold text shows the newly added code.
 
-```
+<pre>
 package mysampleadapter
 
 import (
@@ -439,7 +439,7 @@ func (b *builder) SetMetricTypes(types map[string]*metric.Type) {
 ////////////////// Request-time Methods //////////////////////////
 // metric.Handler#HandleMetric
 func (h *handler) HandleMetric(ctx context.Context, insts []*metric.Instance) error {
-	for _, inst := range insts {
+	<b>for _, inst := range insts {
 		if _, ok := h.metricTypes[inst.Name]; !ok {
 			h.env.Logger().Errorf("Cannot find Type for instance %s", inst.Name)
 			continue
@@ -449,7 +449,7 @@ func (h *handler) HandleMetric(ctx context.Context, insts []*metric.Instance) er
 		Instance Value : %v,
 		Type           : %v`, inst.Name, *inst, *h.metricTypes[inst.Name]))
 	}
-	return nil
+	return nil</b>
 }
 
 // adapter.Handler#Close
@@ -470,7 +470,7 @@ func GetInfo() adapter.Info {
 		DefaultConfig: &config.Params{},
 	}
 }
-```
+</pre>
 
 
 Just to ensure everything is good, let's build the code
@@ -496,7 +496,7 @@ Update the //adapter/BUILD file to add the new 'mysampleadapter' into the Mixers
 
 Add the following two lines
 
-```
+<pre>
 inventory_library(
    name = "inventory_lib",
    packages = {
@@ -504,16 +504,16 @@ inventory_library(
        # "friendlyName" : "go_import_path"
        "svcctrl": "istio.io/mixer/adapter/svcctrl",
        ...
-       "mysampleadapter": "istio.io/mixer/adapter/mysampleadapter",
+       <b>"mysampleadapter": "istio.io/mixer/adapter/mysampleadapter",</b>
    },
    deps = [
        # list of all go_default_library rule for adapters.
        "//adapter/svcctrl:go_default_library",
        ...
-       "//adapter/mysampleadapter:go_default_library",
+       <b>"//adapter/mysampleadapter:go_default_library",</b>
    ],
 )
-```
+</pre>
 
 
 Now your Adapter is plugged into Mixer and ready to receive data from Mixer.
