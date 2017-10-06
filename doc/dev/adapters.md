@@ -270,7 +270,7 @@ type Handler interface {
 ```
 
 
- In the next section we'll look in more detail about adapter lifecycle.* * *
+ In the next section we'll look in more detail about adapter lifecycle.
 
 
 # Adapter life cycle
@@ -285,7 +285,7 @@ Every adapter must implement :
 
 * A Go struct that implements '`Handler' `interfaces for all supported templates.
 
-An adapter implementation therefore usually contains a Go struct named `'builder'`*`* `and a Go struct named `'handler' (`The name of the structs is not important, but for the purpose of this document, let's call them `builder` and `handler)`.
+An adapter implementation therefore usually contains a Go struct named `builder` and a Go struct named `handler`. (The name of the structs is not important, but for the purpose of this document, let's call them `builder` and `handler).
 
 An adapter's `builder` type must implement the `HandlerBuilder` interface for all the templates the adapter supports. An adapter's `handler` type must implement the `Handler `interface for all the templates the adapter supports. It is these two objects that Mixer uses to interact with the adapter for passing template-specific `Type` and `Instance` objects respectively. The following section explains how and when Mixer and adapter interaction happens via these objects.
 
@@ -309,7 +309,7 @@ This is when Mixer is booted and adapters are initialized. Every adapter must im
 ```
 type Info struct {
 	// Name returns the official name of the adapter, it must be RFC 1035 compatible DNS
-// label.
+    // label.
 	// Regex: "^[a-z]([-a-z0-9]*[a-z0-9])?$"
 	// Name is used in Istio configuration, therefore it should be descriptive but short.
 	// example: denier
@@ -322,7 +322,7 @@ type Info struct {
 	// Description returns a user-friendly description of the adapter.
 	Description string
 	// NewBuilder is a function that creates a Builder which implements Builders
-// associated with the SupportedTemplates.
+    // associated with the SupportedTemplates.
 	NewBuilder NewBuilderFn
 	// SupportedTemplates expresses all the templates the Adapter wants to serve.
 	SupportedTemplates []string
@@ -347,7 +347,7 @@ Every handler config block in the operator's config results into an instance of 
 
 ![handler config](./img/handler%20config.svg)
 
-**Passing template specific types and adapter config to `builder`**
+**Passing template-specific types and adapter-specific config to `builder`**
 
 After `builder` object instantiation, Mixer configures the `builder` object by invoking various Template specific `HandlerBuilder `interface methods (example `SetMetricTypes`, `SetQuotaTypes` for 'metric' and 'quota' named Templates.) and passing a map of string-to-`Type `struct. The string key and the value `Type `represents the name of the instance as configured by the operator and the shape of the `Instance` object the adapter would receive during request time.
 
@@ -357,7 +357,7 @@ Given the above sample operator's handler configuration and 'metric' Template sh
 
 During request time, every `Instance` object dispatch to the adapter has a '`Name`' field. Adapter implementation should use the value of the `Name` field to lookup the shape description for the `Instance` object from the map of instance name(string)->`Type` that was passed during configuration time through the `builder` object.
 
-Once Mixer has called into various template-specific Set****Types methods,
+Once Mixer has called into various template-specific Set.*Types methods,
 
 Mixer calls the `SetAdapterConfig` method on the `builder`, and once done then Mixer calls the `Validate` followed by the `Build` method. `SetAdapterConfig` gives the builder the adapter specific configuration, `Validate` allows builder to validate the operator configuration based on the the provided Template specific `Types` and the Adapter specific configuration.
 
@@ -365,7 +365,7 @@ Mixer calls the `SetAdapterConfig` method on the `builder`, and once done then M
 
 Once `builder` is validated, Mixer calls its `Build` method, which returns a `handler` object which Mixer invokes during request processing. The `handler `instance constructed must implement all the `Handler` interfaces (runtime request serving interfaces) for all the templates the adapter has registered for. If the returned handler fails to implement the required interface for the adapter's supported templates, Mixer reports an error and doesn't serve runtime traffic to the particular handler.
 
-*NOTE: *In the `Build` method, adapters must do all the bootstrapping work (example establishing connection with backend system, initializing cache and more) that they need to start receiving data during request time.
+*NOTE*: In the `Build` method, adapters must do all the bootstrapping work (example establishing connection with backend system, initializing cache and more) that they need to start receiving data during request time.
 
 **Closing `handler`**
 
@@ -373,7 +373,7 @@ When a handler is no longer useful, Mixer calls it close method. In the `Close` 
 
 ### Request-time
 
-During this time Mixer dispatches the `instance` objects to the adapter based on the routing rules that operator has configured. Mixer does this by invoking the Handle* functions on the `handler` object.
+During this time Mixer dispatches the `instance` objects to the adapter based on the routing rules that operator has configured. Mixer does this by invoking the Handle.* functions on the `handler` object.
 
 Given the above example operator's config (instance, action, handler configuration) and ['metric' Template](#heading=h.ee6dn8otn4o0), the following examples shows the request-time `Instance` objects created for a given input attribute bag:
 
@@ -546,7 +546,7 @@ Below diagrams show the relationship between, Adapter, Mixer, Template and opera
 
 First let's look into how Mixer, adapter, templates and operator configurations are related
 
-![template, adapter and operator config relationship](./img/Template%2C%20Adapter%20and%20Operator%20config%20relationship.svg)
+![template, adapter and operator config relationship](./img/template%2C%20adapter%20and%20operator%20config%20relationship.svg)
 
 Now we have understood the relationship between various artifacts, let's look into what happens at the time of Mixer start, when operator configuration is loaded/changed and when request is received.
 
@@ -558,7 +558,7 @@ Now we have understood the relationship between various artifacts, let's look in
 
 # Plug adapter into Mixer
 
-For a new adapter to plug into Mixer, you will have to add your adapter's reference into Mixer's inventory [build file](https://github.com/istio/mixer/blob/master/adapter/BUILD)'s inventory_library rule. In the *deps *section add a reference to adapter's go_library build rule, and in the *packages* section add the short name and the go import path to the adapter package that implements the `GetInfo `function. These two changes will plug your custom adapter into Mixer.
+For a new adapter to plug into Mixer, you will have to add your adapter's reference into Mixer's inventory [build file](https://github.com/istio/mixer/blob/master/adapter/BUILD)'s inventory_library rule. In the *deps* section add a reference to adapter's go_library build rule, and in the *packages* section add the short name and the go import path to the adapter package that implements the `GetInfo `function. These two changes will plug your custom adapter into Mixer.
 
 # Testing
 
