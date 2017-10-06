@@ -750,3 +750,4 @@ Using the above templates, the Mixer team has implemented a set of adapters that
 # Walkthrough of Adapter implementation (30 minutes)
 
 Please refer to [Adapter Development Walkthrough](https://docs.google.com/document/d/1ZjGtmf27AQLxq7Au5lpI_P-YDdjDaqTpU2tNLdK3IMI/edit#)
+
