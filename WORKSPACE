@@ -34,6 +34,18 @@ load(":adapter_author_deps.bzl", "mixer_adapter_repositories")
 mixer_adapter_repositories()
 
 go_repository(
+    name = "com_github_guptasu_remoteTemplate",
+    commit = "33725d84580eece93300f2ae80dfaf234fba6527",
+    importpath = "github.com/guptasu/remote-template",
+)
+
+go_repository(
+    name = "com_github_guptasu_remoteAdapter",
+    commit = "4bfc5ace97d8acca80f45a320cd83d4fa819d834",
+    importpath = "github.com/guptasu/remote-adapter",
+)
+
+go_repository(
     name = "com_github_ghodss_yaml",
     commit = "04f313413ffd65ce25f2541bfd2b2ceec5c0908c",  # Dec 6, 2016 (no releases)
     importpath = "github.com/ghodss/yaml",
