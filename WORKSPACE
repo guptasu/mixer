@@ -41,7 +41,7 @@ go_repository(
 
 go_repository(
     name = "com_github_guptasu_remoteAdapter",
-    commit = "d14196e8c05c2c0a9a7716553c638a9a745c9d0c",
+    commit = "159009ca439773a9f33e0784d59e99084691a7fe",
     importpath = "github.com/guptasu/remote-adapter",
 )
 
