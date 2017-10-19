@@ -35,13 +35,13 @@ mixer_adapter_repositories()
 
 go_repository(
     name = "com_github_guptasu_remoteTemplate",
-    commit = "33725d84580eece93300f2ae80dfaf234fba6527",
+    commit = "97b58eabc17d4610db96e4fac9f257df9c65396f",
     importpath = "github.com/guptasu/remote-template",
 )
 
 go_repository(
     name = "com_github_guptasu_remoteAdapter",
-    commit = "4bfc5ace97d8acca80f45a320cd83d4fa819d834",
+    commit = "d14196e8c05c2c0a9a7716553c638a9a745c9d0c",
     importpath = "github.com/guptasu/remote-adapter",
 )
 
