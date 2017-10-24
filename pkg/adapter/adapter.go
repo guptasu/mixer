@@ -94,6 +94,21 @@ type (
 		// ?
 	}
 
+	// This should be a proto message
+	IstioService struct {
+		ServiceName string
+	}
+
+	// Call info that Mixer passes to the Adapters, for example, time, serviceName, etc.
+	// Basically values of some of the request attributes are useful to most of the adapters, along with the operator
+	// provided instance object, for example service name can be used to enable multi-tenancy. The value of those
+	// chosen attributes are passed to the Adapter via this object.
+	//
+	// This should be a proto message
+	CallContext struct {
+		IstioService IstioService
+	}
+
 	// Logger defines where aspects should output their log state to.
 	//
 	// This log information is funneled to Mixer which augments it with

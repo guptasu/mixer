@@ -23,6 +23,7 @@ import (
 
 	"istio.io/mixer/pkg/adapter"
 	reportTmpl "istio.io/mixer/test/template/report"
+	"fmt"
 )
 
 type (
@@ -144,6 +145,9 @@ func (b builder) Validate() *adapter.ConfigErrors {
 }
 
 func (h handler) HandleSampleReport(ctx context.Context, instances []*reportTmpl.Instance) error {
+	v := ctx.Value("callcontext").(*adapter.CallContext)
+	fmt.Println(v.IstioService.ServiceName)
+
 	h.data.HandleSampleReportCount++
 	if h.behavior.HandleSampleReportPanic {
 		panic("HandleSampleReport")
