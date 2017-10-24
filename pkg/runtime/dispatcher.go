@@ -175,16 +175,6 @@ func (m *dispatcher) dispatch(ctx context.Context, requestBag attribute.Bag, var
 	return m.run(ctx, ra)
 }
 
-func UpdateContext(ctx context.Context, requestBag attribute.Bag) context.Context {
-	if requestBag != nil {
-		if srcSrvc, found := requestBag.Get("destination.service"); found {
-			ctx = context.WithValue(ctx, "callcontext", &adapter.CallContext{
-				IstioService: adapter.IstioService{ServiceName: srcSrvc.(string)},
-			})
-		}
-	}
-	return ctx
-}
 
 // Report dispatches to the set of adapters associated with the Report API method
 // Config validation ensures that things are consistent.
@@ -192,7 +182,7 @@ func UpdateContext(ctx context.Context, requestBag attribute.Bag) context.Contex
 // before aborting. Returns an error if any of the adapters return an error.
 // Dispatcher#Report.
 func (m *dispatcher) Report(ctx context.Context, requestBag attribute.Bag) error {
-	ctx = UpdateContext(ctx, requestBag)
+	ctx = adapter.NewContext(ctx, requestBag)
 	_, err := m.dispatch(ctx, requestBag, adptTmpl.TEMPLATE_VARIETY_REPORT,
 		func(call *Action) []dispatchFn {
 			instCfg := make(map[string]proto.Message)

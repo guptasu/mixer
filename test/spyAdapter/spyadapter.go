@@ -145,7 +145,8 @@ func (b builder) Validate() *adapter.ConfigErrors {
 }
 
 func (h handler) HandleSampleReport(ctx context.Context, instances []*reportTmpl.Instance) error {
-	v := ctx.Value("callcontext").(*adapter.CallContext)
+
+	v,_ := adapter.FromContext(ctx)
 	fmt.Println(v.IstioService.ServiceName)
 
 	h.data.HandleSampleReportCount++

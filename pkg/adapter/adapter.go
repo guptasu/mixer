@@ -20,6 +20,8 @@ import (
 	"io"
 
 	"github.com/gogo/protobuf/proto"
+	"context"
+	"istio.io/mixer/pkg/attribute"
 )
 
 type (
@@ -138,3 +140,23 @@ type (
 	// adapters.
 	VerbosityLevel int32
 )
+
+
+// NOTE: All the below code should be inside a callContext package and not inside adapter package.
+const callcontextKey = "callcontext"
+func FromContext(ctx context.Context) (CallContext, bool) {
+	// ctx.Value returns nil if ctx has no value for the key;
+	// the net.IP type assertion returns ok=false for nil.
+	userIP, ok := ctx.Value(callcontextKey).(CallContext)
+	return userIP, ok
+}
+func NewContext(ctx context.Context, requestBag attribute.Bag) context.Context {
+	if requestBag != nil {
+		if srcSrvc, found := requestBag.Get("destination.service"); found {
+			ctx = context.WithValue(ctx, callcontextKey, CallContext{
+				IstioService: IstioService{ServiceName: srcSrvc.(string)},
+			})
+		}
+	}
+	return ctx
+}
