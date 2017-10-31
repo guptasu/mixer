@@ -1,0 +1,14 @@
+// comment for syntax
+syntax = "proto3";
+
+// comment for package
+package foo.listChecker;
+
+import "mixer/v1/template/extensions.proto";
+
+option (istio.mixer.v1.template.template_variety) = TEMPLATE_VARIETY_ATTRIBUTE_GENERATOR;
+
+// My Template comment
+message Template {}
+
+// missing OutputTemplate message

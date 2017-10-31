@@ -134,6 +134,28 @@ proto_compile(
 )
 
 proto_compile(
+    name = "unsupported_valuetype_in_outtmpl",
+    testonly = True,
+    args = [
+        "--include_imports",
+        "--include_source_info",
+    ],
+    imports = [
+        "external/com_github_google_protobuf/src",
+        "external/io_istio_api",
+    ],
+    inputs = [
+        "@io_istio_api//:mixer/v1/template_protos",
+        "@com_github_google_protobuf//:well_known_protos",
+        "@io_istio_api//:mixer/v1/config/descriptor_protos",  # keep
+    ],
+    protos = [
+        "UnsupportedValueTypeInOutTmpl.proto",
+    ],
+    verbose = 0,
+)
+
+proto_compile(
     name = "missing_both_required",
     testonly = True,
     args = [
@@ -171,6 +193,27 @@ proto_compile(
     ],
     protos = [
         "MissingPackageName.proto",
+    ],
+    verbose = 0,
+)
+
+proto_compile(
+    name = "missing_output_template",
+    testonly = True,
+    args = [
+        "--include_imports",
+        "--include_source_info",
+    ],
+    imports = [
+        "external/com_github_google_protobuf/src",
+        "external/io_istio_api",
+    ],
+    inputs = [
+        "@io_istio_api//:mixer/v1/template_protos",
+        "@com_github_google_protobuf//:well_known_protos",
+    ],
+    protos = [
+        "MissingOutputTemplate.proto",
     ],
     verbose = 0,
 )
@@ -307,6 +350,7 @@ filegroup(
     srcs = [
         "basic_top_level_fields.descriptor_set",
         "missing_both_required.descriptor_set",
+        "missing_output_template.descriptor_set",
         "missing_package_name.descriptor_set",
         "missing_template_message.descriptor_set",
         "missing_template_variety.descriptor_set",
@@ -317,6 +361,7 @@ filegroup(
         "unsupported_field_type_enum.descriptor_set",
         "unsupported_field_type_message.descriptor_set",
         "unsupported_field_type_primitive.descriptor_set",
+        "unsupported_valuetype_in_outtmpl.descriptor_set",
         "wrong_pkg_name.descriptor_set",
     ],
 )

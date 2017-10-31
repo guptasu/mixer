@@ -15,6 +15,7 @@
 package modelgen
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
 	"strconv"
@@ -67,6 +68,8 @@ type (
 		// Info for regenerated template proto
 		PackageName     string
 		TemplateMessage MessageInfo
+
+		OutputTemplateMessage MessageInfo
 
 		// Warnings/Errors in the Template proto file.
 		diags []diag
@@ -134,42 +137,68 @@ func createGoError(diags []diag) error {
 }
 
 func (m *Model) fillModel(templateProto *FileDescriptor, parser *FileDescriptorSetParser) {
-
 	m.PackageImportPath = parser.PackageImportPath
 
 	m.addTopLevelFields(templateProto)
 	// ensure Template is present
-	if tmplDesc, ok := getRequiredTmplMsg(templateProto); !ok {
+	if tmplDesc, ok := getMsg(templateProto, "Template"); !ok {
 		m.addError(templateProto.GetName(), unknownLine, "message 'Template' not defined")
 	} else {
-		m.addTemplateMessage(parser, templateProto, tmplDesc)
+		diags := addMessageFields(parser,
+			templateProto,
+			tmplDesc,
+			map[string]bool{"name": true},
+			true,
+			&m.TemplateMessage,
+		)
+		m.diags = append(m.diags, diags...)
+	}
+
+	outputTmplDesc, outputTmplPresent := getMsg(templateProto, "OutputTemplate")
+	if m.VarietyName == tmpl.TEMPLATE_VARIETY_ATTRIBUTE_GENERATOR.String() {
+		if !outputTmplPresent {
+			m.addError(templateProto.GetName(), unknownLine, "for template of variety '%s', message "+
+				"'OutputTemplate' must be defined", tmpl.TEMPLATE_VARIETY_ATTRIBUTE_GENERATOR.String())
+		} else {
+			diags := addMessageFields(parser,
+				templateProto,
+				outputTmplDesc,
+				map[string]bool{"name": true},
+				false,
+				&m.OutputTemplateMessage,
+			)
+			m.diags = append(m.diags, diags...)
+		}
 	}
 }
 
-func (m *Model) addTemplateMessage(parser *FileDescriptorSetParser, tmplProto *FileDescriptor, tmplDesc *Descriptor) {
-	m.TemplateMessage.Comment = tmplProto.getComment(tmplDesc.path)
-	m.TemplateMessage.Fields = make([]FieldInfo, 0)
+type isFieldNameReserved func(string) bool
+
+func addMessageFields(parser *FileDescriptorSetParser, tmplProto *FileDescriptor, tmplDesc *Descriptor,
+	reservedNames map[string]bool, valueTypeAllowed bool, outMessage *MessageInfo) []diag {
+	diags := make([]diag, 0)
+	outMessage.Comment = tmplProto.getComment(tmplDesc.path)
+	outMessage.Fields = make([]FieldInfo, 0)
 	for i, fieldDesc := range tmplDesc.Field {
 		fieldName := fieldDesc.GetName()
 
-		// Name field is a reserved field that will be injected in the Instance object. The user defined
-		// Template should not have a Name field, else there will be a name clash.
-		// 'Name' within the Instance object would represent the name of the Instance:name
-		// specified in the operator Yaml file.
-		if strings.ToLower(fieldName) == "name" {
-			m.addError(tmplDesc.file.GetName(),
+		if _, ok := reservedNames[strings.ToLower(fieldName)]; ok {
+			err := createError(
+				tmplDesc.file.GetName(),
 				tmplProto.getLineNumber(getPathForField(tmplDesc, i)),
-				"Template message must not contain the reserved filed name '%s'", fieldDesc.GetName())
+				"%s message must not contain the reserved field name '%s'",
+				tmplDesc.GetName(), fieldDesc.GetName())
+
+			diags = append(diags, err)
 			continue
 		}
 
-		protoTypeInfo, goTypeInfo, err := getTypeName(parser, fieldDesc)
+		protoTypeInfo, goTypeInfo, err := getTypeName(parser, fieldDesc, valueTypeAllowed)
 		if err != nil {
-			m.addError(tmplDesc.file.GetName(),
-				tmplProto.getLineNumber(getPathForField(tmplDesc, i)),
-				err.Error())
+			err := createError(tmplDesc.file.GetName(), tmplProto.getLineNumber(getPathForField(tmplDesc, i)), err.Error())
+			diags = append(diags, err)
 		}
-		m.TemplateMessage.Fields = append(m.TemplateMessage.Fields, FieldInfo{
+		outMessage.Fields = append(outMessage.Fields, FieldInfo{
 			ProtoName: fieldName,
 			GoName:    camelCase(fieldName),
 			GoType:    goTypeInfo,
@@ -178,6 +207,8 @@ func (m *Model) addTemplateMessage(parser *FileDescriptorSetParser, tmplProto *F
 			Comment:   tmplProto.getComment(getPathForField(tmplDesc, i)),
 		})
 	}
+
+	return diags
 }
 
 // Find the file that has the options TemplateVariety and TemplateName. There should only be one such file.
@@ -195,7 +226,7 @@ func getTmplFileDesc(fds []*FileDescriptor) (*FileDescriptor, []diag) {
 		if templateDescriptorProto != nil {
 			diags = append(diags, createError(fd.GetName(), unknownLine,
 				"Proto files %s and %s, both have the option %s. Only one proto file is allowed with this options",
-				[]interface{}{fd.GetName(), templateDescriptorProto.Name, tmpl.E_TemplateVariety.Name}))
+				fd.GetName(), templateDescriptorProto.Name, tmpl.E_TemplateVariety.Name))
 			continue
 		}
 
@@ -204,7 +235,7 @@ func getTmplFileDesc(fds []*FileDescriptor) (*FileDescriptor, []diag) {
 
 	if templateDescriptorProto == nil {
 		diags = append(diags, createError(unknownFile, unknownLine, "There has to be one proto file that has the extension %s",
-			[]interface{}{tmpl.E_TemplateVariety.Name}))
+			tmpl.E_TemplateVariety.Name))
 	}
 
 	if len(diags) != 0 {
@@ -256,10 +287,10 @@ func getLastSegment(pkg string) (string, error) {
 	return "", fmt.Errorf("the last segment of package name '%s' must match the reges '%s'", pkg, pkgLaskSeg)
 }
 
-func getRequiredTmplMsg(fdp *FileDescriptor) (*Descriptor, bool) {
+func getMsg(fdp *FileDescriptor, msgName string) (*Descriptor, bool) {
 	var cstrDesc *Descriptor
 	for _, desc := range fdp.desc {
-		if desc.GetName() == "Template" {
+		if desc.GetName() == msgName {
 			cstrDesc = desc
 			break
 		}
@@ -268,15 +299,33 @@ func getRequiredTmplMsg(fdp *FileDescriptor) (*Descriptor, bool) {
 	return cstrDesc, cstrDesc != nil
 }
 
-func createInvalidTypeError(field string, err error) error {
-	errStr := fmt.Sprintf("unsupported type for field '%s'. Supported types are '%s'", field, supportedTypes)
-	if err == nil {
+func createInvalidTypeError2(field string, extraErr error, supportedTypes []string) error {
+	errStr := fmt.Sprintf("unsupported type for field '%s'. Supported types are '%s'", field, getAllSupportedTypes(supportedTypes))
+	if extraErr == nil {
 		return fmt.Errorf(errStr)
 	}
-	return fmt.Errorf(errStr+": %v", err)
-
+	return fmt.Errorf(errStr+"; %v", extraErr)
 }
-func getTypeName(g *FileDescriptorSetParser, field *descriptor.FieldDescriptorProto) (protoType TypeInfo, goType TypeInfo, err error) {
+
+func createInvalidTypeError(field string, extraErr error) error {
+	return createInvalidTypeError2(field, extraErr, simpleTypes)
+}
+
+func createInvalidTypeErrorNoValType(field string, extraErr error) error {
+	return createInvalidTypeError2(field, extraErr, simpleTypesWithoutValType)
+}
+
+// protoType returns a Proto type name for a Field's DescriptorProto.
+// We only support primitives that can be represented as ValueTypes,ValueType itself, or map<string, ValueType>.
+var simpleTypesWithoutValType = []string{"string", "int64", "double", "bool"}
+var simpleTypes = append(simpleTypesWithoutValType, fullProtoNameOfValueTypeEnum)
+
+func getAllSupportedTypes(simpleTypes []string) string {
+	return strings.Join(simpleTypes, ", ") + ", " +
+		fmt.Sprintf("map<string, %s>", strings.Join(simpleTypes, " | "))
+}
+
+func getTypeName(g *FileDescriptorSetParser, field *descriptor.FieldDescriptorProto, valueTypeAllowed bool) (protoType TypeInfo, goType TypeInfo, err error) {
 	switch *field.Type {
 	case descriptor.FieldDescriptorProto_TYPE_STRING:
 		return TypeInfo{Name: "string"}, TypeInfo{Name: sSTRING}, nil
@@ -288,6 +337,10 @@ func getTypeName(g *FileDescriptorSetParser, field *descriptor.FieldDescriptorPr
 		return TypeInfo{Name: "bool"}, TypeInfo{Name: sBOOL}, nil
 	case descriptor.FieldDescriptorProto_TYPE_ENUM:
 		if field.GetTypeName()[1:] == fullProtoNameOfValueTypeEnum {
+			if !valueTypeAllowed {
+				return TypeInfo{}, TypeInfo{}, createInvalidTypeErrorNoValType(field.GetName(),
+					errors.New("istio.mixer.v1.config.descriptor.ValueType cannot be used inside this message"))
+			}
 			desc := g.ObjectNamed(field.GetTypeName())
 			return TypeInfo{Name: field.GetTypeName()[1:], IsValueType: true}, TypeInfo{Name: g.TypeName(desc), IsValueType: true}, nil
 		}
@@ -301,11 +354,11 @@ func getTypeName(g *FileDescriptorSetParser, field *descriptor.FieldDescriptorPr
 		if d, ok := desc.(*Descriptor); ok && d.GetOptions().GetMapEntry() {
 			keyField, valField := d.Field[0], d.Field[1]
 
-			protoKeyType, goKeyType, err := getTypeName(g, keyField)
+			protoKeyType, goKeyType, err := getTypeName(g, keyField, valueTypeAllowed)
 			if err != nil {
 				return TypeInfo{}, TypeInfo{}, createInvalidTypeError(field.GetName(), err)
 			}
-			protoValType, goValType, err := getTypeName(g, valField)
+			protoValType, goValType, err := getTypeName(g, valField, valueTypeAllowed)
 			if err != nil {
 				return TypeInfo{}, TypeInfo{}, createInvalidTypeError(field.GetName(), err)
 			}

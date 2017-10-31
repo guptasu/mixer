@@ -34,16 +34,22 @@ func TestErrorInTemplate(t *testing.T) {
 		{"testdata/missing_both_required.descriptor_set", "There has to be one proto file that has the " +
 			"extension istio.mixer.v1.template.template_variety"},
 		{"testdata/missing_template_message.descriptor_set", "message 'Template' not defined"},
-		{"testdata/reserved_field_in_template.descriptor_set", "proto:14: Template message must not contain the reserved filed name 'Name'"},
+		{"testdata/reserved_field_in_template.descriptor_set", "proto:14: Template message must not contain the reserved field name 'Name'"},
 		{"testdata/proto2_bad_syntax.descriptor_set", "Proto2BadSyntax.proto:3: Only proto3 template files are allowed."},
 		{"testdata/unsupported_field_type_message.descriptor_set", "UnsupportedFieldTypeMessage.proto:12: " +
 			"unsupported type for field 'o'. Supported types are 'string, int64, double, bool, istio.mixer.v1.config.descriptor.ValueType, map<string, " +
-			"istio.mixer.v1.config.descriptor.ValueType | string | int64 | double | bool>'"},
+			"string | int64 | double | bool | istio.mixer.v1.config.descriptor.ValueType>'"},
 		{"testdata/unsupported_field_type_primitive.descriptor_set", "unsupported type for field 'o'."},
 		{"testdata/unsupported_field_type_as_map.descriptor_set", "unsupported type for field 'o'."},
 		{"testdata/unsupported_field_type_enum.descriptor_set", "unsupported type for field 'o'."},
 		{"testdata/wrong_pkg_name.descriptor_set", "WrongPkgName.proto:2: the last segment of package " +
 			"name 'foo.badStrNumbersNotAllowed123' must match the reges '^[a-zA-Z]+$'"},
+		{"testdata/missing_output_template.descriptor_set", "'OutputTemplate' must be defined"},
+		{"testdata/unsupported_valuetype_in_outtmpl.descriptor_set", "Error: " +
+			"tools/codegen/pkg/modelgen/testdata/UnsupportedValueTypeInOutTmpl.proto:12: unsupported type for field 'val'. " +
+			"Supported types are 'string, int64, double, bool, " +
+			"map<string, string | int64 | double | bool>'; " +
+			"istio.mixer.v1.config.descriptor.ValueType cannot be used inside this message."},
 	}
 
 	for idx, tt := range tests {
